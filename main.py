@@ -2,7 +2,7 @@
 from TREXExtension.TREXExtension import TREX
 from DisplayNameExtension.DisplayNameExtension import DisplayNames
 
-from PAC_ID.PAC_ID import PAC_Parser
+from PAC_ID.data_model import PAC_Parser
 
 
 if __name__ == "__main__":

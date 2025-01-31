@@ -1,5 +1,5 @@
 import logging
-from PAC_ID.PAC_ID import Extension
+from PAC_ID.data_model import Extension
 from base36 import from_base36, to_base36
 from pydantic import BaseModel
 

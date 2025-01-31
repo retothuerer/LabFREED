@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 import logging
 import re
-from PAC_ID.PAC_ID import Extension
+from PAC_ID.data_model import Extension
 from pydantic import BaseModel, field_validator
 from abc import ABC
 
