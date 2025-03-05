@@ -1,8 +1,0 @@
-/__pycache__
-PAC_ID/data_model.py
-PAC_ID/__pycache__/data_model.cpython-310.pyc
-PAC_ID/__pycache__/parse.cpython-310.pyc
-PAC_ID/__pycache__/recommendations_to_imply_keys.cpython-310.pyc
-PAC_ID/__pycache__/recommendations.cpython-310.pyc
-PAC_ID/tests/__pycache__/test_pac_id_parse.cpython-310-pytest-7.1.2.pyc
-.gitignore
