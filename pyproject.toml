@@ -1,0 +1,17 @@
+[build-system]
+requires = ["flit_core >=3.11,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "labfreed"
+authors = [{name = "Reto Thürer", email = "reto.thuerer@gmail.com"}]
+license = "MIT"
+license-files = ["LICENSE"]
+dynamic = ["version", "description"]
+
+readme = "README.md"
+requires-python = ">=3.13"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
