@@ -2,4 +2,4 @@
 Python implementation of LabFREED building blocks
 '''
 
-__version__ = "0.0.2"
+__version__ = "0.0.3"
