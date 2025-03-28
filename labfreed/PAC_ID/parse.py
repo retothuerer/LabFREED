@@ -4,6 +4,8 @@ import re
 from types import MappingProxyType
 from .data_model import *
 
+from ..validation import extract_warnings
+
 
 category_conventions = MappingProxyType(
                             {
@@ -37,8 +39,12 @@ class PAC_Parser():
             ext_str = ""
             
         pac_id = self.parse_pac_id(id_str)
-        extensions = self.parse_extensions(ext_str)    
-        return PACID_With_Extensions(pac_id=pac_id, extensions=extensions)
+        extensions = self.parse_extensions(ext_str)
+        
+        pac_with_extension = PACID_With_Extensions(pac_id=pac_id, extensions=extensions)
+        warnings = extract_warnings(pac_with_extension)
+        
+        return pac_with_extension, warnings
             
             
     def parse_id_segments(self, identifier:str):
@@ -46,6 +52,8 @@ class PAC_Parser():
             return []    
         
         id_segments = list()  
+        if len(identifier) > 0 and identifier[0] == '/':
+            identifier = identifier[1:]
         for s in identifier.split('/'):
             tmp = s.split(':')
             
@@ -85,10 +93,11 @@ class PAC_Parser():
         default_keys = None
         id_segments = self.parse_id_segments(d.get('identifier'))
         id_segments = self._apply_category_defaults(id_segments)
-            
-        return PACID(issuer= d.get('issuer'),
+        
+        pac = PACID(issuer= d.get('issuer'),
                      identifier=Identifier(segments=id_segments)
         )
+        return pac
 
 
     def parse_extensions(self, extensions_str:str|None) -> list[Extension]:    
