@@ -4,7 +4,7 @@ import re
 from .data_model import TREX, T_REX_Segment_ParseError, TREX_SimpleSegment, TREX_Table
 
 
-def from_trex_string(trex_str, enforce_type=True) -> TREX:
+def from_trex_string(trex_str, name=None, enforce_type=True) -> TREX:
     if not trex_str:
         raise ValueError(f'T-REX must be a string of non zero length')
 
@@ -17,10 +17,8 @@ def from_trex_string(trex_str, enforce_type=True) -> TREX:
     d = re.match('((?P<name>.+)\$(?P<type>.+)/)?(?P<data>.+)', trex_str).groupdict()     
     if not d:
         raise ValueError('TREX is invalid.') 
-    type = d.get('type')
-    name = d.get('name')
-    data = d.get('data')
     
+    type = d.get('type')
     if not type:
         logging.warning('No type given. Assume its trex')
     elif type != 'TREX' and enforce_type:
@@ -28,8 +26,17 @@ def from_trex_string(trex_str, enforce_type=True) -> TREX:
         raise ValueError(f'Extension type {type} is not TREX.')
     else:
         logging.warning('Extension type {type} is not TREX. Try anyways')
+        
+    s_name = d.get('name')
+    if name and s_name:
+        logging.warning(f'conflicting names given. The string contained {s_name}, method parameter was {name}. Method parameter wins.')
+    elif not name and not s_name:
+        raise ValueError('No extension name was given')
+    elif s_name:
+        name = s_name
+
+    data = d.get('data')
     
-            
     segment_strings = data.split('+')
     out_segments = dict()
     for s in segment_strings:
