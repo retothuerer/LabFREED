@@ -60,26 +60,35 @@ class PydanticUncertainQuantity(BaseModel):
     
 unit_map = [
     ('MGM', units.milligram),
-    ('CEL', units.celsius),
-    ('LTR', units.liter),
-    ('MLT', units.milliliter),
     ('GRM', units.gram),
     ('KGM', units.kilogram),
+    
+    ('CEL', units.celsius),
+    
+    ('LTR', units.liter),
+    ('MLT', units.milliliter),
+
     ('C34', units.mole),
     ('D43',units.atomic_mass_unit),
+    
     ('1', units.dimensionless),
     ('C62', units.dimensionless),
+    
     ('BAR',units.bar),
     ('MBR',units.millibar),
     ('KBA',units.kilobar),
+    
     ('RPM', units.rpm),
-    ('HUR', units.hour),
+    
     ('HTZ', units.hertz),
     ('KHZ', units.kilohertz),
     ('MHZ',units.megahertz),
+    
     ('SEC', units.second),
     ('MIN', units.minute),
-    ('URH', units.hour)
+    ('HUR', units.hour),
+    
+    ('MTR', units.meter)
     
 ]      
     
