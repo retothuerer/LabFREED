@@ -65,23 +65,23 @@ class Material_Misc(Material_Consumable):
 
 class Data_Result(CATBase):
     category_key: str = Field(default='-DR', frozen=True)
-    id:str =                    Field(              alias='240', min_length=1)
+    id:str =                    Field(              alias='21', min_length=1)
     
 class Data_Method(CATBase):
     category_key: str = Field(default='-DM', frozen=True)
-    id:str =                    Field(              alias='240', min_length=1)
+    id:str =                    Field(              alias='21', min_length=1)
     
 class Data_Calibration(CATBase):
     category_key: str = Field(default='-DC', frozen=True)
-    id:str =                    Field(              alias='240', min_length=1)
+    id:str =                    Field(              alias='21', min_length=1)
     
 class Data_Progress(CATBase):
     category_key: str = Field(default='-DP', frozen=True)
-    id:str =                    Field(              alias='240', min_length=1)
+    id:str =                    Field(              alias='21', min_length=1)
     
 class Data_Static(CATBase):
     category_key: str = Field(default='-DS', frozen=True)
-    id:str =                    Field(              alias='240', min_length=1)
+    id:str =                    Field(              alias='21', min_length=1)
     
     
     
