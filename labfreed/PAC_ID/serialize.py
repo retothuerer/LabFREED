@@ -4,7 +4,7 @@ from .data_model import *
     
     
 class PAC_Serializer():    
-    def to_url(self, pac:PACID|PACID_With_Extensions, extensions:list[Extension]=None, use_short_notation_for_extensions=False) -> str:
+    def to_url(self, pac:PACID|PACID_With_Extensions, extensions:list[Extension]=None, use_short_notation_for_extensions=False, uppercase_only=False) -> str:
         if isinstance(pac, PACID_With_Extensions):
             if extensions:
                 raise ValueError('Extensions were given twice, as part of PACID_With_Extension and as method parameter.')
@@ -13,7 +13,10 @@ class PAC_Serializer():
         issuer = pac.issuer
         extensions_str = self._serialize_extensions(extensions, use_short_notation_for_extensions)
         id_segments = self._serialize_id_segments(pac.identifier.segments)
-        return f"HTTPS://PAC.{issuer}{id_segments}{extensions_str}".upper()
+        out = f"HTTPS://PAC.{issuer}{id_segments}{extensions_str}"
+        if uppercase_only:
+            out = out.upper()
+        return out
     
     
     def _serialize_id_segments(self, segments):
