@@ -4,7 +4,7 @@ import re
 from types import MappingProxyType
 from .data_model import *
 
-from ..validation import extract_warnings
+from ..validation import extract_warnings, ValidationWarning
 
 
 category_conventions = MappingProxyType(
@@ -31,7 +31,7 @@ class PAC_Parser():
     def __init__(self, extension_interpreters:dict[str, Extension]=None):
         self.extension_interpreters = extension_interpreters or {}
         
-    def parse_pac_url(self, pac_url:str) -> PACID_With_Extensions:
+    def parse_pac_url(self, pac_url:str) -> tuple[PACID_With_Extensions, list[ValidationWarning] ]:
         if '*' in pac_url:
             id_str, ext_str = pac_url.split('*', 1)
         else:
