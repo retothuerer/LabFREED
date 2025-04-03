@@ -87,7 +87,6 @@ def _deserialize_table_segment_from_trex_segment_str(trex_segment_str) -> TREX_T
     # re_table_pattern = re.compile(f"(?P<tablename>[\w\.-]*?)\$\$(?P<header>[\w\.,\$:]*?)::(?P<body>.*)")
     # re_col_head_pattern = re.compile(f"(?P<name>[\w\.-]*?)\$(?P<unit>[\w\.]*)")
     re_table_pattern = re.compile(r"(?P<tablename>.+?)\$\$(?P<header>.+?)::(?P<body>.+)")
-    re_col_head_pattern = re.compile(r"(?P<name>.+?)\$(?P<unit>.+)")
     
     matches = re_table_pattern.match(trex_segment_str) 
     if not matches:
@@ -97,8 +96,8 @@ def _deserialize_table_segment_from_trex_segment_str(trex_segment_str) -> TREX_T
     column_headers_str = header.split(':')
     
     headers = []
-    for ch in column_headers_str:
-         column_heads = [colhead.split('$') for colhead in ch]
+    for colum_header in column_headers_str:
+         ch = colum_header.split('$')
          col_key = ch[0]
          col_type = ch[1] if len(ch) > 1 else ''
          headers.append(ColumnHeader(key=col_key, type=col_type))
@@ -107,8 +106,9 @@ def _deserialize_table_segment_from_trex_segment_str(trex_segment_str) -> TREX_T
     col_types = [h.type for h in headers]
     # convert to correct value types
     data_with_types = [[str_to_value_type(c,t) for c, t in zip(r, col_types)] for r in data]
+    data = [ TableRow(r) for r in data_with_types]
              
-    out = TREX_Table(col_headers=headers, data=data_with_types, key=name)
+    out = TREX_Table(column_headers=headers, data=data_with_types, key=name)
     return out
         
 

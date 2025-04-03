@@ -4,13 +4,13 @@ import re
 from collections import Counter
 
 
-from pydantic import ValidationError, field_validator, model_validator, Field
+from pydantic import RootModel, ValidationError, field_validator, model_validator, Field
 from labfreed.TREX.unece_units import unece_unit_codes
 from labfreed.validation import BaseModelWithValidationMessages
 from abc import ABC,  abstractmethod
 
 from ..PAC_ID.data_model import Extension
-from ..conversion_tools.utilities.base36 import to_base36, from_base36
+from labfreed.utilities.base36 import to_base36, from_base36
 
         
 
@@ -23,7 +23,7 @@ class TREX_Segment(BaseModelWithValidationMessages, ABC):
             self.add_validation_message(
                 source=f"TREX segment key {self.key}",
                 type="Error",
-                msg=f"Segment name contains invalid characters: {','.join(not_allowed_chars)}",
+                msg=f"Segment key contains invalid characters: {','.join(not_allowed_chars)}",
                 highlight_pattern = f'{self.key}$',
                 highlight_sub=not_allowed_chars
             )
@@ -38,6 +38,9 @@ class TREX_Segment(BaseModelWithValidationMessages, ABC):
 
 class ValueMixin(BaseModelWithValidationMessages, ABC): 
     value:str 
+    
+    def serialize_for_trex(self):
+        return self.value
         
     # @abstractclassmethod
     # def from_python_type(cls, v):
@@ -135,7 +138,7 @@ class BoolValue(ValueMixin):
                 source=f"TREX boolean value {self.value}",
                 type="Error",
                 msg=f'{self.value} is no valid boolean. Must be T or F',
-                highlight_pattern = f':{self.value}',
+                highlight_pattern = f'{self.value}',
                 highlight_sub=[c for c in self.value]
             )
         return self
@@ -237,6 +240,18 @@ class ErrorValue(ValueMixin):
 class ValueSegment(TREX_Segment, ValueMixin, ABC):
     type:str
     
+    @model_validator(mode='after')
+    def validate_type(self):
+        valid_types = valid_types = unece_unit_codes() + ['T.D', 'T.B', 'T.A', 'T.T', 'T.X', 'E']
+        if not self.type in valid_types:
+            self.add_validation_message(
+                    source=f"TREX value segment {self.key}",
+                    type="Error",
+                    msg=f"Type {self.type} is invalid. Must be 'T.D', 'T.B', 'T.A', 'T.T', 'T.X', 'E' or a UNECE unit",
+                    highlight_pattern = self.type
+            )
+        return self
+    
     @classmethod
     def get_subclass(cls, type:str, key:str, value:str):
         match type:
@@ -253,8 +268,6 @@ class ValueSegment(TREX_Segment, ValueMixin, ABC):
             case 'E':
                 model = ErrorSegment(key=key, value=value, type=type)
             case _:
-                if not type in unece_unit_codes():
-                    raise ValueError(f'Invalid unit code. {type} is not in UNECE list of common codes')
                 model = NumericSegment(value=value, key=key, type=type)
                     
         return model    
@@ -291,22 +304,60 @@ class ErrorSegment(ValueSegment, ErrorValue):
 class ColumnHeader(BaseModelWithValidationMessages):
     key:str
     type:str
+               
+    @model_validator(mode='after')     
+    def validate_key(self):
+        if not_allowed_chars := set(re.sub(r'[A-Z0-9\.-]', '', self.key)):
+            self.add_validation_message(
+                source=f"TREX table column {self.key}",
+                type="Error",
+                msg=f"Column header key contains invalid characters: {','.join(not_allowed_chars)}",
+                highlight_pattern = f'{self.key}$',
+                highlight_sub=not_allowed_chars
+            )
+        return self
+    
+    @model_validator(mode='after')
+    def validate_type(self):
+        valid_types = unece_unit_codes() + ['T.D', 'T.B', 'T.A', 'T.T', 'T.X', 'E']
+        if not self.type in valid_types:
+            self.add_validation_message(
+                    source=f"TREX table column {self.key}",
+                    type="Error",
+                    msg=f"Type '{self.type}' is invalid. Must be 'T.D', 'T.B', 'T.A', 'T.T', 'T.X', 'E' or a UNECE unit",
+                    highlight_pattern = self.type
+            )
+        return self
 
-
+class TableRow(RootModel[list[ValueMixin]]):    
+    def serialize_for_trex(self):
+        return ':'.join([e.serialize_for_trex() for e in self.root])
+    
+    def __len__(self):
+        return len(self.root)
+    
+    def __iter__(self):
+        return iter(self.root)
   
 class TREX_Table(TREX_Segment):
-    col_headers: list[ColumnHeader]
-
-    data: list[list[ValueMixin]]
+    column_headers: list[ColumnHeader]
+    data: list[TableRow]
+    
+    @property
+    def column_names(self):
+        return [h.key for h in self.column_headers]
+    
+    @property
+    def column_types(self):
+        return [h.type for h in self.column_headers]
     
     @model_validator(mode='after')
     def validate_sizes(self):
-        
-        sizes = [len(self.col_headers)]
+        sizes = [len(self.column_headers)]
         sizes.extend( [ len(row) for row in self.data ] ) 
         most_common_len, count = Counter(sizes).most_common(1)[0]        
         
-        if len(self.col_headers) != most_common_len:
+        if len(self.column_headers) != most_common_len:
             self.add_validation_message(
                     source=f"Table {self.key}",
                     type="Error",
@@ -315,7 +366,7 @@ class TREX_Table(TREX_Segment):
             )
             expected_row_len = most_common_len
         else:
-            expected_row_len = len(self.col_headers)
+            expected_row_len = len(self.column_headers)
             
 
         for i, row in enumerate(self.data):
@@ -324,25 +375,94 @@ class TREX_Table(TREX_Segment):
                     source=f"Table {self.key}",
                     type="Error",
                     msg=f"Size mismatch: Table row {i} contains {len(row)} elements. Expected size is {expected_row_len}",
-                    highlight_pattern = self.key
+                    highlight_pattern = row.serialize_for_trex()
                 )
+        return self
+    
+    @model_validator(mode='after')
+    def validate_data_types(self):
+        expected_types = self.column_types
+        i = 0
+        for row in self.data:
+            for e, t_expected, nm in zip(row, expected_types, self.column_names):
+                try:
+                    match t_expected:
+                        case 'T.D':
+                            assert isinstance(e, DateValue)
+                        case 'T.B':
+                            assert isinstance(e, BoolValue)
+                        case 'T.A':
+                            assert isinstance(e, AlphanumericValue)
+                            
+                        case 'T.T':
+                            assert isinstance(e, TextValue)
+                        case 'T.X':
+                            assert isinstance(e, BinaryValue)
+                        case 'E':
+                            assert isinstance(e, ErrorValue)
+                        case _:
+                            assert isinstance(e, NumericValue)
+                except AssertionError:
+                    self.add_validation_message(
+                        source=f"Table {self.key}",
+                        type="Error",
+                        msg=f"Size mismatch: Table row {i}, column {nm} is of wrong type. Is {e.type_identifier}, should be {t_expected}",
+                        highlight_pattern = row.serialize_for_trex(),
+                        highlight_sub=[c for c in e.value]
+                    )
+                    
+                if msg := e.get_errors():
+                    for m in msg:
+                        self.add_validation_message(
+                            source=f"Table {self.key}",
+                            type="Error",
+                            msg=m.problem_msg,
+                            highlight_pattern = row.serialize_for_trex(),
+                            highlight_sub=[c for c in e.value]
+                        )
+                i += 1
+                    
 
+            
+    def _get_col_index(self, col:str|int):
+        if isinstance(col, str):
+            col_index = self.column_names.index(col)
+        elif isinstance(col, int):
+            col_index = col
+        else:
+            raise TypeError(f"Column must be specified as string or int: {col.__name__}")
+        return col_index
+    
+    
+    
+    def serialize_for_trex(self):
+        header = ':'.join([f'{h.key}${h.type}' for h in self.column_headers])        
+        data = '::'.join([r.serialize_for_trex() for r in self.data])
+        s = f'{self.key}$${header}::{data}'
+        return s
+        
+        
+        
+        
+        
         
     def n_rows(self) -> int:
         return len(self.data)
     
     def n_cols(self) -> int:
-        return len(self.col_names)
+        return len(self.column_headers)
       
     def row_data(self, row:int) -> list:
         out = self.data[row]
         return out
-                
-    def col_data(self, col:str|int) -> list:
+    
+    
+    def column_data(self, col:str|int) -> list:
         col_index = self._get_col_index(col)
-        type = self.col_types[col_index]
+        type = self.column_headers[col_index].type
         out =  [row[col_index] for row in self.data]
         return out
+     
      
     def cell_data(self, row:int, col:str|int):
         try:
@@ -352,28 +472,6 @@ class TREX_Table(TREX_Segment):
             logging.warning(f"row {row}, column {col} not found")
             return None 
         return value
-            
-    def _get_col_index(self, col:str|int):
-        if isinstance(col, str):
-            col_index = self.col_names.index(col)
-        elif isinstance(col, int):
-            col_index = col
-        else:
-            raise TypeError(f"Column must be specified as string or int: {col.__name__}")
-        return col_index
-    
-    
-    
-    def serialize_for_trex(self, name):
-        header = ':'.join([f'{el[0]}${el[1]}' for el in zip(self.col_names, self.col_types)])
-        date_rows = list()
-        for r in self.data:
-            row = ':'.join([cell.serialize_for_trex() for cell in r])
-            date_rows.append(row)
-        data = '::'.join(date_rows)
-        s = f'{name}$${header}::{data}'
-        return s
-        
    
 
 
@@ -398,7 +496,7 @@ class TREX(Extension, BaseModelWithValidationMessages):
         s_out = '+'.join(seg_strings)
         return s_out
     
-    
+       
     def get_segment(self, segment_key:str) -> TREX_Segment:
         s = [s for s in self.segments if s.key == segment_key]
         if s:

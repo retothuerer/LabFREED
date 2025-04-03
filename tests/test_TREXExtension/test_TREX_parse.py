@@ -1,7 +1,7 @@
 import re
 import pytest
 
-from labfreed.TREX.data_model import TREX
+from labfreed.TREX.data_model import *
 from labfreed.TREX.parse import _from_trex_string, TREX_Parser
 
 from labfreed.validation import LabFREEDValidationError
@@ -213,3 +213,59 @@ def test_invalid_error():
     for e in b:
         with pytest.raises(ValueError):
             trex = parser.parse_trex_str(f'A$E:{e}', name='A')
+            
+            
+# Table
+def test_valid_table():
+    tab = 'TAB$$C-0$T.A:C.1$T.B::TRUE:T::FALSE:F'
+    trex = parser.parse_trex_str(tab, name='A')
+    assert not trex.get_errors()
+    t = trex.segments[0]
+    assert isinstance(t, TREX_Table)
+    assert t.column_headers[0].key == 'C-0'
+    assert t.column_headers[0].type == 'T.A'
+    assert t.column_headers[1].key == 'C.1'
+    assert t.column_headers[1].type == 'T.B'
+    assert len(t.data) == 2
+    assert [e.value for e in t.data[0]] == ['TRUE', 'T']
+    assert [e.value for e in t.data[1]] == ['FALSE', 'F']
+    
+def test_invalid_header_keys():
+    tab = 'TAB$$C£0$T.A:C1$T.B::TRUE:T::FALSE:F' # character £ in key
+    with pytest.raises(LabFREEDValidationError):
+        trex = parser.parse_trex_str(tab, name='A')
+        
+def test_valid_header_types():
+    d = [
+        ('T.D', '20240101'), 
+        ('T.B', 'T'), 
+        ('T.A', 'ABC'),
+        ('T.T', 'ABC'), 
+        ('T.X', 'ABC'),
+        ('E', 'ABC'), 
+        ('HUR', '1'),
+        ('C63', '2')
+        ]
+    for e in d:
+        tab = f'TAB$$A${e[0]}::{e[1]}'
+        trex = parser.parse_trex_str(tab, name='A')
+        assert not trex.get_errors()
+        
+def test_invalid_header_types():
+    types = ['T.Q', 'T.', 'HURR', 'W70']
+    for t in types:
+        tab = f'TAB$$A${t}::V'
+        with pytest.raises(LabFREEDValidationError):
+            trex = parser.parse_trex_str(tab, name='A')
+            
+def test_size_mismatch():
+    tab = 'TAB$$C0$T.A:C1$T.B:C2$C63::TRUE:T::FALSE:T:1' #row 0 has only 2 elements
+    with pytest.raises(LabFREEDValidationError):
+        trex = parser.parse_trex_str(tab, name='A')
+        
+def test_type_mismatch():
+    tab = 'TAB$$C0$T.A:C1$T.B::TRUE:TRUE::FALSE:T' #element (0,1) has wrong type. should be boolean (T or F) but is text 
+    with pytest.raises(LabFREEDValidationError):
+        trex = parser.parse_trex_str(tab, name='A')
+        
+            

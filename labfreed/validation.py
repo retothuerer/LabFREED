@@ -115,18 +115,27 @@ class BaseModelWithValidationMessages(BaseModel):
     
     def print_validation_messages(self, str_to_highlight_in):
         msgs = self.get_nested_validation_messages()
+        print('\n'.join(['\n',
+                         '=======================================',
+                         'Validation Results',
+                         '---------------------------------------'
+                        ]
+                        )
+        )
+
         for m in msgs:
             if m.type.casefold() == "error":
                 color = 'red'
             else:
                 color = 'yellow'
                 
-            text = Text.from_markup(f'\n [bold {color}] {m.type} [/bold {color}] in \t {m.source} \n {m.problem_msg}' )
+            text = Text.from_markup(f'\n [bold {color}]{m.type} [/bold {color}] in \t {m.source}' )
             print(text)
             formatted_highlight = m.emphazised_highlight.replace('emph', f'bold {color}')
             fmtd = str_to_highlight_in.replace(m.highlight, formatted_highlight)
             fmtd = Text.from_markup(fmtd)
             print(fmtd)
+            print(Text.from_markup(f'{m.problem_msg}'))
         
     
     
