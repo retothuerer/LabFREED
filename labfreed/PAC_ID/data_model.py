@@ -2,30 +2,46 @@ import re
 from typing import Optional
 from typing_extensions import Self
 from pydantic import Field, ValidationInfo, computed_field, conlist, model_validator, field_validator
-from ..validation import BaseModelWithWarnings, ValidationWarning, hsegment_pattern, domain_name_pattern
+
 from abc import ABC, abstractproperty, abstractstaticmethod
 from .well_known_segment_keys import WellKnownSegmentKeys
+from labfreed.validation import BaseModelWithValidationMessages, ValidationMessage, hsegment_pattern, domain_name_pattern
 
 
-class IDSegment(BaseModelWithWarnings):
+class IDSegment(BaseModelWithValidationMessages):
     key:str|None = None
     value:str  
+    
     @model_validator(mode="after")
-    def validate_segment(cls, model):
-        key = model.key or ""
-        value = model.value 
+    def validate_segment(self):
+        key = self.key or ""
+        value = self.value 
         
         # MUST be a valid hsegment according to RFC 1738, but without * (see PAC-ID Extension)
         # This means it must be true for both, key and value
         if not_allowed_chars := set(re.sub(hsegment_pattern, '', key)):
-            raise ValueError(f"id segment key {key} contains invalid characters {' '.join(not_allowed_chars)}.")
+            self.add_validation_message(
+                    source=f"id segment key {key}",
+                    type="Error",
+                    msg=f"{' '.join(not_allowed_chars)} must not be used.",
+                    recommendation = "The segment key must be a valid hsegment",
+                    highlight_pattern = key,
+                    highlight_sub = not_allowed_chars
+            )
         
         if not_allowed_chars := set(re.sub(hsegment_pattern, '', value)):
-            raise ValueError(f"id segment key {value} contains invalid characters {' '.join(not_allowed_chars)}.")
+            self.add_validation_message(
+                    source=f"id segment key {value}",
+                    type="Error",
+                    msg=f"{' '.join(not_allowed_chars)} must not be used.",
+                    recommendation = "The segment key must be a valid hsegment",
+                    highlight_pattern = value,
+                    highlight_sub = not_allowed_chars
+            )
 
         # Segment key SHOULD be limited to A-Z, 0-9, and -+..
         if not_recommended_chars := set(re.sub(r'[A-Z0-9-:+]', '', key)):
-            model.add_warning(
+            self.add_validation_message(
                     source=f"id segment key {key}",
                     type="Recommendation",
                     msg=f"{' '.join(not_recommended_chars)} should not be used.",
@@ -36,7 +52,7 @@ class IDSegment(BaseModelWithWarnings):
             
         # Segment key should be in Well know keys
         if key and key not in [k.value for k in WellKnownSegmentKeys]:
-            model.add_warning(
+            self.add_validation_message(
                     source=f"id segment key {key}",
                     type="Recommendation",
                     msg=f"{key} is not a well known segment key.",
@@ -47,7 +63,7 @@ class IDSegment(BaseModelWithWarnings):
             
         # Segment value SHOULD be limited to A-Z, 0-9, and -+..
         if not_recommended_chars := set(re.sub(r'[A-Z0-9-:+]', '', value)):
-            model.add_warning(
+            self.add_validation_message(
                     source=f"id segment value {value}",
                     type="Recommendation",
                     msg=f"Characters {' '.join(not_recommended_chars)} should not be used.",
@@ -59,31 +75,31 @@ class IDSegment(BaseModelWithWarnings):
         # Segment value SHOULD be limited to A-Z, 0-9, and :-+ for new designs.
         # this means that ":" in key or value is problematic
         if ':' in key:
-            model.add_warning(
+            self.add_validation_message(
                     source=f"id segment key {key}",
                     type="Recommendation",
                     msg=f"Character ':' should not be used in segment key, since this character is used to separate key and value this can lead to undefined behaviour.",
                     highlight_pattern = key
                 )
         if ':' in value:
-            model.add_warning(
+            self.add_validation_message(
                     source=f"id segment value {value}",
                     type="Recommendation",
                     msg=f"Character ':' should not be used in segment value, since this character is used to separate key and value this can lead to undefined behaviour.",
                     highlight_pattern = value
                 )
                 
-        return model
+        return self
     
   
     
 
-class Category(BaseModelWithWarnings):
+class Category(BaseModelWithValidationMessages):
     key:str|None = None
     segments: list[IDSegment]
 
 
-class Identifier(BaseModelWithWarnings):
+class Identifier(BaseModelWithValidationMessages):
     segments: conlist(IDSegment, min_length=1) = Field(..., exclude=True) # type: ignore # exclude=True prevents this from being serialized by Pydantic
         
     @computed_field
@@ -113,7 +129,13 @@ class Identifier(BaseModelWithWarnings):
             keys = [s.key for s in c.segments if s.key]
             duplicate_keys = [k for k in set(keys) if keys.count(k) > 1]
             if duplicate_keys:
-                raise ValueError(f'Duplicate keys {",".join(duplicate_keys)} in category {c.key}')
+                for k in duplicate_keys:
+                    self.add_validation_message(
+                        source=f"identifier {k}",
+                        type="Error",
+                        msg=f"Duplicate key {k} in category {c.key}",
+                        highlight_pattern = k
+                    )
             return self
         
     @model_validator(mode='after')
@@ -127,7 +149,12 @@ class Identifier(BaseModelWithWarnings):
         l += len(self.segments) - 1 # account for "/" separating the segments
         
         if l > 256:
-            raise ValueError(f'Identifier is {l} characters long, Identifier must not exceed 256 characters.')
+            self.add_validation_message(
+                        source=f"identifier",
+                        type="Error",
+                        msg=f'Identifier is {l} characters long, Identifier must not exceed 256 characters.',
+                        highlight_pattern = ""
+                    )
         return self
        
     @staticmethod 
@@ -141,7 +168,7 @@ class Identifier(BaseModelWithWarnings):
         
     
 
-class Extension(ABC, BaseModelWithWarnings): 
+class Extension(ABC, BaseModelWithValidationMessages): 
     
     @abstractproperty
     def name(self)->str:
@@ -183,29 +210,34 @@ class UnknownExtension(Extension):
     
 
 
-class PACID(BaseModelWithWarnings):
+class PACID(BaseModelWithValidationMessages):
     issuer:str
     identifier: Identifier
     
     @model_validator(mode="after")
-    def validate_issuer(cls, model):
-        if not re.fullmatch(domain_name_pattern, model.issuer):
-            raise ValueError("Issuer must be a valid domain name.")
-
+    def validate_issuer(self):
+        if not re.fullmatch(domain_name_pattern, self.issuer):
+            self.add_validation_message(
+                    source="PAC-ID",
+                    type="Error",
+                    highlight_pattern=self.issuer,
+                    highlight_sub=not_recommended_chars,
+                    msg=f"Issuer must be a valid domain name. "
+                )
          
         # recommendation that A-Z, 0-9, -, and . should be used
-        if not_recommended_chars := set(re.sub(r'[A-Z0-9\.-]', '', model.issuer)):
-            model.add_warning(
+        if not_recommended_chars := set(re.sub(r'[A-Z0-9\.-]', '', self.issuer)):
+            self.add_validation_message(
                     source="PAC-ID",
                     type="Recommendation",
-                    highlight_pattern=model.issuer,
+                    highlight_pattern=self.issuer,
                     highlight_sub=not_recommended_chars,
                     msg=f"Characters {' '.join(not_recommended_chars)} should not be used. Issuer SHOULD contain only the characters A-Z, 0-9, -, and . "
                 )
-        return model
+        return self
     
     
-class PACID_With_Extensions(BaseModelWithWarnings):
+class PACID_With_Extensions(BaseModelWithValidationMessages):
     pac_id: PACID
     extensions: list[Extension] = Field(default_factory=list)
 

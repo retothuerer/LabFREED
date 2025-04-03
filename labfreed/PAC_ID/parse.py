@@ -4,7 +4,7 @@ import re
 from types import MappingProxyType
 from .data_model import *
 
-from ..validation import extract_warnings, ValidationWarning
+from ..validation import ValidationMessage, LabFREEDValidationError
 
 
 category_conventions = MappingProxyType(
@@ -31,7 +31,7 @@ class PAC_Parser():
     def __init__(self, extension_interpreters:dict[str, Extension]=None):
         self.extension_interpreters = extension_interpreters or {}
         
-    def parse_pac_url(self, pac_url:str) -> tuple[PACID_With_Extensions, list[ValidationWarning] ]:
+    def parse_pac_url(self, pac_url:str) -> tuple[PACID_With_Extensions, list[ValidationMessage] ]:
         if '*' in pac_url:
             id_str, ext_str = pac_url.split('*', 1)
         else:
@@ -42,9 +42,11 @@ class PAC_Parser():
         extensions = self.parse_extensions(ext_str)
         
         pac_with_extension = PACID_With_Extensions(pac_id=pac_id, extensions=extensions)
-        warnings = extract_warnings(pac_with_extension)
+        pac_with_extension.print_validation_messages(pac_url)
+        if not pac_with_extension.is_valid():
+            raise LabFREEDValidationError(validation_msgs = pac_with_extension.get_nested_validation_messages())
         
-        return pac_with_extension, warnings
+        return pac_with_extension
             
             
     def parse_id_segments(self, identifier:str):
