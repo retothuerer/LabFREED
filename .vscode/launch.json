@@ -13,6 +13,16 @@
             "env": {
                 "PYTHONPATH": "$(pwd)"
             }
+        },
+        {
+            "name": "Python Debugger: Main",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "main.py",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "$(pwd)"
+            }
         }
     ]
 }
