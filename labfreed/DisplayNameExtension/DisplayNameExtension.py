@@ -1,7 +1,7 @@
 import logging
 from pydantic import BaseModel
 from ..PAC_ID.data_model import Extension
-from .base36 import from_base36, to_base36
+from labfreed.utilities.base36 import from_base36, to_base36
 
 
 class DisplayNames(Extension, BaseModel):
