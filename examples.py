@@ -99,7 +99,7 @@ trex2.update(
                         'TEMP': Quantity(value=10.15, unit_name='meter', unit_symbol='m'),
                         'OK':False,
                         'COMMENT': 'FOO',
-                        'COMMENT2':'🐯'
+                        'COMMENT2':'£'
                     }
 )
 
