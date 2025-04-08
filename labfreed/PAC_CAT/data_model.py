@@ -138,6 +138,19 @@ class PAC_CAT(PACID):
                     )
             return self
         
+    def print_categories(self):
+        s = ''
+        for i, c in enumerate(self.categories):
+            if i == 0:
+                title = 'Main Category\n----------'
+            else:
+                title = 'Category\n------ '
+            
+            s += f'{title}\n'
+            s += str(c)
+            s += '\n'
+        print(s)
+        
         
     # @classmethod
     # def from_categories(cls, issuer:str, categories:list[Category]):
@@ -196,6 +209,11 @@ class Category(BaseModelWithValidationMessages):
                     highlight_pattern = f"{self.key}"
         )
         return self
+    
+    
+    def __str__(self):
+        s = '\n'.join( [f'{field_name} \t ({field_info.alias or ''}): \t {getattr(self, field_name)}' for  field_name, field_info in self.model_fields.items() if getattr(self, field_name)]) 
+        return s
     
     
     # def to_identifier_category(self, use_short_notation=False):
@@ -261,14 +279,14 @@ class Material_Device(Category):
             self.add_validation_message(
                     source=f"Category {self.key}",
                     type="Error",
-                    msg=f'Category key {self.key} is missing mandatory field Model NUmber',
+                    msg=f'Category key {self.key} is missing mandatory field Model Number',
                     highlight_pattern = f"{self.key}"
             )
         if not self.serial_number:
             self.add_validation_message(
                     source=f"Category {self.key}",
                     type="Error",
-                    msg=f'Category key {self.key} is missing mandatory field Serial NUmber',
+                    msg=f'Category key {self.key} is missing mandatory field Serial Number',
                     highlight_pattern = f"{self.key}"
             )
     
@@ -286,7 +304,7 @@ class Material_Substance(Category):
             self.add_validation_message(
                     source=f"Category {self.key}",
                     type="Error",
-                    msg=f'Category key {self.key} is missing mandatory field Product NUmber',
+                    msg=f'Category key {self.key} is missing mandatory field Product Number',
                     highlight_pattern = f"{self.key}"
             )
     
@@ -328,19 +346,19 @@ class Data_Abstract(Category, ABC):
                     highlight_pattern = f"{self.key}"
             )
 
-class Data_Result(Category):
+class Data_Result(Data_Abstract):
     key: str = Field(default='-DR', frozen=True)
     
-class Data_Method(Category):
+class Data_Method(Data_Abstract):
     key: str = Field(default='-DM', frozen=True)
     
-class Data_Calibration(Category):
+class Data_Calibration(Data_Abstract):
     key: str = Field(default='-DC', frozen=True)
     
-class Data_Progress(Category):
+class Data_Progress(Data_Abstract):
     key: str = Field(default='-DP', frozen=True)
     
-class Data_Static(Category):
+class Data_Static(Data_Abstract):
     key: str = Field(default='-DS', frozen=True)
     
     

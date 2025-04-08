@@ -654,6 +654,7 @@ class TREX(Extension, BaseModelWithValidationMessages):
                     data.append(r)
                     
                 self.segments.append(TREX_Table(key=k, column_headers=headers, data=data))
+        return self
                    
                 
     def dict(self):

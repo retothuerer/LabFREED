@@ -1,4 +1,6 @@
 import re
+import io
+import contextlib
 
 start_marker = "<!-- BEGIN EXAMPLES -->"
 end_marker = "<!-- END EXAMPLES -->"
@@ -6,39 +8,67 @@ end_marker = "<!-- END EXAMPLES -->"
 with open("examples.py", encoding="utf-8") as ex_file:
     example_content = ex_file.read()
 
-# Split on docstring blocks, keeping the docstring delimiters
-pattern = r"(?:'''(.*?)'''|\"\"\"(.*?)\"\"\")"
-splits = re.split(pattern, example_content, flags=re.DOTALL)
+# Match blocks: either triple-quoted docstrings or plain code chunks
+pattern = r"(?P<docstring>'''(.*?)'''|\"\"\"(.*?)\"\"\")"
+matches = list(re.finditer(pattern, example_content, flags=re.DOTALL))
 
-# Rebuild output
 output_parts = []
-in_code_block = False
+last_index = 0
 
-def flush_code_block(buffer):
-    if buffer:
-        return "```python\n" + "".join(buffer).strip() + "\n```\n"
-    return ""
+shared_globals = {}
 
-code_buffer = []
+def run_code_block(code_str):
+    stdout = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(stdout):
+            exec(code_str, shared_globals)
+    except Exception as e:
+        return f"[Error during execution: {e}]"
+    return stdout.getvalue().strip()
 
-for i in range(len(splits)):
-    chunk = splits[i]
-    if chunk is None:
-        continue
 
-    # Every odd-numbered chunk is a docstring match (because of how re.split works with groups)
-    if i % 3 == 1 or i % 3 == 2:
-        # Flush any previous code block
-        output_parts.append(flush_code_block(code_buffer))
-        code_buffer = []
-        docstring = chunk.strip()
-        output_parts.append(docstring + "\n")
-    else:
-        code_buffer.append(chunk)
+def format_output_as_html(output: str) -> str:
+    lines = output.splitlines()
+    formatted = "\n".join(f">> {line}" for line in lines)
+    html_output = f"<pre><code style=\"color: green\">{formatted}</code></pre>"
+    return html_output
 
-# Final flush
-output_parts.append(flush_code_block(code_buffer))
 
+def format_output(output: str) -> str:
+    lines = output.splitlines()
+    formatted = "\n".join(f">> {line}" for line in lines)
+    return  f"```text\n{formatted}\n```"
+
+
+for match in matches:
+    # Capture code before this docstring
+    code_chunk = example_content[last_index:match.start()]
+    if code_chunk.strip():
+        code_block = code_chunk.strip("\n")
+        output_parts.append(f"```python\n{code_block}\n```")
+
+        result = run_code_block(code_block)
+        if result:
+            output_parts.append(format_output(result))
+
+    # Capture the docstring itself
+    doc = match.group(0).strip('\'" \n')
+    if doc:
+        output_parts.append(doc.strip() + "\n")
+
+    last_index = match.end()
+
+# Add any remaining code after the last docstring
+if last_index < len(example_content):
+    remaining_code = example_content[last_index:].strip("\n")
+    if remaining_code.strip():
+        output_parts.append(f"```python\n{remaining_code}\n```")
+
+        result = run_code_block(remaining_code)
+        if result:
+            output_parts.append(format_output(result))
+
+# Combine the parts
 example_content_md = "\n".join(part for part in output_parts if part.strip())
 
 # Inject into README.md
