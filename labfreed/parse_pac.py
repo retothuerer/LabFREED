@@ -49,7 +49,7 @@ class PACID_With_Extensions(BaseModelWithValidationMessages):
     @classmethod
     def deserialize(cls, url, extension_interpreters ):
         parser = PAC_Parser(extension_interpreters)
-        return parser.parse_pac_with_extensions(url)
+        return parser.parse(url)
         
         
     
@@ -87,15 +87,15 @@ class PAC_Parser():
     def __init__(self, extension_interpreters:dict[str, Extension]=None):
         self.extension_interpreters = extension_interpreters or {'TREX': TREX, 'N': DisplayNames}
         
-    def parse_pac_with_extensions(self, pac_url:str) -> PACID_With_Extensions:
+    def parse(self, pac_url:str) -> PACID_With_Extensions:
         if '*' in pac_url:
             id_str, ext_str = pac_url.split('*', 1)
         else:
             id_str = pac_url
             ext_str = ""
             
-        pac_id = self.parse_pac_id(id_str)
-        extensions = self.parse_extensions(ext_str)
+        pac_id = self._parse_pac_id(id_str)
+        extensions = self._parse_extensions(ext_str)
         
         pac_with_extension = PACID_With_Extensions(pac_id=pac_id, extensions=extensions)
         if not pac_with_extension.is_valid():
@@ -104,7 +104,7 @@ class PAC_Parser():
         return pac_with_extension
             
             
-    def parse_pac_id(self,id_str:str) -> PACID:
+    def _parse_pac_id(self,id_str:str) -> PACID:
         m = re.match(f'(HTTPS://)?(PAC.)?(?P<issuer>.+?\..+?)/(?P<identifier>.*)', id_str)
         d = m.groupdict()
         
@@ -148,7 +148,7 @@ class PAC_Parser():
     
 
 
-    def parse_extensions(self, extensions_str:str|None) -> list[Extension]:    
+    def _parse_extensions(self, extensions_str:str|None) -> list[Extension]:    
         
         extensions = list()
         
