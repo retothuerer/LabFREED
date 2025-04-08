@@ -23,13 +23,9 @@ pip install labfreed
 
 
 ## Usage Examples
+> ⚠️ **Note:** These examples are building on each other. Imports and parsing are not repeated in each example.
 <!-- BEGIN EXAMPLES -->
-```python
-
-```
-
-### Parse a simple PAC-ID 
-The
+### Parse a simple PAC-ID
 
 ```python
 from labfreed.parse_pac import PAC_Parser
@@ -42,33 +38,54 @@ pac_id = PAC_Parser().parse(pac_str).pac_id
 pac_id = PAC_Parser().parse(pac_str).pac_id
 is_valid = pac_id.is_valid()
 print('PAC-ID is valid: {is_valid}')
-# >> PAC-ID is valid: {is_valid}
 ```
-
-Show recommendations:
-Note that the PAC-ID, while valid uses characters, which are not recommended (results in larger QR code).
+```text
+>> PAC-ID is valid: {is_valid}
+```
+### Show recommendations:
+Note that the PAC-ID -- while valid -- uses characters which are not recommended (results in larger QR code).
 There is a nice function to highlight problems
 
 ```python
 pac_id.print_validation_messages()
-# >>
-#   =======================================
-#   Validation Results
-#   ---------------------------------------
-
-#   Recommendation  in      id segment value bal500
-#   HTTPS://PAC.METTORIUS.COM/-MD/bal500/@1234
-#   Characters a b l should not be used.
-
-#   Recommendation  in      id segment value @1234
-#   HTTPS://PAC.METTORIUS.COM/-MD/bal500/@1234
-#   Characters @ should not be used.
-
-#   Warning  in     Category -MD
-#   HTTPS://PAC.METTORIUS.COM/-MD/bal500/@1234
-#   Category key -MD is not a well known key. It is recommended to use well known keys only
 ```
+```text
+>> =======================================
+>> Validation Results
+>> ---------------------------------------
+>> 
+>>  Recommendation  in      id segment value bal500
+>> HTTPS://PAC.METTORIUS.COM/-MD/bal500/@1234
+>> Characters a l b should not be used.
+>> 
+>>  Recommendation  in      id segment value @1234
+>> HTTPS://PAC.METTORIUS.COM/-MD/bal500/@1234
+>> Characters @ should not be used.
+>> 
+>>  Warning  in     Category -MD
+>> HTTPS://PAC.METTORIUS.COM/-MD/bal500/@1234
+>> Category key -MD is not a well known key. It is recommended to use well known keys only
+```
+### PAC-CAT
 
+```python
+from labfreed.PAC_CAT.data_model import PAC_CAT
+pac_str = 'HTTPS://PAC.METTORIUS.COM/-DR/XQ908756/-MD/bal500/@1234'
+pac_id = PAC_Parser().parse(pac_str).pac_id
+if isinstance(pac_id, PAC_CAT):
+    pac_id.print_categories()
+```
+```text
+>> Main Category
+>> ----------
+>> key 	 (): 	 -DR
+>> id 	 (21): 	 XQ908756
+>> Category
+>> ------ 
+>> key 	 (): 	 -MD
+>> model_number 	 (240): 	 bal500
+>> serial_number 	 (21): 	 @1234
+```
 ### Parse a PAC-ID with extensions
 PAC-ID can have extensions. Here we parse a PAC-ID with attached display names and summary.
 
@@ -78,17 +95,21 @@ pac_id = PAC_Parser().parse(pac_str)
 
 # Display Name
 display_names = pac_id.get_extension('N') # display name has name 'N'
-print(f'\n {display_names}')
-# >> Display names: My Balance ❤️
-
+print(display_names)
+```
+```text
+>> Display names: My Balance ❤️
+```
+```python
 # TREX
 trexes = pac_id.get_extension_of_type('TREX')
 trex = trexes[0] # there could be multiple trexes. In this example there is only one, though
 v = trex.get_segment('WEIGHT').to_python_type() 
 print(f'WEIGHT = {v}')
-# >> WEIGHT = 67.89 g
 ```
-
+```text
+>> WEIGHT = 67.89 g
+```
 ### Create a PAC-ID with Extensions
 
 #### Create PAC-ID
@@ -99,10 +120,11 @@ from labfreed.utilities.well_known_keys import WellKnownKeys
 
 pac_id = PACID(issuer='METTORIUS:COM', identifier=[IDSegment(key=WellKnownKeys.SERIAL, value='1234')])
 pac_str = pac_id.serialize()
-pac_str = pac_id.serialize()
 print(pac_str)
 ```
-
+```text
+>> HTTPS://PAC.METTORIUS:COM/21:1234
+```
 #### Create a TREX 
 TREX can conveniently be created from a python dictionary.
 Note that utility types for Quantity (number with unit) and table are needed
@@ -140,7 +162,6 @@ if trex.get_nested_validation_messages():
 # Side Note: The TREX can be turned back into a dict
 d = trex.dict()
 ```
-
 #### Combine PAC-ID and TREX and serialize
 
 ```python
@@ -150,13 +171,15 @@ pac_with_trex = PACID_With_Extensions(pac_id=pac_id, extensions=[trex])
 pac_str = pac_with_trex.serialize()
 print(pac_str)
 ```
-
+```text
+>> HTTPS://PAC.METTORIUS:COM/21:1234*DEMO$TREX/STOP$T.D:20240505T1306+TEMP$KEL:10.15+OK$T.B:F+COMMENT$T.A:FOO+COMMENT2$T.T:12G3+TABLE$$DURATION$HUR:DATE$T.D:OK$T.B:COMMENT$T.A::1:20250408T204147.801:T:FOO::1.1:20250408T204147.801:T:BAR::1.3:20250408T204147.801:F:BLUBB
+```
 <!-- END EXAMPLES -->
 
 
 
 ## Change Log
 
-### v0.0.9
+### v0.0.16
 - supports PAC-ID, PAC-CAT, TREX and DisplayName
 - ok-ish test coverage

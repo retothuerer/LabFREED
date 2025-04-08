@@ -13,5 +13,5 @@ if ($target -eq "prod") {
     flit publish --repository pypi
 }
 else {
-    flit publish --repository pypi
+    flit publish --repository testpypi
 }
