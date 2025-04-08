@@ -3,7 +3,7 @@ from typing import Annotated
 
 # Parse a PAC ID
 from labfreed.PAC_ID.data_model import PACID, IDSegment
-from labfreed.parse import PAC_Parser, PACID_With_Extensions
+from labfreed.parse_pac import PAC_Parser, PACID_With_Extensions
 from utility_types import Quantity
 pac_str = 'HTTPS://PAC.METTORIUS.COM/-MD/BAL500/1234'
 pac = PAC_Parser().parse_pac_id(pac_str)
@@ -58,7 +58,7 @@ trex.segments.append(DateSegment(key='STOP', value=datetime(year=2024,month=5,da
 trex.segments.append(NumericSegment(key='TEMP',type='KEL', value=10.15) )
 trex.segments.append(BoolSegment(key='OK', value=False) )
 trex.segments.append(AlphanumericSegment(key='COMMENT', value='FOO') )
-trex.segments.append(TextSegment(key='COMMENT2', value='🐯') )
+trex.segments.append(TextSegment(key='COMMENT2', value='£') )
 trex.segments.append(TextSegment(key='COMMENT2', value='BAR') )
 
 # if the sting is already in base36 you have to be explicit
