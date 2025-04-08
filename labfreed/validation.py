@@ -113,7 +113,9 @@ class BaseModelWithValidationMessages(BaseModel):
         return filter_warnings(self.get_nested_validation_messages())
     
     
-    def print_validation_messages(self, str_to_highlight_in):
+    def print_validation_messages(self, str_to_highlight_in=None):
+        if not str_to_highlight_in:
+            str_to_highlight_in = str(self)
         msgs = self.get_nested_validation_messages()
         print('\n'.join(['\n',
                          '=======================================',

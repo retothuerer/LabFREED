@@ -51,78 +51,10 @@ def _from_trex_string(trex_str, name=None, enforce_type=True) -> TREX:
 
     data = d.get('data')
     
-    segment_strings = data.split('+')
-    out_segments = list()
-    for s in segment_strings:
-        # there are only two valid options. The segment is a scalar or a table. 
-        # Constructors do the parsing anyways and raise exceptions if invalid data
-        # try both options and then let it fail
-        segment = _deserialize_table_segment_from_trex_segment_str(s)
-        if not segment:
-            segment = _deserialize_value_segment_from_trex_segment_str(s)
-        if not segment:
-            raise ValueError('TREX contains neither valid value segment nor table')
-            
-        out_segments.append(segment)
-    trex = TREX(name_= name, segments=out_segments)
-    trex._trex_str = trex_str
+    trex = TREX.from_spec_fields(name=name, data=data)
 
     return trex
 
 
-
-def _deserialize_value_segment_from_trex_segment_str(trex_segment_str) -> ValueSegment:
-    #re_scalar_pattern = re.compile(f"(?P<name>[\w\.-]*?)\$(?P<unit>[\w\.]*?):(?P<value>.*)")
-    re_scalar_pattern = re.compile(f"(?P<name>.+?)\$(?P<unit>.+?):(?P<value>.+)")
-    matches = re_scalar_pattern.match(trex_segment_str)
-    if not matches:
-        return None
-    
-    name, type_, value = matches.groups()
-    out = ValueSegment.get_subclass(type=type_, value=value, key=name)
-    return out
-
-
-def _deserialize_table_segment_from_trex_segment_str(trex_segment_str) -> TREX_Table:
-    # re_table_pattern = re.compile(f"(?P<tablename>[\w\.-]*?)\$\$(?P<header>[\w\.,\$:]*?)::(?P<body>.*)")
-    # re_col_head_pattern = re.compile(f"(?P<name>[\w\.-]*?)\$(?P<unit>[\w\.]*)")
-    re_table_pattern = re.compile(r"(?P<tablename>.+?)\$\$(?P<header>.+?)::(?P<body>.+)")
-    
-    matches = re_table_pattern.match(trex_segment_str) 
-    if not matches:
-        return None
-    name, header, body = matches.groups()
-    
-    column_headers_str = header.split(':')
-    
-    headers = []
-    for colum_header in column_headers_str:
-         ch = colum_header.split('$')
-         col_key = ch[0]
-         col_type = ch[1] if len(ch) > 1 else ''
-         headers.append(ColumnHeader(key=col_key, type=col_type))
-    
-    data = [row.split(':') for row in body.split('::') ]
-    col_types = [h.type for h in headers]
-    # convert to correct value types
-    data_with_types = [[str_to_value_type(c,t) for c, t in zip(r, col_types)] for r in data]
-    data = [ TableRow(r) for r in data_with_types]
-             
-    out = TREX_Table(column_headers=headers, data=data_with_types, key=name)
-    return out
-        
-
-def str_to_value_type(s:str, t:str):
-    match t:
-        case 'T.D': v = DateValue(value=s)
-        case 'T.B': v = BoolValue(value=s)
-        case 'T.A': v = AlphanumericValue(value=s)
-        case 'T.T': v = TextValue(value=s)
-        case 'T.X': v = BinaryValue(value=s)
-        case 'E'  : v = ErrorValue(value=s)
-        case _    : v = NumericValue(value=s)         
-    return v   
-    
-    
 
 

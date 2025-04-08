@@ -1,6 +1,6 @@
 import logging
 from pydantic import BaseModel
-from ..PAC_ID.data_model import Extension
+from labfreed.PAC_ID.extensions import Extension
 from labfreed.utilities.base36 import from_base36, to_base36
 
 
@@ -20,7 +20,7 @@ class DisplayNames(Extension, BaseModel):
         return '/'.join([to_base36(dn) for dn in self.display_names])
     
     @staticmethod
-    def from_spec_fields(name, type, data):
+    def from_spec_fields(*, name, type, data):
         if name != 'N':
             logging.warning(f'Name {name} was given, but this extension should only be used with name "N". Will ignore input')
             
@@ -30,5 +30,8 @@ class DisplayNames(Extension, BaseModel):
         display_names = [from_base36(b36) for b36 in data.split('/')]
          
         return DisplayNames(display_names=display_names)
+    
+    def __str__(self):
+        return 'Display names: '+ ';'.join(self.display_names)
 
 

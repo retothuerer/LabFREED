@@ -2,15 +2,17 @@ from datetime import date, datetime, time
 import logging
 import re
 from collections import Counter
+from typing import Annotated, Literal
 
 
-from pydantic import RootModel, ValidationError, field_validator, model_validator, Field
-from labfreed.TREX.unece_units import unece_unit_codes
+from pydantic import PrivateAttr, RootModel, ValidationError, field_validator, model_validator, Field
+from labfreed.TREX.unece_units import unece_unit, unece_unit_codes, unece_units, unit_name, unit_symbol
+from labfreed.utilities.utility_types import DataTable, Quantity, Unit, unece_unit_code_from_quantity
 from labfreed.validation import BaseModelWithValidationMessages
 from abc import ABC,  abstractmethod
 
-from ..PAC_ID.data_model import Extension
-from labfreed.utilities.base36 import to_base36, from_base36
+from labfreed.PAC_ID.extensions import Extension
+from labfreed.utilities.base36 import base36, to_base36, from_base36
 
         
 
@@ -33,6 +35,14 @@ class TREX_Segment(BaseModelWithValidationMessages, ABC):
     def serialize_for_trex(self):
         raise NotImplementedError("Subclasses must implement 'serialize_as_trex()' method")
     
+    # @abstractmethod
+    # def to_python_type(self):
+    #      raise NotImplementedError("Subclasses must implement 'to_python_type()' method")
+     
+    # @abstractmethod
+    # def from_python_type(self):
+    #      raise NotImplementedError("Subclasses must implement 'from_python_type()' method")
+    
     
 
 
@@ -46,16 +56,23 @@ class ValueMixin(BaseModelWithValidationMessages, ABC):
     # def from_python_type(cls, v):
     #     ...
         
-    # @abstractmethod
-    # def to_python_type(self):
-    #     ...
+    @abstractmethod
+    def value_to_python_type(self):
+        ...
         
         
 class NumericValue(ValueMixin):
+    @field_validator('value', mode='before')
+    @classmethod
+    def from_python_type(cls, v:str| int|float):
+        if isinstance(v, str):
+            return v
+        return str(v)
+        
     @model_validator(mode='after')
     def validate(self):
         value = self.value
-        if not_allowed_chars := set(re.sub(r'[0-9\.-]', '', value)):
+        if not_allowed_chars := set(re.sub(r'[0-9\.\-E]', '', value)):
             self.add_validation_message(
                 source=f"TREX numeric value {value}",
                 type="Error",
@@ -63,7 +80,7 @@ class NumericValue(ValueMixin):
                 highlight_pattern = f'{value}',
                 highlight_sub=not_allowed_chars
             )
-        if not re.fullmatch(r'-?\d+(\.\d+)?', value):
+        if not re.fullmatch(r'-?\d+(\.\d+)?(E-?\d+)?', value):
             self.add_validation_message(
                 source=f"TREX numeric value {value}",
                 type="Error",
@@ -72,9 +89,36 @@ class NumericValue(ValueMixin):
             )
         return self
     
+    def value_to_python_type(self) -> str:
+        v = float(self.value)  
+        if not '.' in self.value and not 'E' in self.value: 
+            return int(v)
+        else:
+            return v
 
 
 class DateValue(ValueMixin):
+    _date_time_dict:dict|None = PrivateAttr(default=None)
+    @field_validator('value', mode='before')
+    @classmethod
+    def from_python_type(cls, v:str| date|time|datetime):
+        if isinstance(v, str):
+            return v
+        
+        sd = ""
+        st = ""
+        if isinstance(v, date) or isinstance(v, datetime):
+            sd = v.strftime('%Y%m%d')
+        if isinstance(v, time) or isinstance(v, datetime):
+            if v.microsecond:
+                st = v.strftime("T%H%M%S.") + f"{v.microsecond // 1000:03d}"
+            elif v.second:
+                st = v.strftime("T%H%M%S")
+            else:
+                st = v.strftime("T%H%M")
+                         
+        return sd + st
+    
     @model_validator(mode='after')
     def validate(self):
         pattern:str = r'((?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2}))?(T(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2})?(\.(?P<millisecond>\d{3}))?)?'
@@ -89,7 +133,7 @@ class DateValue(ValueMixin):
             return self
             
         matches = re.match(pattern, value)       
-        d = matches.groupdict()
+        d = matches.groupdict()  
         d = {k: int(v) for k,v in d.items() if v }
         if 'millisecond' in d.keys():
             ms = d.pop('millisecond')
@@ -106,31 +150,31 @@ class DateValue(ValueMixin):
                 msg=f'{value} is no valid date or time.',
                 highlight_pattern = f'{value}'
             )
-        
+            
+        self._date_time_dict = d
         return self
     
-    def to_python_type(self) -> str:
-        ...
+    def value_to_python_type(self) -> str:
+        d = self._date_time_dict
+        if d.get('year') and d.get('hour'): # input is only a time
+            return datetime(**d)
+        elif d.get('year'):
+            return date(**d)
+        else:
+            return time(**d)
     
-    @classmethod
-    def from_python_type(v:date|time|datetime):
-        sd = ""
-        st = ""
-        match v:
-            case date() | datetime():
-                sd = v.strftime('%Y%m%d')
-            case time() | datetime():
-                if v.microsecond:
-                    st = v.strftime("T%H:%M:%S.") + f"{v.microsecond // 1000:03d}"
-                elif v.seconds:
-                    st = v.strftime("T%H:%M:%S")
-                else:
-                    st = v.strftime("T%H:%M")
-                         
-        return DateValue(value= sd + st)
+   
     
 
 class BoolValue(ValueMixin):
+    @field_validator('value', mode='before')
+    @classmethod
+    def from_python_type(cls, v:str| bool):
+        if isinstance(v, str):
+            return v
+        
+        return 'T' if v else 'F'
+
     @model_validator(mode='after')
     def validate(self):
         if not self.value in ['T', 'F']:
@@ -143,16 +187,21 @@ class BoolValue(ValueMixin):
             )
         return self
     
-    def to_python_type(self) -> str:
-        if self == 'T':
+    def value_to_python_type(self) -> str:
+        if self.value == 'T':
             return True
-        elif self == 'F':
+        elif self.value == 'F':
             return False
         else:
             Exception(f'{self} is not valid boolean. That really should not have been possible -- Contact the maintainers of the library')
             
           
 class AlphanumericValue(ValueMixin):
+    @field_validator('value', mode='before')
+    @classmethod
+    def from_python_type(cls, v:str):
+        return v
+        
     @model_validator(mode='after')
     def validate(self):
         if re.match(r'[a-z]', self.value):
@@ -173,15 +222,21 @@ class AlphanumericValue(ValueMixin):
             )
         return self
            
-    def to_python_type(self) -> str:
-        return self
+    def value_to_python_type(self) -> str:
+        return self.value
     
-    @classmethod
-    def from_python_type(cls, v):
-        raise NotImplementedError()
     
 
 class TextValue(ValueMixin):
+    @field_validator('value', mode='before')
+    @classmethod
+    def from_python_type(cls, v:base36|str):
+        if isinstance(v, str):
+            logging.info('Got str for text value > converting to base36')
+            return to_base36(v).root
+        else:
+            return v.root
+        
     @model_validator(mode='after')
     def validate(self):
         if not_allowed_chars := set(re.sub(r'[A-Z0-9]', '', self.value)):
@@ -194,12 +249,20 @@ class TextValue(ValueMixin):
             )
         return self
               
-    def to_python_type(self) -> str:
-        decoded = from_base36(self)
+    def value_to_python_type(self) -> str:
+        decoded = from_base36(self.value)
         return decoded
     
     
 class BinaryValue(ValueMixin):
+    @field_validator('value', mode='before')
+    @classmethod
+    def from_python_type(cls, v:base36|str):
+        if isinstance(v, str):
+            return v
+        else:
+            return v.root
+        
     @model_validator(mode='after')
     def validate(self):
         if not_allowed_chars := set(re.sub(r'[A-Z0-9]', '', self.value)):
@@ -212,7 +275,7 @@ class BinaryValue(ValueMixin):
             )
         return self
               
-    def to_python_type(self) -> bytes:
+    def value_to_python_type(self) -> bytes:
         decoded = bytes(from_base36(self))
         return decoded
     
@@ -231,8 +294,8 @@ class ErrorValue(ValueMixin):
         return self
        
     
-    def to_python_type(self) -> str:
-        return self
+    def value_to_python_type(self) -> str:
+        return self.value
 
 
 
@@ -252,52 +315,64 @@ class ValueSegment(TREX_Segment, ValueMixin, ABC):
             )
         return self
     
-    @classmethod
-    def get_subclass(cls, type:str, key:str, value:str):
-        match type:
-            case 'T.D':
-                model = DateSegment(key=key, value=value, type=type)
-            case 'T.B':
-                model = BoolSegment(key=key, value=value, type=type)
-            case 'T.A':
-                model = AlphanumericSegment(key=key, value=value, type=type)
-            case 'T.T':
-                model = TextSegment(key=key, value=value, type=type)
-            case 'T.X':
-                model = BinarySegment(key=key, value=value, type=type)
-            case 'E':
-                model = ErrorSegment(key=key, value=value, type=type)
-            case _:
-                model = NumericSegment(value=value, key=key, type=type)
+    # @classmethod
+    # def get_subclass(cls, type:str, key:str, value:str):
+    #     match type:
+    #         case 'T.D':
+    #             model = DateSegment(key=key, value=value, type=type)
+    #         case 'T.B':
+    #             model = BoolSegment(key=key, value=value, type=type)
+    #         case 'T.A':
+    #             model = AlphanumericSegment(key=key, value=value, type=type)
+    #         case 'T.T':
+    #             model = TextSegment(key=key, value=value, type=type)
+    #         case 'T.X':
+    #             model = BinarySegment(key=key, value=value, type=type)
+    #         case 'E':
+    #             model = ErrorSegment(key=key, value=value, type=type)
+    #         case _:
+    #             model = NumericSegment(value=value, key=key, type=type)
                     
-        return model    
+    #     return model    
     
     
     def serialize_for_trex(self) -> str:
         return f'{self.key}${self.type}:{self.value}'
+    
+    def to_python_type(self):
+        return self.value_to_python_type()
+    
+    
+
+    
     
 
     
 class NumericSegment(ValueSegment, NumericValue):
     type: str    
     
-class DateSegment(ValueSegment, DateValue):
-    type: str = Field('T.D', frozen=True)
+    def to_python_type(self):
+        unit = unece_unit(self.type)
+        out = Quantity(value=self.value_to_python_type(), unit=Unit(name=unit_name(unit), symbol=unit_symbol(unit)))
+        return out
     
+class DateSegment(ValueSegment, DateValue):
+    type: Literal['T.D'] = Field('T.D', frozen=True)
+          
 class BoolSegment(ValueSegment, BoolValue):
-    type: str = Field('T.A', frozen=True) 
+    type: Literal['T.B']  = Field('T.B', frozen=True) 
         
 class AlphanumericSegment(ValueSegment, AlphanumericValue):
-    type: str = Field('T.A', frozen=True)
+    type: Literal['T.A'] = Field('T.A', frozen=True)
     
 class TextSegment(ValueSegment, TextValue):
-    type: str = Field('T.T', frozen=True)
+    type: Literal['T.T'] = Field('T.T', frozen=True)
     
 class BinarySegment(ValueSegment, BinaryValue):
-    type: str = Field('T.X', frozen=True)
+    type: Literal['T.X'] = Field('T.X', frozen=True)
     
 class ErrorSegment(ValueSegment, ErrorValue):
-    type: str = Field('E', frozen=True)
+    type: Literal['E'] = Field('E', frozen=True)
                         
         
     
@@ -406,7 +481,7 @@ class TREX_Table(TREX_Segment):
                     self.add_validation_message(
                         source=f"Table {self.key}",
                         type="Error",
-                        msg=f"Size mismatch: Table row {i}, column {nm} is of wrong type. Is {e.type_identifier}, should be {t_expected}",
+                        msg=f"Type mismatch: Table row {i}, column {nm} is of wrong type. According to the header it should be {t_expected}",
                         highlight_pattern = row.serialize_for_trex(),
                         highlight_sub=[c for c in e.value]
                     )
@@ -421,8 +496,7 @@ class TREX_Table(TREX_Segment):
                             highlight_sub=[c for c in e.value]
                         )
                 i += 1
-                    
-
+                
             
     def _get_col_index(self, col:str|int):
         if isinstance(col, str):
@@ -440,9 +514,21 @@ class TREX_Table(TREX_Segment):
         data = '::'.join([r.serialize_for_trex() for r in self.data])
         s = f'{self.key}$${header}::{data}'
         return s
-        
-        
-        
+    
+    
+    def to_python_type(self):
+        table = DataTable([ch.key for ch in self.column_headers])
+        for row in self.data:
+            r = []
+            for e, h in zip(row, self.column_headers):
+                if isinstance(e, NumericValue):
+                    u = unece_unit(h.type)
+                    unit = Unit(name=u.get('name'), symbol=u.get('symbol'))
+                    r.append(Quantity(value=e.value, unit=unit))
+                else:
+                    r.append(e.value_to_python_type())
+                table.append(r)
+        return table
         
         
         
@@ -505,6 +591,76 @@ class TREX(Extension, BaseModelWithValidationMessages):
             return None
         
         
+    def update(self, segments: dict[str, Quantity|datetime|time|date|bool|str|base36|DataTable] ):
+        for k, v in segments.items():
+            if isinstance(v, bool):
+                self.segments.append(BoolSegment(key=k, value=v))
+            elif isinstance(v, Quantity):
+                unece_code = unece_unit_code_from_quantity(v)
+                self.segments.append(NumericSegment(key=k, value=v.value, type=unece_code))
+            elif isinstance(v, (int, float)):
+                self.segments.append(NumericSegment(key=k, value=v, type='C63'))  # unitless
+            elif isinstance(v, (datetime, time, date)):
+                self.segments.append(DateSegment(key=k, value=v))
+            elif isinstance(v, str):
+                if re.fullmatch(r'[A-Z0-9\-\.]*', v):
+                    self.segments.append(AlphanumericSegment(key=k, value=v))
+                else:
+                    v = to_base36(v)
+                    self.segments.append(TextSegment(key=k, value=v))
+            elif isinstance(v, base36):
+                self.segments.append(TextSegment(key=k, value=v))
+            elif isinstance(v, DataTable):
+                v:DataTable = v
+                headers = list()
+                for nm, rt in zip(v.col_names, v.row_template):
+                    if isinstance(rt, bool): # must come first otherwise int matches the bool
+                        t = 'T.B'
+                    elif isinstance(rt, Quantity):
+                        unece_code = unece_unit_code_from_quantity(rt)
+                        t = unece_code
+                    elif isinstance(rt, (datetime, time, date)):
+                        t = 'T.D'     
+                    elif isinstance(rt, str):
+                        if re.fullmatch(r'[A-Z0-9\-\.]*', rt):
+                            t = 'T.A'
+                        else:
+                            v = to_base36(rt)
+                            t = 'T.X'
+                    elif isinstance(rt, base36):
+                        t = 'T.X'
+                    
+                    headers.append(ColumnHeader(key=nm, type=t))
+                data = []
+                for row in v:
+                    r = []
+                    for e in row:
+                        if isinstance(e, bool): # must come first otherwise int matches the bool
+                            r.append(BoolValue(value=e))
+                        elif isinstance(e, Quantity):
+                            r.append(NumericValue(value=e.value))
+                        elif isinstance(e, (int, float)):
+                            r.append(NumericValue(value=e))
+                        elif isinstance(e, (datetime, time, date)):
+                            r.append(DateValue(value=e))
+                        elif isinstance(e, str):
+                            if re.fullmatch(r'[A-Z0-9\-\.]*', e):
+                                r.append(AlphanumericValue(value=e))
+                            else:
+                                e = to_base36(e)
+                                r.append(TextValue(value=e))
+                        elif isinstance(e, base36):
+                            r.append(TextValue(value=e))
+                    data.append(r)
+                    
+                self.segments.append(TREX_Table(key=k, column_headers=headers, data=data))
+                   
+                
+    def dict(self):
+        return {s.key: s.to_python_type() for s in self.segments}
+            
+        
+        
     @field_validator('segments')
     @classmethod
     def validate_segments(cls, segments):
@@ -517,8 +673,93 @@ class TREX(Extension, BaseModelWithValidationMessages):
     
         
     @staticmethod
-    def from_spec_fields(name, type, data):
-        ...
+    def from_spec_fields(*, name, data, type='TREX'):
+        segment_strings = data.split('+')
+        out_segments = list()
+        for s in segment_strings:
+            # there are only two valid options. The segment is a scalar or a table. 
+            # Constructors do the parsing anyways and raise exceptions if invalid data
+            # try both options and then let it fail
+            segment = _deserialize_table_segment_from_trex_segment_str(s)
+            if not segment:
+                segment = _deserialize_value_segment_from_trex_segment_str(s)
+            if not segment:
+                raise ValueError('TREX contains neither valid value segment nor table')
+                
+            out_segments.append(segment)
+        trex = TREX(name_= name, segments=out_segments)
+    
+        return trex
+    
+    
+def _deserialize_value_segment_from_trex_segment_str(trex_segment_str) -> ValueSegment:
+    #re_scalar_pattern = re.compile(f"(?P<name>[\w\.-]*?)\$(?P<unit>[\w\.]*?):(?P<value>.*)")
+    re_scalar_pattern = re.compile(f"(?P<name>.+?)\$(?P<unit>.+?):(?P<value>.+)")
+    matches = re_scalar_pattern.match(trex_segment_str)
+    if not matches:
+        return None
+    
+    key, type_, value = matches.groups()
+    
+    match type_:
+        case 'T.D':
+            out = DateSegment(key=key, value=value, type=type_)
+        case 'T.B':
+            out = BoolSegment(key=key, value=value, type=type_)
+        case 'T.A':
+            out = AlphanumericSegment(key=key, value=value, type=type_)
+        case 'T.T':
+            out = TextSegment(key=key, value=base36(value), type=type_)  # prevent repeated conversion from str to base36 and make explict that when parsing we assume the string tpo be base36 already
+        case 'T.X':
+            out = BinarySegment(key=key, value=base36(value), type=type_) # prevent repeated conversion from str to base36 and make explict that when parsing we assume the string tpo be base36 already
+        case 'E':
+            out = ErrorSegment(key=key, value=value, type=type_)
+        case _:
+            out = NumericSegment(value=value, key=key, type=type_)
+                    
+    return out    
+    
+
+
+def _deserialize_table_segment_from_trex_segment_str(trex_segment_str) -> TREX_Table:
+    # re_table_pattern = re.compile(f"(?P<tablename>[\w\.-]*?)\$\$(?P<header>[\w\.,\$:]*?)::(?P<body>.*)")
+    # re_col_head_pattern = re.compile(f"(?P<name>[\w\.-]*?)\$(?P<unit>[\w\.]*)")
+    re_table_pattern = re.compile(r"(?P<tablename>.+?)\$\$(?P<header>.+?)::(?P<body>.+)")
+    
+    matches = re_table_pattern.match(trex_segment_str) 
+    if not matches:
+        return None
+    name, header, body = matches.groups()
+    
+    column_headers_str = header.split(':')
+    
+    headers = []
+    for colum_header in column_headers_str:
+         ch = colum_header.split('$')
+         col_key = ch[0]
+         col_type = ch[1] if len(ch) > 1 else ''
+         headers.append(ColumnHeader(key=col_key, type=col_type))
+    
+    data = [row.split(':') for row in body.split('::') ]
+    col_types = [h.type for h in headers]
+    # convert to correct value types
+    data_with_types = [[str_to_value_type(c,t) for c, t in zip(r, col_types)] for r in data]
+    data = [ TableRow(r) for r in data_with_types]
+             
+    out = TREX_Table(column_headers=headers, data=data_with_types, key=name)
+    return out
+        
+
+def str_to_value_type(s:str, t:str):
+    match t:
+        case 'T.D': v = DateValue(value=s)
+        case 'T.B': v = BoolValue(value=s)
+        case 'T.A': v = AlphanumericValue(value=s)
+        case 'T.T': v = TextValue(value=base36(s))
+        case 'T.X': v = BinaryValue(value=s)
+        case 'E'  : v = ErrorValue(value=s)
+        case _    : v = NumericValue(value=s)         
+    return v   
     
 
     
@@ -546,324 +787,3 @@ class TREX_Struct(TREX_Segment):
     
 
 
-
-
-
-          
-# class Value(str, ABC): 
-#     @classmethod
-#     def __get_validators__(cls):
-#         yield cls.validate
-        
-#     def __new__(cls, value):
-#         # validate manually
-#         validated = cls.validate(value)
-#         return super().__new__(cls, validated)
-        
-#     @abstractclassmethod
-#     def validate(cls, value):
-#         ...
-        
-#     @abstractclassmethod
-#     def from_python_type(v):
-#         ...
-        
-#     @abstractmethod
-#     def to_python_type():
-#         ...
-          
-          
-        
-# class NumericValue(Value):
-#     @classmethod
-#     def validate(cls, value):
-#         if not_allowed_chars := set(re.sub(r'[0-9\.-]', '', value)):
-#             raise ValueError(f"Characters {','.join(not_allowed_chars)} are not allowed in quantity segment. Base36 encoding only allows A-Z0-9")
-#         if not re.fullmatch(r'-?\d+(\.\d+)?', value):
-#             raise ValueError(f"{value} cannot be converted to number")
-#         return value
-    
-#     def to_python_type(self) -> str:
-#         ...
-        
-# class DateValue(Value):
-#     pattern = r'((?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2}))?(T(?P<hours>\d{2})(?P<minutes>\d{2})(?P<seconds>\d{2})?(\.(?P<milliseconds>\d{3}))?)?'
-
-#     @classmethod
-#     def validate(cls, value):
-#         if not re.fullmatch(cls.pattern, value):
-#             raise ValueError(f'{value} is no valid date or time.')
-#         return value
-    
-#     def to_python_type(self) -> str:
-#         ...
-    
-#     @classmethod
-#     def from_python_type(v:date|time|datetime):
-#         sd = ""
-#         st = ""
-#         match v:
-#             case date() | datetime():
-#                 sd = v.strftime('%Y%m%d')
-#             case time() | datetime():
-#                 if v.microsecond:
-#                     st = v.strftime("T%H:%M:%S.") + f"{v.microsecond // 1000:03d}"
-#                 elif v.seconds:
-#                     st = v.strftime("T%H:%M:%S")
-#                 else:
-#                     st = v.strftime("T%H:%M")
-                         
-#         return DateValue(sd + st)
-    
-
-          
-          
-# class BoolValue(Value):
-#     @classmethod
-#     def validate(cls, value):
-#         if not value in ['T', 'F']:
-#             raise ValueError(f'{value} is no valid boolean. Must be T or F')
-#         return value
-    
-#     def to_python_type(self) -> str:
-#         if self == 'T':
-#             return True
-#         elif self == 'F':
-#             return False
-#         else:
-#             Exception(f'{self} is not valid boolean. That really should not have been possible -- Contact the maintainers of the library')
-            
-          
-# class AlphanumericValue(Value):
-#     @classmethod
-#     def validate(cls, value):
-#        if not_allowed_chars := set(re.sub(r'[A-Z0-9\.-]', '', value)):
-#             raise ValueError(f"Characters {','.join(not_allowed_chars)} are not allowed in alphanumeric segment")
-#        else:
-#            return value
-       
-#     @property
-#     def trex_type(self):
-#         return 'T.A'
-    
-#     def to_python_type(self) -> str:
-#         return self
-    
-
-# class TextValue(Value):
-
-#     @classmethod
-#     def validate(cls, value):
-#        if not_allowed_chars := set(re.sub(r'[A-Z0-9]', '', value)):
-#             raise ValueError(f"Characters {','.join(not_allowed_chars)} are not allowed in text segment. Base36 encoding only allows A-Z0-9")
-#        else:
-#            return value
-       
-#     @property
-#     def trex_type(self):
-#         return 'T.A'
-       
-#     def to_python_type(self) -> str:
-#         decoded = from_base36(self)
-#         return decoded
-    
-    
-# class BinaryValue(Value):
-#     @classmethod
-#     def validate(cls, value):
-#        if not_allowed_chars := set(re.sub(r'[A-Z0-9]', '', value)):
-#             raise ValueError(f"Characters {','.join(not_allowed_chars)} are not allowed in text segment. Base36 encoding only allows A-Z0-9")
-#        else:
-#            return value
-       
-#     @property
-#     def trex_type(self):
-#         return 'T.X'
-       
-#     def to_python_type(self) -> bytes:
-#         decoded = bytes(from_base36(self))
-#         return decoded
-    
-    
-# class ErrorValue(Value):
-#     @classmethod
-#     def validate(cls, value):
-#        if not_allowed_chars := set(re.sub(r'[A-Z0-9\.-]', '', value)):
-#             raise ValueError(f"Characters {','.join(not_allowed_chars)} are not allowed in error segment")
-#        else:
-#            return value
-       
-#     @property
-#     def trex_type(self):
-#         return 'E'
-    
-#     def to_python_type(self) -> str:
-#         return self
-
-
-# class TREX_Segment(BaseModelWithValidationMessages, ABC):
-#     key: str
-    
-#     @field_validator('key')
-#     def validate_name(cls, v):
-#         if not_allowed_chars := set(re.sub(r'[A-Z0-9\.-]', '', v)):
-#             raise ValueError(f"Segment name contains invalid characters: {','.join(not_allowed_chars)}")
-#         return v
-    
-#     @abstractmethod
-#     def serialize_for_trex(self):
-#         raise NotImplementedError("Subclasses must implement 'serialize_as_trex()' method")
-    
-    
-    
-# class ValueSegment(TREX_Segment):
-#     type: str
-#     value: str #NumericValue|DateValue|BoolValue|AlphanumericValue|TextValue|BinaryValue|ErrorValue
-          
-#     @model_validator(mode='before')
-#     @classmethod
-#     def validate(cls, model):
-#         t = model.get('type')
-#         v = model.get('value')
-#         match t:
-#             case 'T.D':
-#                 v = DateValue(v)
-#             case 'T.B':
-#                 v = BoolValue(v)
-#             case 'T.A':
-#                 v = AlphanumericValue(v)
-#             case 'T.T':
-#                 v = TextValue(v)
-#             case 'T.X':
-#                 v = BinaryValue(v)
-#             case 'E':
-#                 v = ErrorValue(v)
-#             case _:
-#                 if not t in unece_unit_codes():
-#                     raise ValueError(f'Invalid unit code. {t} is not in UNECE list of common codes')
-#                 v = NumericValue(v)
-                
-#         model['value'] = v
-#         return model
-                
-        
-#     def serialize_for_trex(self) -> str:
-#         return f'{self.key}${self.type}:{self.value}'
-        
-        # class UNECEQuantity(BaseModelWithWarnings):
-#     value:int|float
-#     unece_code:str
-#     unit_name: str|None = ""
-#     unit_symbol: str|None = ""
-    
-      
-#     def as_strings(self):
-#         unit_symbol = self.unit_symbol
-#         if unit_symbol == "dimensionless":
-#             unit_symbol = ""
-#         s = ''
-
-#         val_str = self.value
-#         return f"{val_str}", f"{unit_symbol}", f"{val_str} {unit_symbol}"
-        
-#     def __str__(self):
-#         unit_symbol = self.unit_symbol
-#         if unit_symbol == "dimensionless":
-#             unit_symbol = ""
-        
-#         s = f"{self.value} {unit_symbol}" 
-#         return s
-
-
-
-
-# class ValueSegment2(TREX_Segment, ValueMixin, ABC):
-#     type:str
-    
-    # @model_validator(mode='before')
-    # @classmethod
-    # def convert_str_value(cls, model):
-    #     if isinstance(model.get('value'), str):
-    #         bases = [base for base in cls.__bases__ if base is not ValueSegment2 and issubclass(base, ValueMixin)]
-    #         base = bases[0]
-    #         v = base(value = model.get('value'))
-    #         model['value'] = v
-    #     return model
-    
-    
-    # @model_validator(mode='before')
-    # @classmethod
-    # def cast_to_subclass(cls, model):
-        
-    #     # this method should do anything if called by the subclasses
-    #     if cls is not ValueSegment2:
-    #         return model
-        
-    #     k = model.get('key')
-    #     t = model.get('type')
-    #     v = model.get('value')      
-    #     match t:
-    #         case 'T.D':
-    #             model = DateSegment(key=k, value=v, type=t)
-    #         case 'T.B':
-    #             model = BoolSegment(key=k, value=v, type=t)
-    #         case 'T.A':
-    #             model = AlphanumericSegment(key=k, value=v, type=t)
-    #         case 'T.T':
-    #             model = TextSegment(key=k, value=v, type=t)
-    #         case 'T.X':
-    #             model = BinarySegment(key=k, value=v, type=t)
-    #         case 'E':
-    #             model = ErrorSegment(key=k, value=v, type=t)
-    #         case _:
-    #             if not t in unece_unit_codes():
-    #                 raise ValueError(f'Invalid unit code. {t} is not in UNECE list of common codes')
-    #             model = NumericSegment(key=k, value=v, type=t)
-                    
-    #     return model    
-    
-    
-    # class ValueSegment(TREX_Segment, ValueMixin, ABC):
-    # type:str
-    
-    # @model_validator(mode='before')
-    # @classmethod
-    # def convert_str_value(cls, model):
-    #     if isinstance(model.get('value'), str):
-    #         bases = [base for base in cls.__bases__ if base is not ValueSegment2 and issubclass(base, ValueMixin)]
-    #         base = bases[0]
-    #         v = base(value = model.get('value'))
-    #         model['value'] = v
-    #     return model
-    
-    
-    # @model_validator(mode='before')
-    # @classmethod
-    # def cast_to_subclass(cls, model):
-        
-    #     # this method should do anything if called by the subclasses
-    #     if cls is not ValueSegment2:
-    #         return model
-        
-    #     k = model.get('key')
-    #     t = model.get('type')
-    #     v = model.get('value')      
-    #     match t:
-    #         case 'T.D':
-    #             model = DateSegment(key=k, value=v, type=t)
-    #         case 'T.B':
-    #             model = BoolSegment(key=k, value=v, type=t)
-    #         case 'T.A':
-    #             model = AlphanumericSegment(key=k, value=v, type=t)
-    #         case 'T.T':
-    #             model = TextSegment(key=k, value=v, type=t)
-    #         case 'T.X':
-    #             model = BinarySegment(key=k, value=v, type=t)
-    #         case 'E':
-    #             model = ErrorSegment(key=k, value=v, type=t)
-    #         case _:
-    #             if not t in unece_unit_codes():
-    #                 raise ValueError(f'Invalid unit code. {t} is not in UNECE list of common codes')
-    #             model = NumericSegment(key=k, value=v, type=t)
-                    
-    #     return model    

@@ -4,7 +4,8 @@ from typing_extensions import Self
 from pydantic import Field, ValidationInfo, computed_field, conlist, model_validator, field_validator
 
 from abc import ABC, abstractproperty, abstractstaticmethod
-from .well_known_segment_keys import WellKnownSegmentKeys
+
+from ..utilities.well_known_keys import WellKnownKeys
 from labfreed.validation import BaseModelWithValidationMessages, ValidationMessage, hsegment_pattern, domain_name_pattern
 
 
@@ -51,7 +52,7 @@ class IDSegment(BaseModelWithValidationMessages):
                 )
             
         # Segment key should be in Well know keys
-        if key and key not in [k.value for k in WellKnownSegmentKeys]:
+        if key and key not in [k.value for k in WellKnownKeys]:
             self.add_validation_message(
                     source=f"id segment key {key}",
                     type="Recommendation",
@@ -90,63 +91,24 @@ class IDSegment(BaseModelWithValidationMessages):
                 )
                 
         return self
-    
+     
   
-    
 
-class Category(BaseModelWithValidationMessages):
-    key:str|None = None
-    segments: list[IDSegment]
-
-
-class Identifier(BaseModelWithValidationMessages):
-    segments: conlist(IDSegment, min_length=1) = Field(..., exclude=True) # type: ignore # exclude=True prevents this from being serialized by Pydantic
+class PACID(BaseModelWithValidationMessages):
+    issuer:str
+    identifier: conlist(IDSegment, min_length=1) = Field(..., default_factory=list()) # type: ignore # exclude=True prevents this from being serialized by Pydantic
         
-    @computed_field
-    @property
-    def categories(self) -> list[Category]:
-        categories = list()
-        c = Category(segments=[])
-        categories.append(c)
-        for s in self.segments:
-            # new category starts with "-"
-            if s.value[0] == '-':
-                cat_key = s.value
-                c = Category(key=cat_key, segments=[])
-                categories.append(c)
-            else:
-                c.segments.append(s)
-            
-        # the first category might have no segments. remove categories without segments
-        if not categories[0].segments:
-            categories = categories[1:]
-                
-        return categories
-    
-    @model_validator(mode='after')
-    def check_keys_are_unique_in_each_category(self) -> Self:
-        for c in self.categories:
-            keys = [s.key for s in c.segments if s.key]
-            duplicate_keys = [k for k in set(keys) if keys.count(k) > 1]
-            if duplicate_keys:
-                for k in duplicate_keys:
-                    self.add_validation_message(
-                        source=f"identifier {k}",
-                        type="Error",
-                        msg=f"Duplicate key {k} in category {c.key}",
-                        highlight_pattern = k
-                    )
-            return self
         
     @model_validator(mode='after')
     def check_length(self) -> Self:
         l = 0
-        for s in self.segments:
+        for s in self.identifier:
+            s:IDSegment = s
             if s.key:
                 l += len(s.key)
                 l += 1 # for ":"
             l += len(s.value)
-        l += len(self.segments) - 1 # account for "/" separating the segments
+        l += len(self.identifier) - 1 # account for "/" separating the segments
         
         if l > 256:
             self.add_validation_message(
@@ -157,62 +119,6 @@ class Identifier(BaseModelWithValidationMessages):
                     )
         return self
        
-    @staticmethod 
-    def from_categories(categories:list[Category]) :
-        segments = list()
-        for c in categories:
-            if c.key:
-                segments.append(IDSegment(value=c.key))
-            segments.extend(c.segments)
-        return Identifier(segments=segments)
-        
-    
-
-class Extension(ABC, BaseModelWithValidationMessages): 
-    
-    @abstractproperty
-    def name(self)->str:
-        pass
-    
-    @abstractproperty
-    def type(self)->str:
-        pass
-    
-    @abstractproperty
-    def data(self)->str:
-        pass
-    
-    @abstractstaticmethod
-    def from_spec_fields(name, type, data):
-        pass
-    
-    
-class UnknownExtension(Extension):
-    name_:str
-    type_:str
-    data_:str
-    
-    @property
-    def name(self)->str:
-        return self.name_
-    
-    @property
-    def type(self)->str:
-        return self.type_
-    
-    @property
-    def data(self)->str:
-        return self.data_
-       
-    @staticmethod
-    def from_spec_fields(name, type, data):
-        return UnknownExtension(name_=name, type_=type, data_=data)
-    
-
-
-class PACID(BaseModelWithValidationMessages):
-    issuer:str
-    identifier: Identifier
     
     @model_validator(mode="after")
     def validate_issuer(self):
@@ -221,7 +127,6 @@ class PACID(BaseModelWithValidationMessages):
                     source="PAC-ID",
                     type="Error",
                     highlight_pattern=self.issuer,
-                    highlight_sub=not_recommended_chars,
                     msg=f"Issuer must be a valid domain name. "
                 )
          
@@ -237,11 +142,36 @@ class PACID(BaseModelWithValidationMessages):
         return self
     
     
-class PACID_With_Extensions(BaseModelWithValidationMessages):
-    pac_id: PACID
-    extensions: list[Extension] = Field(default_factory=list)
-
-
-
-
+    @model_validator(mode='after')
+    def check_identifier_segment_keys_are_unique(self) -> Self:
+        keys = [s.key for s in self.identifier if s.key]
+        duplicate_keys = [k for k in set(keys) if keys.count(k) > 1]
+        if duplicate_keys:
+            for k in duplicate_keys:
+                self.add_validation_message(
+                    source=f"identifier {k}",
+                    type="Recommendation",
+                    msg=f"Duplicate segment key {k}. This will probably lead to undefined behaviour",
+                    highlight_pattern = k
+                )
+        return self
+    
+    
+    def __str__(self):
+        id_segments = ''
+        for s in self.identifier:
+            s:IDSegment = s
+            if s.key:
+                id_segments += f'/{s.key}:{s.value}'
+            else:
+                id_segments += f'/{s.value}'
+    
+        out = f"HTTPS://PAC.{self.issuer}{id_segments}"
+        return out
+    
+    
+    def serialize(self):
+        return str(self)
+    
+    
 

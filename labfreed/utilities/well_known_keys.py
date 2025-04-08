@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class WellKnownSegmentKeys(Enum):
+class WellKnownKeys(Enum):
     GTIN = '01'
     BATCH = '10'
     SERIAL = '21'

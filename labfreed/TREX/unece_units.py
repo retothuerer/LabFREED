@@ -3,7 +3,6 @@ import json
 from pathlib import Path
 
 
-
 @cache
 def unece_units() -> list[dict]:
     p = Path(__file__).parent / 'UneceUnits.json'
@@ -15,6 +14,23 @@ def unece_units() -> list[dict]:
 def unece_unit_codes():
     codes= [u.get('commonCode') for u in unece_units() if u.get('state') == 'ACTIVE']
     return codes
+
+
+def unece_unit(unit_code):
+    unit =  [u for u in unece_units() if u['commonCode'] == unit_code]
+    if len(unit) == 0:
+        return None
+    else:
+        return unit[0]
+    
+def unit_symbol(unit:dict) ->str:
+    return unit.get('symbol')
+
+def unit_name(unit:dict) ->str:
+    return unit.get('name')
+
+
+
 
 
 # def quantity_from_UN_CEFACT(value:str, unit_UN_CEFACT) -> UnitQuantity:

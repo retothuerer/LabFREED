@@ -36,35 +36,44 @@ def test_invalid_keys():
 
 # Numeric Segment
 def test_numeric_segment_valid():
-    trex_str ='TIME$HUR:25.0'
-    trex = parser.parse_trex_str(trex_str, name="A")
-    assert trex.data == trex_str
+    valid_strs = [
+        'TIME$HUR:25.0',
+        'TIME$HUR:25',
+        'TIME$HUR:-25.0',
+        'TIME$HUR:-25'
+    ]
+    for trex_str in valid_strs:
+        trex = parser.parse_trex_str(trex_str, name="A")
+        assert trex.data == trex_str
     
-    trex_str ='TIME$HUR:25'
-    trex = parser.parse_trex_str(trex_str, name="A")
-    assert trex.data == trex_str
+
+        
+def test_numeric_segment_scientific_valid():   
+    valid_strs = [
+        'TIME$HUR:-25E2',
+        'TIME$HUR:-25E-2',
+        'TIME$HUR:-25.12E2',
+        'TIME$HUR:-25.12E-2'
+    ]
+    for trex_str in valid_strs:
+        trex = parser.parse_trex_str(trex_str, name="A")
+        assert trex.data == trex_str
+
     
-    trex_str ='TIME$HUR:-25.0'
-    trex = parser.parse_trex_str(trex_str, name="A")
-    assert trex.data == trex_str
-    
-    trex_str ='TIME$HUR:-25'
-    trex = parser.parse_trex_str(trex_str, name="A")
-    assert trex.data == trex_str
     
 def test_numeric_segment_invalid_values():
-    with pytest.raises(ValueError):
+    with pytest.raises(LabFREEDValidationError):
         trex_str ='TIME$HUR:A'
         trex = parser.parse_trex_str(trex_str, name="A")
         assert trex.data == trex_str
     
-    with pytest.raises(ValueError):
+    with pytest.raises(LabFREEDValidationError):
         trex_str ='TIME$HUR:1.1.1'
         trex = parser.parse_trex_str(trex_str, name="A")
         assert trex.data == trex_str
         
 def test_numeric_segment_invalid_unit():
-    with pytest.raises(ValueError):
+    with pytest.raises(LabFREEDValidationError):
         trex_str ='TIME$HIP:A'
         trex = parser.parse_trex_str(trex_str, name="A")
         assert trex.data == trex_str
@@ -101,7 +110,7 @@ def test_invalid_dates_format():
         '2024030'
     ]
     for e in dates:
-        with pytest.raises(ValueError):
+        with pytest.raises(LabFREEDValidationError):
             trex = parser.parse_trex_str(f'A$T.D:{e}', name='A')
             
             
@@ -110,7 +119,7 @@ def test_invalid_dates():
         '20241331', '20240000'
     ]
     for e in dates:
-        with pytest.raises(ValueError):
+        with pytest.raises(LabFREEDValidationError):
             trex = parser.parse_trex_str(f'A$T.D:{e}', name='A')
             
             
@@ -119,7 +128,7 @@ def test_invalid_times_format():
         'T2561'
     ]
     for e in times:
-        with pytest.raises(ValueError):
+        with pytest.raises(LabFREEDValidationError):
             trex = parser.parse_trex_str(f'A$T.D:{e}', name='A')
     
 
@@ -138,7 +147,7 @@ def test_invalid_bool():
         '1', '0', 'TRUE', 'FALSE'
     ]
     for e in b:
-        with pytest.raises(ValueError):
+        with pytest.raises(LabFREEDValidationError):
             trex = parser.parse_trex_str(f'A$T.B:{e}', name='A')
             
             
@@ -157,32 +166,45 @@ def test_invalid_alphanumeric():
         'a', '£', '<', 'ABCDeFGh'
     ]
     for e in b:
-        with pytest.raises(ValueError):
+        with pytest.raises(LabFREEDValidationError):
             trex = parser.parse_trex_str(f'A$T.A:{e}', name='A')
+
 
 
 # Text Segment
 def test_valid_text():
     b = [
         'ABCDEFGHIJKLMNOPQRSTUVW012345678', 
+        'ABCD'
     ]
     for e in b:
         trex = parser.parse_trex_str(f'A$T.T:{e}', name='A')
         assert not trex.get_nested_validation_messages()
-        
+        assert trex.get_segment('A').value == e
+          
 def test_invalid_text():
     b = [
         'a', '£', '<', 'ABCDeFGh', 'ABCDEFGHIJKLMNOPQRSTUVW012345678.-'
     ]
     for e in b:
         with pytest.raises(ValueError):
-            trex = parser.parse_trex_str(f'A$T.T:{e}', name='A')
+            trex = parser.parse_trex_str(f'A$T.X:{e}', name='A')
+            
+def test_valid__with_b36_conversion_text():
+    b = [
+        ('🐯', '1URIOQ7')
+    ]
+    for e in b:
+        trex = TREX(segments=[TextSegment(key='A', value=e[0])], name_='A')
+        assert not trex.get_nested_validation_messages()
+        assert trex.get_segment('A').value == e[1]
+        
 
       
 # Binary Segment
 def test_valid_binary():
     b = [
-        'ABCDEFGHIJKLMNOPQRSTUVW012345678', 
+        'ABCDEFGHIJKLMNOPQRSTUVW012345678'
     ]
     for e in b:
         trex = parser.parse_trex_str(f'A$T.X:{e}', name='A')
@@ -200,7 +222,7 @@ def test_invalid_binary():
 # Error Segment
 def test_valid_error():
     b = [
-        'ABCDEFGHIJKLMNOPQRSTUVW012345678.-', 
+        'ABCDEFGHIJKLMNOPQRSTUVW012345678.-'
     ]
     for e in b:
         trex = parser.parse_trex_str(f'A$E:{e}', name='A')
@@ -211,7 +233,7 @@ def test_invalid_error():
         'a', '£', '<', 'ABCDeFGh'
     ]
     for e in b:
-        with pytest.raises(ValueError):
+        with pytest.raises(LabFREEDValidationError):
             trex = parser.parse_trex_str(f'A$E:{e}', name='A')
             
             

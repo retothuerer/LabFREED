@@ -2,7 +2,6 @@ import pytest
 from pydantic import ValidationError
 
 from labfreed.PAC_CAT.data_model import *
-from labfreed.PAC_ID.data_model import Identifier
 
 additional_segments=[IDSegment(key='K1', value='V1'),
                                          IDSegment(value='V2')]
@@ -110,8 +109,3 @@ def test_short_notation_break():
     
     
     
-dr = Data_Result(id='BLUBB')
-
-def test_conversion_to_identifier():
-    categories = [dr.to_identifier_category(), md.to_identifier_category()]
-    Identifier.from_categories(categories=categories)
