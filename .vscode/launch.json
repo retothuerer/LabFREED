@@ -23,6 +23,16 @@
             "env": {
                 "PYTHONPATH": "$(pwd)"
             }
+        },
+        {
+            "name": "Python Debugger: Examples",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "examples.py",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "$(pwd)"
+            }
         }
     ]
 }
