@@ -1,8 +1,5 @@
 
 from abc import ABC, abstractproperty, abstractstaticmethod
-from types import MappingProxyType
-
-from pydantic import Field
 
 from labfreed.validation import BaseModelWithValidationMessages
 from labfreed.PAC_ID.data_model import PACID

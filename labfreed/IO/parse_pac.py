@@ -9,9 +9,9 @@ from labfreed.PAC_ID.extensions import Extension, UnknownExtension
 from labfreed.TREX.data_model import TREX
 
 
-from .PAC_ID.data_model import *
+from ..PAC_ID.data_model import *
 
-from .validation import ValidationMessage, LabFREEDValidationError
+from ..validation import ValidationMessage, LabFREEDValidationError
 
 
 

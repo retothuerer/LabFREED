@@ -9,8 +9,13 @@ from labfreed.PAC_CAT.data_model import *
 from labfreed.utilities.base36 import base36
 from labfreed.utilities.utility_types import DataTable, Quantity, Unit
 
+from labfreed.QR_Generator.generate_qr import save_qr_with_markers
 
 if __name__ == "__main__":
+    
+    
+    save_qr_with_markers('HTTPS://PAC.METTORIUS.COM/-MD/ABCG/ACG') 
+    
     
     table = DataTable(['DURATION', 'DATE', 'OK', 'COMMENT'])
     table.append([Quantity(value=1, unit=Unit(symbol='h', name='hour')), datetime.now(), True, 'FOO'])

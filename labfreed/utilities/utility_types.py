@@ -1,37 +1,7 @@
-from functools import cache
-import json
-from pathlib import Path
-
-from rich import print
-
-from typing import Any, Tuple
-from typing_extensions import Annotated 
-from pydantic import BaseModel, AfterValidator
-import quantities as pq
-from quantities import  units
+from pydantic import BaseModel
 
 from labfreed.TREX.unece_units import unece_units           
                 
-def validate_unit(unit_name:str) -> str :
-    """
-    Pydantic validator function for the unit.
-    Checks if the unit is a valid unit.
-    
-
-    Args:
-        unit (str): unit symbol, e.g. 'kg'
-
-    Returns:
-        str: the input unit. 
-        
-    Errors:
-        raises an AssertionError if validation fails
-    """
-    if hasattr(pq, unit_name):
-        return unit_name
-    else:
-        assert False
-
 
 class Unit(BaseModel):
     name: str

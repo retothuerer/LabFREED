@@ -1,7 +1,7 @@
 ''' 
 ### Parse a simple PAC-ID 
 '''
-from labfreed.parse_pac import PAC_Parser
+from labfreed.IO.parse_pac import PAC_Parser
 
 # Parse the PAC-ID
 pac_str = 'HTTPS://PAC.METTORIUS.COM/-MD/bal500/@1234'
@@ -10,7 +10,7 @@ pac_id = PAC_Parser().parse(pac_str).pac_id
 # Check validity of this PAC-ID
 pac_id = PAC_Parser().parse(pac_str).pac_id
 is_valid = pac_id.is_valid()
-print('PAC-ID is valid: {is_valid}')
+print(f'PAC-ID is valid: {is_valid}')
 
 ''' 
 ### Show recommendations:
@@ -19,6 +19,12 @@ There is a nice function to highlight problems
 '''
 pac_id.print_validation_messages()
 
+'''
+### Save as QR Code
+'''
+from labfreed.IO.generate_qr import save_qr_with_markers
+
+save_qr_with_markers(pac_str, fmt='png')
 
 '''
 ### PAC-CAT
@@ -28,8 +34,6 @@ pac_str = 'HTTPS://PAC.METTORIUS.COM/-DR/XQ908756/-MD/bal500/@1234'
 pac_id = PAC_Parser().parse(pac_str).pac_id
 if isinstance(pac_id, PAC_CAT):
     pac_id.print_categories()
-
-
 
 
 
@@ -106,7 +110,7 @@ d = trex.dict()
 ''' 
 #### Combine PAC-ID and TREX and serialize
 '''
-from labfreed.parse_pac import PACID_With_Extensions
+from labfreed.IO.parse_pac import PACID_With_Extensions
 
 pac_with_trex = PACID_With_Extensions(pac_id=pac_id, extensions=[trex])
 pac_str = pac_with_trex.serialize()

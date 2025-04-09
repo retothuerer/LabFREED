@@ -364,16 +364,16 @@ class VisualMarker:
 app = typer.Typer()
 
 
-def generate_qr_with_markers(url, text="PAC", title=None, direction = Direction.LEFT_TO_RIGHT): 
+def _generate_qr_with_markers(qr_str, text, title, direction): 
     if title:
     #try to use standard size 10. Go bigger if 10 does not fit the data
         try:
-            qr = segno.make_qr(url, error="L", version=10)
+            qr = segno.make_qr(qr_str, error="L", version=10)
         except DataOverflowError as e:
-            qr = segno.make_qr(url, error="L")
+            qr = segno.make_qr(qr_str, error="L")
         v = qr.version
     else: 
-        qr = segno.make_qr(url, error="L")
+        qr = segno.make_qr(qr_str, error="L")
         v = qr.version
     
     if(qr.mode != "alphanumeric"):
@@ -396,42 +396,18 @@ def generate_qr_with_markers(url, text="PAC", title=None, direction = Direction.
         combined_matrix = np.concatenate((title_marker, padding, qr_matrix, padding, visual_marker), axis=append_axis)
     else:
         combined_matrix = np.concatenate((qr_matrix, padding, visual_marker), axis=append_axis)
-    
+        
     return combined_matrix
-    
-def generate_qr_with_markers_file(url, text="PAC", title=None, direction = Direction.LEFT_TO_RIGHT, fmt='svg', path=str):
-    combined_matrix = generate_qr_with_markers(url, text="PAC", title=None, direction = Direction.LEFT_TO_RIGHT)
+
+def save_qr_with_markers(url, text="PAC", title=None, direction = Direction.LEFT_TO_RIGHT, fmt='png', path='qr'):
+    combined_matrix = _generate_qr_with_markers(url, text="PAC", title=None, direction = Direction.LEFT_TO_RIGHT)
     outfile = f'{path}.{fmt}'
     match fmt:
         case 'png':
-            segno.writers.write_png(combined_matrix, combined_matrix.shape[::-1], out=outfile, border=9)
+            writers.write_png(combined_matrix, combined_matrix.shape[::-1], out=outfile, border=9)
         case 'svg':
-            segno.writers.write_svg(combined_matrix, combined_matrix.shape[::-1], out=outfile, border=9)
-
-    
-def generate_qr_with_markers_uri(url, text="PAC", title=None, direction = Direction.LEFT_TO_RIGHT, fmt='svg'):
-    combined_matrix = generate_qr_with_markers(url, text="PAC", title=None, direction = Direction.LEFT_TO_RIGHT)
-    match fmt:
-        case 'png':
-            out = segno.writers.as_png_data_uri(combined_matrix, combined_matrix.shape[::-1], border=9)
-        case 'svg':
-            out = segno.writers.as_svg_data_uri(combined_matrix, combined_matrix.shape[::-1], border=9)
-    return out    
-
-def generate_qr_with_markers_svg(url, text="PAC", title=None, direction = Direction.LEFT_TO_RIGHT, width=None, height=None, border=9, svg_omitsize=False):
-    combined_matrix = generate_qr_with_markers(url, text="PAC", title=None, direction = Direction.LEFT_TO_RIGHT)
-    with io.BytesIO() as out:
-        version = combined_matrix.shape[::-1]
-        scalex = width  / (version[0] + 2*border)   if width else 1
-        scaley = height / (version[1] + 2*border)   if height else 1
-        scale = min(scalex, scaley)
-        segno.writers.write_svg(combined_matrix, version, out, border=border, 
-                                  xmldecl=False, svgns=True, scale=scale, omitsize=svg_omitsize
-                                  )
-        s = out.getvalue().decode()
-    return s    
-
-
+            writers.write_svg(combined_matrix, combined_matrix.shape[::-1], out=outfile, border=9)
+            
 
 
 
@@ -440,8 +416,7 @@ def main(url: Annotated[str, typer.Argument(help="The PAC-ID to be rendered as Q
     text: Annotated[str, typer.Option(help="The text of the PAC decoration.")] = "PAC",
     direction: Annotated[Direction, typer.Option(help="The position/direction of the PAC decoration.")] = Direction.TOP_TO_BOTTOM):
 
-    img = generate_qr_with_markers(url, text=text, direction=direction) 
-    img.save('generated_codes', f"{outfile}.svg", format='svg')
+    save_qr_with_markers(url, text=text, direction=direction, path=outfile) 
     
 
 
