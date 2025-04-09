@@ -436,7 +436,7 @@ class TREX_Table(TREX_Segment):
             self.add_validation_message(
                     source=f"Table {self.key}",
                     type="Error",
-                    msg=f"Size mismatch: Table header contains {self.col_names} keys, while most rows have {most_common_len}",
+                    msg=f"Size mismatch: Table header contains {self.column_names} keys, while most rows have {most_common_len}",
                     highlight_pattern = self.key
             )
             expected_row_len = most_common_len
@@ -527,7 +527,7 @@ class TREX_Table(TREX_Segment):
                     r.append(Quantity(value=e.value, unit=unit))
                 else:
                     r.append(e.value_to_python_type())
-                table.append(r)
+            table.append(r)
         return table
         
         

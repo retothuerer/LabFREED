@@ -17,7 +17,7 @@ print(f'PAC-ID is valid: {is_valid}')
 Note that the PAC-ID -- while valid -- uses characters which are not recommended (results in larger QR code).
 There is a nice function to highlight problems
 '''
-pac_id.print_validation_messages()
+pac_id.print_validation_messages(target='markdown')
 
 '''
 ### Save as QR Code
@@ -65,7 +65,7 @@ print(f'WEIGHT = {v}')
 from labfreed.PAC_ID.data_model import PACID, IDSegment
 from labfreed.utilities.well_known_keys import WellKnownKeys
 
-pac_id = PACID(issuer='METTORIUS:COM', identifier=[IDSegment(key=WellKnownKeys.SERIAL, value='1234')])
+pac_id = PACID(issuer='METTORIUS.COM', identifier=[IDSegment(key=WellKnownKeys.SERIAL, value='1234')])
 pac_str = pac_id.serialize()
 print(pac_str)
 
@@ -93,7 +93,7 @@ trex.update(
 )
 
 # Create a table
-table = DataTable(['DURATION', 'DATE', 'OK', 'COMMENT'])
+table = DataTable(['DURATION', 'Date', 'OK', 'COMMENT'])
 table.append([Quantity(value=1, unit=Unit(symbol='h', name='hour')), datetime.now(), True, 'FOO'])
 table.append([                                                 1.1,  datetime.now(), True, 'BAR'])
 table.append([                                                 1.3,  datetime.now(), False, 'BLUBB'])
@@ -101,11 +101,13 @@ table.append([                                                 1.3,  datetime.no
 trex.update({'TABLE': table})
 
 # Validation also works the same way for TREX
-if trex.get_nested_validation_messages():
-    trex.print_validation_messages()
+trex.print_validation_messages(target='markdown')
 
-# Side Note: The TREX can be turned back into a dict
+# there is an error. 'Date' uses lower case. Lets fix it
 d = trex.dict()
+d['TABLE'].col_names[1] = 'DATE'
+trex = TREX(name_='DEMO') 
+trex.update(d)
 
 ''' 
 #### Combine PAC-ID and TREX and serialize

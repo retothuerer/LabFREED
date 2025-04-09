@@ -113,7 +113,7 @@ class BaseModelWithValidationMessages(BaseModel):
         return filter_warnings(self.get_nested_validation_messages())
     
     
-    def print_validation_messages(self, str_to_highlight_in=None):
+    def print_validation_messages(self, str_to_highlight_in=None, target='console'):
         if not str_to_highlight_in:
             str_to_highlight_in = str(self)
         msgs = self.get_nested_validation_messages()
@@ -133,7 +133,13 @@ class BaseModelWithValidationMessages(BaseModel):
                 
             text = Text.from_markup(f'\n [bold {color}]{m.type} [/bold {color}] in \t {m.source}' )
             print(text)
-            formatted_highlight = m.emphazised_highlight.replace('emph', f'bold {color}')
+            match target:
+                case 'markdown':
+                    formatted_highlight = m.emphazised_highlight.replace('emph', f'🔸').replace('[/', '').replace('[', '').replace(']', '')
+                case 'console':     
+                    formatted_highlight = m.emphazised_highlight.replace('emph', f'bold {color}')
+                case 'html':
+                    formatted_highlight = m.emphazised_highlight.replace('emph', f'b').replace('[', '<').replace(']', '>')
             fmtd = str_to_highlight_in.replace(m.highlight, formatted_highlight)
             fmtd = Text.from_markup(fmtd)
             print(fmtd)
