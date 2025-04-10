@@ -11,7 +11,6 @@ pac_str = 'HTTPS://PAC.METTORIUS.COM/-MD/bal500/@1234'
 pac_id = PAC_Parser().parse(pac_str).pac_id
 
 # Check validity of this PAC-ID
-pac_id = PAC_Parser().parse(pac_str).pac_id
 is_valid = pac_id.is_valid()
 print(f'PAC-ID is valid: {is_valid}')
 
@@ -142,6 +141,7 @@ cit.print_validation_messages()
 # resolve a pac id
 service_groups = PAC_ID_Resolver(cits=[cit]).resolve(pac_with_trex)
 for sg in service_groups:
+    sg.update_states()
     sg.print()
     
 5
