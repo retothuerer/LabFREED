@@ -46,7 +46,7 @@ class Service(BaseModelWithValidationMessages):
     
     def check_state(self):
         try:
-            r = request('get',self.url, timeout=1)
+            r = request('get',self.url, timeout=2)
             if r.status_code < 400:
                 self.active = ServiceState.ACTIVE
             else: 
