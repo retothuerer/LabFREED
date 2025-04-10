@@ -1,7 +1,10 @@
+# import built ins
+import os
 ''' 
 ### Parse a simple PAC-ID 
 '''
 from labfreed.IO.parse_pac import PAC_Parser
+
 
 # Parse the PAC-ID
 pac_str = 'HTTPS://PAC.METTORIUS.COM/-MD/bal500/@1234'
@@ -102,7 +105,7 @@ trex.update({'TABLE': table})
 
 # Validation also works the same way for TREX
 trex.print_validation_messages(target='markdown')
-
+''''''
 # there is an error. 'Date' uses lower case. Lets fix it
 d = trex.dict()
 d['TABLE'].col_names[1] = 'DATE'
@@ -122,3 +125,23 @@ print(pac_str)
 
 
 
+'''
+## PAC-ID Resolver
+'''
+from labfreed.PAC_ID_Resolver.resolver import PAC_ID_Resolver, load_cit
+# Get a CIT
+dir = os.path.dirname(__file__)
+p = os.path.join(dir, 'cit_mine.yaml')       
+cit = load_cit(p)
+
+# validate the CIT
+cit.is_valid()
+cit.print_validation_messages()
+
+''''''
+# resolve a pac id
+service_groups = PAC_ID_Resolver(cits=[cit]).resolve(pac_with_trex)
+for sg in service_groups:
+    sg.print()
+    
+5

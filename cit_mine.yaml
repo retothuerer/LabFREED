@@ -1,0 +1,22 @@
+origin: MINE
+
+cit:
+# Test
+- if: 
+  entries:
+  - service_type: userhandover-generic
+    service_name: AAAAAAAAAAAAAAAAAAhhhhhh
+    application_intents:
+      - foo
+    template_url: https://AAAAAAAAAAAA.{$.pac.issuer}.com/{$.pac.identifier[1].value}
+
+
+
+
+
+
+
+
+
+
+
