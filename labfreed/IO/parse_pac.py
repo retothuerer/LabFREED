@@ -19,7 +19,7 @@ from ..validation import ValidationMessage, LabFREEDValidationError
 
 
 class PACID_With_Extensions(BaseModelWithValidationMessages):
-    pac_id: PACID
+    pac_id: PACID = Field(serialization_alias='pac')
     extensions: list[Extension] = Field(default_factory=list)
     
     def __str__(self):
