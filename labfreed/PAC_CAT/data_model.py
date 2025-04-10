@@ -202,12 +202,13 @@ class Category(BaseModelWithValidationMessages):
     @model_validator(mode='after')
     def warn_unusual_category_key(self):
         ''' this base class is instantiated only if the key is not a known category key'''
-        self.add_validation_message(
-                    source=f"Category {self.key}",
-                    type="Warning",
-                    msg=f'Category key {self.key} is not a well known key. It is recommended to use well known keys only',
-                    highlight_pattern = f"{self.key}"
-        )
+        if isinstance(self, Category):
+            self.add_validation_message(
+                        source=f"Category {self.key}",
+                        type="Warning",
+                        msg=f'Category key {self.key} is not a well known key. It is recommended to use well known keys only',
+                        highlight_pattern = f"{self.key}"
+            )
         return self
     
     
