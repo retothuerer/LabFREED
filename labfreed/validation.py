@@ -15,7 +15,7 @@ class ValidationMessage(BaseModel):
     problem_msg:str
     recommendation_msg: str = ""
     highlight:str = "" #this can be used to highlight problematic parts
-    highlight_sub:list[str] = Field(default_factory=list())
+    highlight_sub:list[str] = Field(default_factory=list)
         
     @property
     def emphazised_highlight(self):
@@ -124,6 +124,10 @@ class BaseModelWithValidationMessages(BaseModel):
                         ]
                         )
         )
+        
+        if not msgs:
+            print('All clear!')
+            return
 
         for m in msgs:
             if m.type.casefold() == "error":
