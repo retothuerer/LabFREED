@@ -14,7 +14,7 @@ class PAC_CAT(PACID):
     ''' 
     Extends a PAC-ID with interpretation of the identifier as categories
     '''
-    categories:list[Category] = Field(default_factory=list())
+    categories:list[Category] = Field(default_factory=list)
     
     @property
     def identifier(self) -> list[IDSegment]:
@@ -175,7 +175,7 @@ class Category(BaseModelWithValidationMessages):
         "populate_by_name": True
     }
     key:str
-    additional_segments: list[IDSegment] = Field(default_factory=list)   
+    additional_segments: list[IDSegment] = Field(default_factory=list, exclude=True)   
     
     @computed_field
     @property
