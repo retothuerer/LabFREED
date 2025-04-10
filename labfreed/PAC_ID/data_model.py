@@ -96,7 +96,7 @@ class IDSegment(BaseModelWithValidationMessages):
 
 class PACID(BaseModelWithValidationMessages):
     issuer:str
-    identifier: conlist(IDSegment, min_length=1) = Field(..., default_factory=list()) # type: ignore # exclude=True prevents this from being serialized by Pydantic
+    identifier: conlist(IDSegment, min_length=1) = Field(..., default_factory=list) # type: ignore # exclude=True prevents this from being serialized by Pydantic
         
         
     @model_validator(mode='after')
