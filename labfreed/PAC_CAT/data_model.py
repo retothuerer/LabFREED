@@ -4,7 +4,11 @@ from abc import ABC
 from typing import Self
 from pydantic import Field, computed_field, model_validator
 
-from labfreed.validation import BaseModelWithValidationMessages
+from rich import print
+from rich.text import Text
+from rich.table import Table
+
+from labfreed.validation import BaseModelWithValidationMessages, ValidationMsgLevel
 
 from ..PAC_ID.data_model import PACID, IDSegment
 
@@ -132,24 +136,37 @@ class PAC_CAT(PACID):
                 for k in duplicate_keys:
                     self.add_validation_message(
                         source=f"identifier {k}",
-                        type="Error",
+                        level = ValidationMsgLevel.ERROR,
                         msg=f"Duplicate key {k} in category {c.key}",
                         highlight_pattern = k
                     )
             return self
         
     def print_categories(self):
+        
+        table = Table(title=f'Categories in {str(self)}', show_header=False)
+        table.add_column('0')
+        table.add_column('1')
         s = ''
         for i, c in enumerate(self.categories):
             if i == 0:
-                title = 'Main Category\n----------'
+                title = Text('Main Category', style='bold')
             else:
-                title = 'Category\n------ '
+                title = Text('Category', style='bold')
             
-            s += f'{title}\n'
-            s += str(c)
-            s += '\n'
-        print(s)
+            table.add_row(title)
+            
+            for field_name, field_info in c.model_fields.items():
+                if not getattr(c, field_name):
+                    continue
+                table.add_row(f"{field_name} ({field_info.alias or ''})",
+                              f" {getattr(c, field_name)}"
+                              )      
+            table.add_section()        
+        print(table)
+        
+ 
+
         
         
     # @classmethod
@@ -202,10 +219,10 @@ class Category(BaseModelWithValidationMessages):
     @model_validator(mode='after')
     def warn_unusual_category_key(self):
         ''' this base class is instantiated only if the key is not a known category key'''
-        if isinstance(self, Category):
+        if type(self) is Category:
             self.add_validation_message(
                         source=f"Category {self.key}",
-                        type="Warning",
+                        level = ValidationMsgLevel.RECOMMENDATION,
                         msg=f'Category key {self.key} is not a well known key. It is recommended to use well known keys only',
                         highlight_pattern = f"{self.key}"
             )
@@ -215,6 +232,8 @@ class Category(BaseModelWithValidationMessages):
     def __str__(self):
         s = '\n'.join( [f'{field_name} \t ({field_info.alias or ''}): \t {getattr(self, field_name)}' for  field_name, field_info in self.model_fields.items() if getattr(self, field_name)]) 
         return s
+ 
+
     
     
     # def to_identifier_category(self, use_short_notation=False):
@@ -279,14 +298,14 @@ class Material_Device(Category):
         if not self.model_number:
             self.add_validation_message(
                     source=f"Category {self.key}",
-                    type="Error",
+                    level = ValidationMsgLevel.ERROR,
                     msg=f'Category key {self.key} is missing mandatory field Model Number',
                     highlight_pattern = f"{self.key}"
             )
         if not self.serial_number:
             self.add_validation_message(
                     source=f"Category {self.key}",
-                    type="Error",
+                    level = ValidationMsgLevel.ERROR,
                     msg=f'Category key {self.key} is missing mandatory field Serial Number',
                     highlight_pattern = f"{self.key}"
             )
@@ -304,7 +323,7 @@ class Material_Substance(Category):
         if not self.product_number:
             self.add_validation_message(
                     source=f"Category {self.key}",
-                    type="Error",
+                    level = ValidationMsgLevel.ERROR,
                     msg=f'Category key {self.key} is missing mandatory field Product Number',
                     highlight_pattern = f"{self.key}"
             )
@@ -322,7 +341,7 @@ class Material_Consumable(Category):
         if not self.product_number:
             self.add_validation_message(
                     source=f"Category {self.key}",
-                    type="Error",
+                    level = ValidationMsgLevel.ERROR,
                     msg=f"Category key {self.key} is missing mandatory field 'Product Number'",
                     highlight_pattern = f"{self.key}"
             )
@@ -342,7 +361,7 @@ class Data_Abstract(Category, ABC):
         if not self.id:
             self.add_validation_message(
                     source=f"Category {self.key}",
-                    type="Error",
+                    level = ValidationMsgLevel.ERROR,
                     msg=f"Category key {self.key} is missing mandatory field 'ID'",
                     highlight_pattern = f"{self.key}"
             )

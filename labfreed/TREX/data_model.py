@@ -8,7 +8,7 @@ from typing import Annotated, Literal
 from pydantic import PrivateAttr, RootModel, ValidationError, field_validator, model_validator, Field
 from labfreed.TREX.unece_units import unece_unit, unece_unit_codes, unece_units, unit_name, unit_symbol
 from labfreed.utilities.utility_types import DataTable, Quantity, Unit, unece_unit_code_from_quantity
-from labfreed.validation import BaseModelWithValidationMessages
+from labfreed.validation import BaseModelWithValidationMessages, ValidationMsgLevel
 from abc import ABC,  abstractmethod
 
 from labfreed.PAC_ID.extensions import Extension
@@ -180,7 +180,7 @@ class BoolValue(ValueMixin):
         if not self.value in ['T', 'F']:
             self.add_validation_message(
                 source=f"TREX boolean value {self.value}",
-                type="Error",
+                level= ValidationMsgLevel.ERROR,
                 msg=f'{self.value} is no valid boolean. Must be T or F',
                 highlight_pattern = f'{self.value}',
                 highlight_sub=[c for c in self.value]
@@ -207,7 +207,7 @@ class AlphanumericValue(ValueMixin):
         if re.match(r'[a-z]', self.value):
             self.add_validation_message(
                     source=f"TREX value {self.value}",
-                    type="Error",
+                    level= ValidationMsgLevel.ERROR,
                     msg=f"Lower case characters are not allowed.",
                     highlight_pattern = self.value
             )
@@ -215,7 +215,7 @@ class AlphanumericValue(ValueMixin):
         if not_allowed_chars := set(re.sub(r'[A-Z0-9\.-]', '', self.value)):
             self.add_validation_message(
                     source=f"TREX value {self.value}",
-                    type="Error",
+                    level= ValidationMsgLevel.ERROR,
                     msg=f"Characters {','.join(not_allowed_chars)} are not allowed in alphanumeric segment",
                     highlight_pattern = self.value,
                     highlight_sub=not_allowed_chars
@@ -242,7 +242,7 @@ class TextValue(ValueMixin):
         if not_allowed_chars := set(re.sub(r'[A-Z0-9]', '', self.value)):
             self.add_validation_message(
                     source=f"TREX value {self.value}",
-                    type="Error",
+                    level= ValidationMsgLevel.ERROR,
                     msg=f"Characters {','.join(not_allowed_chars)} are not allowed in text segment. Base36 encoding only allows A-Z0-9",
                     highlight_pattern = self.value,
                     highlight_sub=not_allowed_chars
@@ -268,7 +268,7 @@ class BinaryValue(ValueMixin):
         if not_allowed_chars := set(re.sub(r'[A-Z0-9]', '', self.value)):
            self.add_validation_message(
                     source=f"TREX value {self.value}",
-                    type="Error",
+                    tlevel= ValidationMsgLevel.ERROR,
                     msg=f"Characters {','.join(not_allowed_chars)} are not allowed in text segment. Base36 encoding only allows A-Z0-9",
                     highlight_pattern = self.value,
                     highlight_sub=not_allowed_chars
@@ -286,7 +286,7 @@ class ErrorValue(ValueMixin):
         if not_allowed_chars := set(re.sub(r'[A-Z0-9\.-]', '', self.value)):
             self.add_validation_message(
                     source=f"TREX value {self.value}",
-                    type="Error",
+                    level= ValidationMsgLevel.ERROR,
                     msg=f"Characters {','.join(not_allowed_chars)} are not allowed in error segment",
                     highlight_pattern = self.value,
                     highlight_sub=not_allowed_chars
@@ -309,7 +309,7 @@ class ValueSegment(TREX_Segment, ValueMixin, ABC):
         if not self.type in valid_types:
             self.add_validation_message(
                     source=f"TREX value segment {self.key}",
-                    type="Error",
+                    level= ValidationMsgLevel.ERROR,
                     msg=f"Type {self.type} is invalid. Must be 'T.D', 'T.B', 'T.A', 'T.T', 'T.X', 'E' or a UNECE unit",
                     highlight_pattern = self.type
             )
@@ -385,7 +385,7 @@ class ColumnHeader(BaseModelWithValidationMessages):
         if not_allowed_chars := set(re.sub(r'[A-Z0-9\.-]', '', self.key)):
             self.add_validation_message(
                 source=f"TREX table column {self.key}",
-                type="Error",
+                level= ValidationMsgLevel.ERROR,
                 msg=f"Column header key contains invalid characters: {','.join(not_allowed_chars)}",
                 highlight_pattern = f'{self.key}$',
                 highlight_sub=not_allowed_chars
@@ -398,7 +398,7 @@ class ColumnHeader(BaseModelWithValidationMessages):
         if not self.type in valid_types:
             self.add_validation_message(
                     source=f"TREX table column {self.key}",
-                    type="Error",
+                    level= ValidationMsgLevel.ERROR,
                     msg=f"Type '{self.type}' is invalid. Must be 'T.D', 'T.B', 'T.A', 'T.T', 'T.X', 'E' or a UNECE unit",
                     highlight_pattern = self.type
             )
@@ -435,7 +435,7 @@ class TREX_Table(TREX_Segment):
         if len(self.column_headers) != most_common_len:
             self.add_validation_message(
                     source=f"Table {self.key}",
-                    type="Error",
+                    level= ValidationMsgLevel.ERROR,
                     msg=f"Size mismatch: Table header contains {self.column_names} keys, while most rows have {most_common_len}",
                     highlight_pattern = self.key
             )
@@ -448,7 +448,7 @@ class TREX_Table(TREX_Segment):
             if len(row) != expected_row_len:
                 self.add_validation_message(
                     source=f"Table {self.key}",
-                    type="Error",
+                    level= ValidationMsgLevel.ERROR,
                     msg=f"Size mismatch: Table row {i} contains {len(row)} elements. Expected size is {expected_row_len}",
                     highlight_pattern = row.serialize_for_trex()
                 )
@@ -480,7 +480,7 @@ class TREX_Table(TREX_Segment):
                 except AssertionError:
                     self.add_validation_message(
                         source=f"Table {self.key}",
-                        type="Error",
+                        level= ValidationMsgLevel.ERROR,
                         msg=f"Type mismatch: Table row {i}, column {nm} is of wrong type. According to the header it should be {t_expected}",
                         highlight_pattern = row.serialize_for_trex(),
                         highlight_sub=[c for c in e.value]
@@ -490,7 +490,7 @@ class TREX_Table(TREX_Segment):
                     for m in msg:
                         self.add_validation_message(
                             source=f"Table {self.key}",
-                            type="Error",
+                            level= ValidationMsgLevel.ERROR,
                             msg=m.problem_msg,
                             highlight_pattern = row.serialize_for_trex(),
                             highlight_sub=[c for c in e.value]

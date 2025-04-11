@@ -6,7 +6,7 @@ from pydantic import Field, ValidationInfo, computed_field, conlist, model_valid
 from abc import ABC, abstractproperty, abstractstaticmethod
 
 from ..utilities.well_known_keys import WellKnownKeys
-from labfreed.validation import BaseModelWithValidationMessages, ValidationMessage, hsegment_pattern, domain_name_pattern
+from labfreed.validation import BaseModelWithValidationMessages, ValidationMessage, ValidationMsgLevel, hsegment_pattern, domain_name_pattern
 
 
 class IDSegment(BaseModelWithValidationMessages):
@@ -23,9 +23,8 @@ class IDSegment(BaseModelWithValidationMessages):
         if not_allowed_chars := set(re.sub(hsegment_pattern, '', key)):
             self.add_validation_message(
                     source=f"id segment key {key}",
-                    type="Error",
-                    msg=f"{' '.join(not_allowed_chars)} must not be used.",
-                    recommendation = "The segment key must be a valid hsegment",
+                    level = ValidationMsgLevel.ERROR,
+                    msg=f"{' '.join(not_allowed_chars)} must not be used. The segment key must be a valid hsegment",
                     highlight_pattern = key,
                     highlight_sub = not_allowed_chars
             )
@@ -33,9 +32,8 @@ class IDSegment(BaseModelWithValidationMessages):
         if not_allowed_chars := set(re.sub(hsegment_pattern, '', value)):
             self.add_validation_message(
                     source=f"id segment key {value}",
-                    type="Error",
-                    msg=f"{' '.join(not_allowed_chars)} must not be used.",
-                    recommendation = "The segment key must be a valid hsegment",
+                    level = ValidationMsgLevel.ERROR,
+                    msg=f"{' '.join(not_allowed_chars)} must not be used. The segment key must be a valid hsegment",
                     highlight_pattern = value,
                     highlight_sub = not_allowed_chars
             )
@@ -44,9 +42,8 @@ class IDSegment(BaseModelWithValidationMessages):
         if not_recommended_chars := set(re.sub(r'[A-Z0-9-:+]', '', key)):
             self.add_validation_message(
                     source=f"id segment key {key}",
-                    type="Recommendation",
-                    msg=f"{' '.join(not_recommended_chars)} should not be used.",
-                    recommendation = "SHOULD be limited to A-Z, 0-9, and -+",
+                    level = ValidationMsgLevel.RECOMMENDATION,
+                    msg=f"{' '.join(not_recommended_chars)} should not be used. Characters SHOULD be limited to upper case letters (A-Z), numbers (0-9), '-' and '+' ",
                     highlight_pattern = key,
                     highlight_sub = not_recommended_chars
                 )
@@ -55,10 +52,10 @@ class IDSegment(BaseModelWithValidationMessages):
         if key and key not in [k.value for k in WellKnownKeys]:
             self.add_validation_message(
                     source=f"id segment key {key}",
-                    type="Recommendation",
-                    msg=f"{key} is not a well known segment key.",
-                    recommendation = "RECOMMENDED to be a well-known id segment key.",
-                    highlight_pattern = key
+                    level = ValidationMsgLevel.RECOMMENDATION,
+                    msg=f"{key} is not a well known segment key. It is RECOMMENDED to use well-known keys.",
+                    highlight_pattern = key,
+                    highlight_sub=[key]
                 )
             
             
@@ -66,9 +63,8 @@ class IDSegment(BaseModelWithValidationMessages):
         if not_recommended_chars := set(re.sub(r'[A-Z0-9-:+]', '', value)):
             self.add_validation_message(
                     source=f"id segment value {value}",
-                    type="Recommendation",
-                    msg=f"Characters {' '.join(not_recommended_chars)} should not be used.",
-                    recommendation = "SHOULD be limited to A-Z, 0-9, and -+",
+                    level = ValidationMsgLevel.RECOMMENDATION,
+                    msg=f"Characters {' '.join(not_recommended_chars)} should not be used., Characters SHOULD be limited to upper case letters (A-Z), numbers (0-9), '-' and '+' ",
                     highlight_pattern = value,
                     highlight_sub = not_recommended_chars
                 )
@@ -78,14 +74,14 @@ class IDSegment(BaseModelWithValidationMessages):
         if ':' in key:
             self.add_validation_message(
                     source=f"id segment key {key}",
-                    type="Recommendation",
+                    level = ValidationMsgLevel.RECOMMENDATION,
                     msg=f"Character ':' should not be used in segment key, since this character is used to separate key and value this can lead to undefined behaviour.",
                     highlight_pattern = key
                 )
         if ':' in value:
             self.add_validation_message(
                     source=f"id segment value {value}",
-                    type="Recommendation",
+                    level = ValidationMsgLevel.RECOMMENDATION,
                     msg=f"Character ':' should not be used in segment value, since this character is used to separate key and value this can lead to undefined behaviour.",
                     highlight_pattern = value
                 )
@@ -113,9 +109,8 @@ class PACID(BaseModelWithValidationMessages):
         if l > 256:
             self.add_validation_message(
                         source=f"identifier",
-                        type="Error",
-                        msg=f'Identifier is {l} characters long, Identifier must not exceed 256 characters.',
-                        highlight_pattern = ""
+                        level = ValidationMsgLevel.ERROR,
+                        msg=f'Identifier is {l} characters long, Identifier must not exceed 256 characters.'
                     )
         return self
        
@@ -125,7 +120,7 @@ class PACID(BaseModelWithValidationMessages):
         if not re.fullmatch(domain_name_pattern, self.issuer):
             self.add_validation_message(
                     source="PAC-ID",
-                    type="Error",
+                    level = ValidationMsgLevel.ERROR,
                     highlight_pattern=self.issuer,
                     msg=f"Issuer must be a valid domain name. "
                 )
@@ -134,7 +129,7 @@ class PACID(BaseModelWithValidationMessages):
         if not_recommended_chars := set(re.sub(r'[A-Z0-9\.-]', '', self.issuer)):
             self.add_validation_message(
                     source="PAC-ID",
-                    type="Recommendation",
+                    level = ValidationMsgLevel.RECOMMENDATION,
                     highlight_pattern=self.issuer,
                     highlight_sub=not_recommended_chars,
                     msg=f"Characters {' '.join(not_recommended_chars)} should not be used. Issuer SHOULD contain only the characters A-Z, 0-9, -, and . "
@@ -150,7 +145,7 @@ class PACID(BaseModelWithValidationMessages):
             for k in duplicate_keys:
                 self.add_validation_message(
                     source=f"identifier {k}",
-                    type="Recommendation",
+                    level = ValidationMsgLevel.RECOMMENDATION,
                     msg=f"Duplicate segment key {k}. This will probably lead to undefined behaviour",
                     highlight_pattern = k
                 )
