@@ -25,6 +25,7 @@ class PACID_With_Extensions(BaseModelWithValidationMessages):
     def __str__(self):
         out = str(self.pac_id)
         out += '*'.join(str(e) for e in self.extensions)
+        return out
         
     def get_extension_of_type(self, type:str) -> list[Extension]:
         return [e for e in self.extensions if e.type == type]
@@ -87,7 +88,7 @@ class PAC_Parser():
     def __init__(self, extension_interpreters:dict[str, Extension]=None):
         self.extension_interpreters = extension_interpreters or {'TREX': TREX, 'N': DisplayNames}
         
-    def parse(self, pac_url:str) -> PACID_With_Extensions:
+    def parse(self, pac_url:str, suppress_errors=False) -> PACID_With_Extensions:
         if '*' in pac_url:
             id_str, ext_str = pac_url.split('*', 1)
         else:
@@ -98,8 +99,8 @@ class PAC_Parser():
         extensions = self._parse_extensions(ext_str)
         
         pac_with_extension = PACID_With_Extensions(pac_id=pac_id, extensions=extensions)
-        if not pac_with_extension.is_valid():
-            raise LabFREEDValidationError(validation_msgs = pac_with_extension.get_nested_validation_messages())
+        if not pac_with_extension.is_valid() and not suppress_errors:
+            raise LabFREEDValidationError(validation_msgs = pac_with_extension.get_nested_validation_messages(), model=pac_with_extension)
         
         return pac_with_extension
             
