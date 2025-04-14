@@ -18,7 +18,7 @@ from ..validation import ValidationMessage, LabFREEDValidationError
 
 
 
-class PACID_With_Extensions(BaseModelWithValidationMessages):
+class PACID_With_Extensions(LabFREED_BaseModel):
     pac_id: PACID = Field(serialization_alias='pac')
     extensions: list[Extension] = Field(default_factory=list)
     

@@ -8,7 +8,7 @@ from rich import print
 from rich.text import Text
 from rich.table import Table
 
-from labfreed.validation import BaseModelWithValidationMessages, ValidationMsgLevel
+from labfreed.validation import LabFREED_BaseModel, ValidationMsgLevel
 
 from ..PAC_ID.data_model import PACID, IDSegment
 
@@ -187,7 +187,7 @@ class PAC_CAT(PACID):
 
                 
 
-class Category(BaseModelWithValidationMessages):
+class Category(LabFREED_BaseModel):
     model_config = {
         "populate_by_name": True
     }

@@ -1,13 +1,13 @@
 
 from abc import ABC, abstractproperty, abstractstaticmethod
 
-from labfreed.validation import BaseModelWithValidationMessages
+from labfreed.validation import LabFREED_BaseModel
 from labfreed.PAC_ID.data_model import PACID
 
 
     
 
-class Extension(ABC, BaseModelWithValidationMessages): 
+class Extension(ABC, LabFREED_BaseModel): 
     
     @abstractproperty
     def name(self)->str:

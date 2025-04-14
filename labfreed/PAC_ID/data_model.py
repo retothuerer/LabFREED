@@ -6,10 +6,10 @@ from pydantic import Field, ValidationInfo, computed_field, conlist, model_valid
 from abc import ABC, abstractproperty, abstractstaticmethod
 
 from ..utilities.well_known_keys import WellKnownKeys
-from labfreed.validation import BaseModelWithValidationMessages, ValidationMessage, ValidationMsgLevel, hsegment_pattern, domain_name_pattern
+from labfreed.validation import LabFREED_BaseModel, ValidationMessage, ValidationMsgLevel, quote_texts, hsegment_pattern, domain_name_pattern
 
 
-class IDSegment(BaseModelWithValidationMessages):
+class IDSegment(LabFREED_BaseModel):
     key:str|None = None
     value:str  
     
@@ -24,7 +24,7 @@ class IDSegment(BaseModelWithValidationMessages):
             self.add_validation_message(
                     source=f"id segment key {key}",
                     level = ValidationMsgLevel.ERROR,
-                    msg=f"{' '.join(not_allowed_chars)} must not be used. The segment key must be a valid hsegment",
+                    msg=f"{quote_texts(not_allowed_chars)} must not be used. The segment key must be a valid hsegment",
                     highlight_pattern = key,
                     highlight_sub = not_allowed_chars
             )
@@ -33,7 +33,7 @@ class IDSegment(BaseModelWithValidationMessages):
             self.add_validation_message(
                     source=f"id segment key {value}",
                     level = ValidationMsgLevel.ERROR,
-                    msg=f"{' '.join(not_allowed_chars)} must not be used. The segment key must be a valid hsegment",
+                    msg=f"{quote_texts(not_allowed_chars)} must not be used. The segment key must be a valid hsegment",
                     highlight_pattern = value,
                     highlight_sub = not_allowed_chars
             )
@@ -43,7 +43,7 @@ class IDSegment(BaseModelWithValidationMessages):
             self.add_validation_message(
                     source=f"id segment key {key}",
                     level = ValidationMsgLevel.RECOMMENDATION,
-                    msg=f"{' '.join(not_recommended_chars)} should not be used. Characters SHOULD be limited to upper case letters (A-Z), numbers (0-9), '-' and '+' ",
+                    msg=f"{quote_texts(not_recommended_chars)} should not be used. Characters SHOULD be limited to upper case letters (A-Z), numbers (0-9), '-' and '+' ",
                     highlight_pattern = key,
                     highlight_sub = not_recommended_chars
                 )
@@ -64,7 +64,7 @@ class IDSegment(BaseModelWithValidationMessages):
             self.add_validation_message(
                     source=f"id segment value {value}",
                     level = ValidationMsgLevel.RECOMMENDATION,
-                    msg=f"Characters {' '.join(not_recommended_chars)} should not be used., Characters SHOULD be limited to upper case letters (A-Z), numbers (0-9), '-' and '+' ",
+                    msg=f"Characters {quote_texts(not_recommended_chars)} should not be used., Characters SHOULD be limited to upper case letters (A-Z), numbers (0-9), '-' and '+' ",
                     highlight_pattern = value,
                     highlight_sub = not_recommended_chars
                 )
@@ -90,7 +90,7 @@ class IDSegment(BaseModelWithValidationMessages):
      
   
 
-class PACID(BaseModelWithValidationMessages):
+class PACID(LabFREED_BaseModel):
     issuer:str
     identifier: conlist(IDSegment, min_length=1) = Field(..., default_factory=list) # type: ignore # exclude=True prevents this from being serialized by Pydantic
         

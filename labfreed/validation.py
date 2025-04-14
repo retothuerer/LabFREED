@@ -1,6 +1,6 @@
 from enum import Enum, auto
 import re
-from pydantic import BaseModel, Field, PrivateAttr
+from pydantic import BaseModel, Field, PrivateAttr, field_validator
 from typing import List, Set, Tuple
 
 from rich import print
@@ -27,6 +27,13 @@ class ValidationMessage(BaseModel):
     recommendation_msg: str = ""
     highlight:str = "" #this can be used to highlight problematic parts
     highlight_sub_patterns:list[str] = Field(default_factory=list)
+
+    @field_validator('highlight_sub_patterns', mode='before')
+    @classmethod
+    def ensure_list(cls, v):
+        if isinstance(v, str):
+            return [v]
+        return v
 
 
     
@@ -61,11 +68,11 @@ class LabFREEDValidationError(ValueError):
     
 
 
-class BaseModelWithValidationMessages(BaseModel):
+class LabFREED_BaseModel(BaseModel):
     """ Extension of Pydantic BaseModel, so that validator can issue warnings.
     The purpose of that is to allow only minimal validation but on top check for stricter recommendations"""
     _validation_messages: list[ValidationMessage] = PrivateAttr(default_factory=list)
-
+    
     def add_validation_message(self, *, msg: str, level:ValidationMsgLevel, recommendation:str="", source:str="", highlight_pattern="", highlight_sub=None):
         if not highlight_sub:
             highlight_sub = []
@@ -111,11 +118,11 @@ class BaseModelWithValidationMessages(BaseModel):
             full_path = f"{parent_name}.{field_name}" if parent_name else field_name
             value = getattr(self, field_name)
 
-            if isinstance(value, BaseModelWithValidationMessages):
+            if isinstance(value, LabFREED_BaseModel):
                 warnings_list.extend(value.get_nested_validation_messages(full_path, visited))
             elif isinstance(value, list):
                 for index, item in enumerate(value):
-                    if isinstance(item, BaseModelWithValidationMessages):
+                    if isinstance(item, LabFREED_BaseModel):
                         list_path = f"{full_path}[{index}]"
                         warnings_list.extend(item.get_nested_validation_messages(list_path, visited))
         return warnings_list
@@ -159,7 +166,7 @@ class BaseModelWithValidationMessages(BaseModel):
     def print_validation_messages(self, target='console'):
         msgs = self.get_nested_validation_messages()
         
-        table = Table(title=f"Validation Results", show_header=False)
+        table = Table(title=f"Validation Results", show_header=False, title_justify='left')
 
         col = lambda s:  table.add_column(s, vertical='top')
         col("-")
@@ -177,7 +184,7 @@ class BaseModelWithValidationMessages(BaseModel):
                 
             match target:
                 case 'markdown':
-                    fmt = lambda s: f'🔸{s}🔸'
+                    fmt = lambda s: f'👉{s}👈'
                 case 'console':     
                     fmt = lambda s: f'[{color} bold]{s}[/{color} bold]'
                 case 'html':
@@ -187,10 +194,11 @@ class BaseModelWithValidationMessages(BaseModel):
                 
             serialized = str(self)
             emphazised_highlight = self._emphasize_in(m, serialized, fmt=fmt, color=color)
+            emphazised_highlight = emphazised_highlight.replace('👈👉','') # removes two consecutive markers, to make it cleaner
             
-            txt =       f'[bold {color}]{m.level.name} [/bold {color}]'
+            txt =       f'[bold {color}]{m.level.name} [/bold {color}] in {m.source}'
             txt += '\n' + f'{m.problem_msg}'
-            txt += '\n' + emphazised_highlight
+            txt += '\n\n' + emphazised_highlight
 
             table.add_row( txt)
             table.add_section()
@@ -240,4 +248,10 @@ def filter_errors(val_msg:list[ValidationMessage]) -> list[ValidationMessage]:
 
 def filter_warnings(val_msg:list[ValidationMessage]) -> list[ValidationMessage]:
     return [ m for m in val_msg if m.level != ValidationMsgLevel.ERROR  ]     
+
+
+
+def quote_texts(texts:list[str]):
+    return ','.join([f"'{t}'" for t in texts])
+
 

@@ -8,7 +8,7 @@ from typing import Annotated, Literal
 from pydantic import PrivateAttr, RootModel, ValidationError, field_validator, model_validator, Field
 from labfreed.TREX.unece_units import unece_unit, unece_unit_codes, unece_units, unit_name, unit_symbol
 from labfreed.utilities.utility_types import DataTable, Quantity, Unit, unece_unit_code_from_quantity
-from labfreed.validation import BaseModelWithValidationMessages, ValidationMsgLevel
+from labfreed.validation import LabFREED_BaseModel, ValidationMsgLevel, quote_texts
 from abc import ABC,  abstractmethod
 
 from labfreed.PAC_ID.extensions import Extension
@@ -16,7 +16,7 @@ from labfreed.utilities.base36 import base36, to_base36, from_base36
 
         
 
-class TREX_Segment(BaseModelWithValidationMessages, ABC):
+class TREX_Segment(LabFREED_BaseModel, ABC):
     key: str
     
     @model_validator(mode='after')
@@ -25,7 +25,7 @@ class TREX_Segment(BaseModelWithValidationMessages, ABC):
             self.add_validation_message(
                 source=f"TREX segment key {self.key}",
                 type="Error",
-                msg=f"Segment key contains invalid characters: {','.join(not_allowed_chars)}",
+                msg=f"Segment key contains invalid characters: {quote_texts(not_allowed_chars)}",
                 highlight_pattern = f'{self.key}$',
                 highlight_sub=not_allowed_chars
             )
@@ -46,7 +46,7 @@ class TREX_Segment(BaseModelWithValidationMessages, ABC):
     
 
 
-class ValueMixin(BaseModelWithValidationMessages, ABC): 
+class ValueMixin(LabFREED_BaseModel, ABC): 
     value:str 
     
     def serialize_for_trex(self):
@@ -76,7 +76,7 @@ class NumericValue(ValueMixin):
             self.add_validation_message(
                 source=f"TREX numeric value {value}",
                 type="Error",
-                msg=f"Characters {','.join(not_allowed_chars)} are not allowed in quantity segment. Base36 encoding only allows A-Z0-9",
+                msg=f"Characters {quote_texts(not_allowed_chars)} are not allowed in quantity segment. Base36 encoding only allows A-Z0-9",
                 highlight_pattern = f'{value}',
                 highlight_sub=not_allowed_chars
             )
@@ -216,7 +216,7 @@ class AlphanumericValue(ValueMixin):
             self.add_validation_message(
                     source=f"TREX value {self.value}",
                     level= ValidationMsgLevel.ERROR,
-                    msg=f"Characters {','.join(not_allowed_chars)} are not allowed in alphanumeric segment",
+                    msg=f"Characters {quote_texts(not_allowed_chars)} are not allowed in alphanumeric segment",
                     highlight_pattern = self.value,
                     highlight_sub=not_allowed_chars
             )
@@ -243,7 +243,7 @@ class TextValue(ValueMixin):
             self.add_validation_message(
                     source=f"TREX value {self.value}",
                     level= ValidationMsgLevel.ERROR,
-                    msg=f"Characters {','.join(not_allowed_chars)} are not allowed in text segment. Base36 encoding only allows A-Z0-9",
+                    msg=f"Characters {quote_texts(not_allowed_chars)} are not allowed in text segment. Base36 encoding only allows A-Z0-9",
                     highlight_pattern = self.value,
                     highlight_sub=not_allowed_chars
             )
@@ -269,7 +269,7 @@ class BinaryValue(ValueMixin):
            self.add_validation_message(
                     source=f"TREX value {self.value}",
                     tlevel= ValidationMsgLevel.ERROR,
-                    msg=f"Characters {','.join(not_allowed_chars)} are not allowed in text segment. Base36 encoding only allows A-Z0-9",
+                    msg=f"Characters {quote_texts(not_allowed_chars)} are not allowed in text segment. Base36 encoding only allows A-Z0-9",
                     highlight_pattern = self.value,
                     highlight_sub=not_allowed_chars
             )
@@ -287,7 +287,7 @@ class ErrorValue(ValueMixin):
             self.add_validation_message(
                     source=f"TREX value {self.value}",
                     level= ValidationMsgLevel.ERROR,
-                    msg=f"Characters {','.join(not_allowed_chars)} are not allowed in error segment",
+                    msg=f"Characters {quote_texts(not_allowed_chars)} are not allowed in error segment",
                     highlight_pattern = self.value,
                     highlight_sub=not_allowed_chars
             )
@@ -376,7 +376,7 @@ class ErrorSegment(ValueSegment, ErrorValue):
                         
         
     
-class ColumnHeader(BaseModelWithValidationMessages):
+class ColumnHeader(LabFREED_BaseModel):
     key:str
     type:str
                
@@ -386,7 +386,7 @@ class ColumnHeader(BaseModelWithValidationMessages):
             self.add_validation_message(
                 source=f"TREX table column {self.key}",
                 level= ValidationMsgLevel.ERROR,
-                msg=f"Column header key contains invalid characters: {','.join(not_allowed_chars)}",
+                msg=f"Column header key contains invalid characters: {quote_texts(not_allowed_chars)}",
                 highlight_pattern = f'{self.key}$',
                 highlight_sub=not_allowed_chars
             )
@@ -562,7 +562,7 @@ class TREX_Table(TREX_Segment):
 
 
 
-class TREX(Extension, BaseModelWithValidationMessages):
+class TREX(Extension, LabFREED_BaseModel):
     name_:str
     segments: list[TREX_Segment] = Field(default_factory=list)
        
@@ -659,6 +659,15 @@ class TREX(Extension, BaseModelWithValidationMessages):
                 
     def dict(self):
         return {s.key: s.to_python_type() for s in self.segments}
+    
+    
+    def serialize_for_trex(self):
+        return self.data()
+    
+    
+    def __str__(self):
+        s = self.data.replace('+', '\n+').replace('::', '::\n ')
+        return s
             
         
         
