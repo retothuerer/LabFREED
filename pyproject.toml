@@ -4,6 +4,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "labfreed"
+requires-python = ">=3.10"
 authors = [{name = "Reto Thürer", email = "thuerer.r@buchi.com"}]
 license = "MIT"
 license-files = ["LICENSE"]
@@ -13,24 +14,34 @@ dependencies = [
     "numpy>=2.2.4",
     "pydantic>=2.11.3",
     "segno>=1.6.6",
-    "typer>=0.15.2"
-    "PyYAML>=6.0.2"
+    "typer>=0.15.2",
+    "PyYAML>=6.0.2",
     "jsonpath-ng>=1.7.0"
+]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Operating System :: OS Independent",
+    "Development Status :: 3 - Alpha",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Utilities",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research"
 ]
 
 [project.optional-dependencies]
-test = [
+dev = [
     "pytest>=8.3.5",
-    "pdoc>=15.0.1"
+    "pdoc>=15.0.1",
     "flit>=3.12.0"
-
 ]
 
 [tool.flit.module]
 name = "labfreed"
 
 
-requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
