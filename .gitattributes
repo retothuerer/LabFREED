@@ -1,0 +1,9 @@
+/tests/ export-ignore
+/docs/ export-ignore
+/examples/ export-ignore
+/dist/ export-ignore
+main.py export-ignore
+publish_commands export-ignore
+publish.sh export-ignore
+publish.ps1 export-ignore
+update_readme.py export_ignore
