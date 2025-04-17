@@ -10,6 +10,13 @@ cit:
       - foo
     template_url: https://AAAAAAAAAAAA.{$.pac.issuer}.com/{$.pac.identifier[1].value}
 
+  - service_type: userhand2over-generic2
+    service_name: abc
+    application_intents:
+      - foo-generic
+      - bar
+    template_url: https://AAAAAAAAAAAA.{$.pac.issuer}.com/{$.pac.identifier[1].value}
+
 
 
 

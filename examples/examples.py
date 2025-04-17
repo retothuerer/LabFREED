@@ -1,9 +1,10 @@
 # import built ins
 import os
+target = 'console'
 ''' 
 ### Parse a simple PAC-ID 
 '''
-from labfreed.IO.parse_pac import PAC_Parser
+from labfreed.IO import PAC_Parser
 
 
 # Parse the PAC-ID
@@ -11,7 +12,7 @@ pac_str = 'HTTPS://PAC.METTORIUS.COM/-MD/bal500/@1234'
 pac_id = PAC_Parser().parse(pac_str).pac_id
 
 # Check validity of this PAC-ID
-is_valid = pac_id.is_valid()
+is_valid = pac_id.is_valid
 print(f'PAC-ID is valid: {is_valid}')
 
 ''' 
@@ -19,19 +20,19 @@ print(f'PAC-ID is valid: {is_valid}')
 Note that the PAC-ID -- while valid -- uses characters which are not recommended (results in larger QR code).
 There is a nice function to highlight problems
 '''
-pac_id.print_validation_messages(target='markdown')
+pac_id.print_validation_messages(target=target)
 
 '''
 ### Save as QR Code
 '''
-from labfreed.IO.generate_qr import save_qr_with_markers
+from labfreed.IO import save_qr_with_markers
 
 save_qr_with_markers(pac_str, fmt='png')
 
 '''
 ### PAC-CAT
 '''
-from labfreed.PAC_CAT.data_model import PAC_CAT
+from labfreed.pac_cat import PAC_CAT
 pac_str = 'HTTPS://PAC.METTORIUS.COM/-DR/XQ908756/-MD/bal500/@1234'
 pac_id = PAC_Parser().parse(pac_str).pac_id
 if isinstance(pac_id, PAC_CAT):
@@ -64,8 +65,8 @@ print(f'WEIGHT = {v}')
 
 #### Create PAC-ID
 '''
-from labfreed.PAC_ID.data_model import PACID, IDSegment
-from labfreed.utilities.well_known_keys import WellKnownKeys
+from labfreed.pac_id import PACID, IDSegment
+from labfreed.well_known_keys.labfreed_common_keys.well_known_keys import WellKnownKeys
 
 pac_id = PACID(issuer='METTORIUS.COM', identifier=[IDSegment(key=WellKnownKeys.SERIAL, value='1234')])
 pac_str = pac_id.serialize()
@@ -78,8 +79,8 @@ TREX can conveniently be created from a python dictionary.
 Note that utility types for Quantity (number with unit) and table are needed
 '''
 from datetime import datetime
-from labfreed.TREX.data_model import TREX
-from labfreed.utilities.utility_types import Quantity, DataTable, Unit
+from labfreed.trex import TREX
+from labfreed.python_convenience.utility_types import Quantity, DataTable, Unit
 
 # Create TREX
 trex = TREX(name_='DEMO') 
@@ -103,10 +104,10 @@ table.append([                                                 1.3,  datetime.no
 trex.update({'TABLE': table})
 
 # Validation also works the same way for TREX
-trex.print_validation_messages(target='markdown')
+trex.print_validation_messages(target=target)
 ''''''
 # there is an error. 'Date' uses lower case. Lets fix it
-d = trex.dict()
+d = trex.to_dict()
 d['TABLE'].col_names[1] = 'DATE'
 trex = TREX(name_='DEMO') 
 trex.update(d)
@@ -114,7 +115,7 @@ trex.update(d)
 ''' 
 #### Combine PAC-ID and TREX and serialize
 '''
-from labfreed.IO.parse_pac import PACID_With_Extensions
+from labfreed.IO import PACID_With_Extensions
 
 pac_with_trex = PACID_With_Extensions(pac_id=pac_id, extensions=[trex])
 pac_str = pac_with_trex.serialize()
@@ -127,15 +128,15 @@ print(pac_str)
 '''
 ## PAC-ID Resolver
 '''
-from labfreed.PAC_ID_Resolver.resolver import PAC_ID_Resolver, load_cit
+from labfreed.pac_id_resolver import PAC_ID_Resolver, load_cit
 # Get a CIT
 dir = os.path.dirname(__file__)
 p = os.path.join(dir, 'cit_mine.yaml')       
 cit = load_cit(p)
 
 # validate the CIT
-cit.is_valid()
-cit.print_validation_messages()
+cit.is_valid
+cit.print_validation_messages(target=target)
 
 ''''''
 # resolve a pac id
@@ -144,4 +145,3 @@ for sg in service_groups:
     sg.update_states()
     sg.print()
     
-5
