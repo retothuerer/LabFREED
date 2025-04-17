@@ -1,100 +1,112 @@
 from enum import Enum, auto
+import logging
 import re
-from pydantic import BaseModel, Field, PrivateAttr, field_validator
-from typing import List, Set, Tuple
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator
+from typing import Any, List, Set
 
 from rich import print
-from rich.text import Text
 from rich.table import Table
 
+''' Configure pdoc'''
+__all__ = ["LabFREED_BaseModel", "ValidationMessage", "ValidationMsgLevel", "LabFREED_ValidationError"]
 
-domain_name_pattern = r"(?!-)([A-Za-z0-9-]{1,63}(?<!-)\.)+[A-Za-z]{2,63}"
-hsegment_pattern = r"[A-Za-z0-9_\-\.~!$&'()+,:;=@]|%[0-9A-Fa-f]{2}"
+class PDOC_Workaround_Base(BaseModel):
+    '''@private
+    This class only exists to make pdoc work better with Pydantic models. It is set up such, that some things are not showing up in docu
+    '''
+    model_config = ConfigDict(extra="forbid")
+    """@private"""
+    def model_post_init(self, context: Any) -> None:
+        '''@private'''
+        super().model_post_init(context)
+
+
+
 
 
 class ValidationMsgLevel(Enum):
-    ERROR = auto()
-    ERROR_AUTO_FIX = auto()
-    WARNING = auto()
+    '''
+    Level of validation messages
+    '''
+    ERROR = auto() 
+    '''Model is **invalid**'''
     RECOMMENDATION = auto()
+    '''Model is **valid**, but recommendations apply'''
     INFO = auto()
+    '''Model is **valid**. Something of interest was detected, which is not a recommendation.'''
 
-class ValidationMessage(BaseModel):
+class ValidationMessage(PDOC_Workaround_Base):
+    '''
+    Represents one problem in the model
+    '''
     source_id:int
     source:str 
     level: ValidationMsgLevel
-    problem_msg:str
-    recommendation_msg: str = ""
+    msg:str
     highlight:str = "" #this can be used to highlight problematic parts
     highlight_sub_patterns:list[str] = Field(default_factory=list)
 
     @field_validator('highlight_sub_patterns', mode='before')
     @classmethod
-    def ensure_list(cls, v):
+    def _ensure_list(cls, v):
         if isinstance(v, str):
             return [v]
         return v
 
 
     
-        
-        
-    # @property
-    # def emphazised_highlight(self):
-    #     fmt = lambda s: f'[emph]{s}[/emph]'
-        
-    #     if not self.highlight_sub_patterns:
-    #         return fmt(self.highlight)
-          
-    #     result = []
-    #     for c in self.highlight:
-    #         if c in self.highlight_sub_patterns:
-    #             result.append(fmt(c))
-    #         else:
-    #             result.append(c)
-
-    #     return ''.join(result)
-
+class LabFREED_ValidationError(ValueError):
+    '''Error which is raised, when LabFREED validation fails, i.e. when the model contains at least one error.'''
     
-class LabFREEDValidationError(ValueError):
     def __init__(self, message=None, validation_msgs=None):
+        '''@private'''
         super().__init__(message)
         self._validation_msgs = validation_msgs
 
     @property
     def validation_msgs(self):
+        ''' The validation messages (errors, recommendations, info) present in the invalid model'''
         return self._validation_msgs
     
     
 
 
-class LabFREED_BaseModel(BaseModel):
+class LabFREED_BaseModel(PDOC_Workaround_Base):
     """ Extension of Pydantic BaseModel, so that validator can issue warnings.
     The purpose of that is to allow only minimal validation but on top check for stricter recommendations"""
-    _validation_messages: list[ValidationMessage] = PrivateAttr(default_factory=list)
     
-    def add_validation_message(self, *, msg: str, level:ValidationMsgLevel, recommendation:str="", source:str="", highlight_pattern="", highlight_sub=None):
+    _validation_messages: list[ValidationMessage] = PrivateAttr(default_factory=list)
+    """Validation messages for this model"""
+    
+    @property
+    def is_valid(self) -> bool:
+        return len(self.errors()) == 0
+    
+
+    def validation_messages(self, nested=True) -> list[ValidationMessage]:
+        if nested:
+            msgs = self._get_nested_validation_messages()
+        else:
+            msgs = self._validation_messages
+        return msgs
+    
+    def errors(self, nested=True) -> list[ValidationMessage]: 
+        return _filter_errors(self.validation_messages(nested=nested))
+    
+    def warnings(self, nested=True) -> list[ValidationMessage]: 
+        return _filter_warnings(self.validation_messages(nested=nested))
+    
+
+    def _add_validation_message(self, *, msg: str, level:ValidationMsgLevel, source:str="", highlight_pattern="", highlight_sub=None):
         if not highlight_sub:
             highlight_sub = []
-        w = ValidationMessage(problem_msg=msg, recommendation_msg=recommendation, source=source, level=level, highlight=highlight_pattern, highlight_sub_patterns=highlight_sub, source_id=id(self))
+        w = ValidationMessage(msg=msg, source=source, level=level, highlight=highlight_pattern, highlight_sub_patterns=highlight_sub, source_id=id(self))
 
-        if not w in self._validation_messages:
+        if w not in self._validation_messages:
             self._validation_messages.append(w)
 
-    def get_validation_messages(self) -> list[ValidationMessage]:
-        return self._validation_messages
-    
-    def get_errors(self) -> list[ValidationMessage]: 
-        return filter_errors(self._validation_messages)
-    
-    def get_warnings(self) -> list[ValidationMessage]: 
-        return filter_warnings(self._validation_messages)
-    
-    def is_valid(self) -> bool:
-        return len(filter_errors(self.get_nested_validation_messages())) == 0
-
     # Function to extract warnings from a model and its nested models
-    def get_nested_validation_messages(self, parent_name: str = "", visited: Set[int] = None) -> List[ValidationMessage]:
+    def _get_nested_validation_messages(self, parent_name: str = "", visited: Set[int] = None) -> List[ValidationMessage]:
         """
         Recursively extract warnings from a Pydantic model and its nested fields.
         
@@ -110,7 +122,7 @@ class LabFREED_BaseModel(BaseModel):
             return []
         visited.add(model_id)
         
-        warnings_list = [warning for warning in self.get_validation_messages()]
+        warnings_list = [warning for warning in self.validation_messages(nested=False)]
         # warnings_list = [(parent_name or self.__class__.__name__, model_id,  warning) for warning in self.get_validation_messages()]
 
 
@@ -119,33 +131,16 @@ class LabFREED_BaseModel(BaseModel):
             value = getattr(self, field_name)
 
             if isinstance(value, LabFREED_BaseModel):
-                warnings_list.extend(value.get_nested_validation_messages(full_path, visited))
+                warnings_list.extend(value._get_nested_validation_messages(full_path, visited))
             elif isinstance(value, list):
                 for index, item in enumerate(value):
                     if isinstance(item, LabFREED_BaseModel):
                         list_path = f"{full_path}[{index}]"
-                        warnings_list.extend(item.get_nested_validation_messages(list_path, visited))
+                        warnings_list.extend(item._get_nested_validation_messages(list_path, visited))
         return warnings_list
     
-    
-    def get_nested_errors(self) -> list[ValidationMessage]: 
-        return filter_errors(self.get_nested_validation_messages())
-    
-    def get_nested_warnings(self) -> list[ValidationMessage]: 
-        return filter_warnings(self.get_nested_validation_messages())
-    
-    
-    def str_for_validation_msg(self, validation_msg:ValidationMessage):
-        if validation_msg.source_id == id(self):
-            return validation_msg.source_id
-            #return validation_msg.emphasize_in(self(str))
-        else:
-            return str(self)
         
-    def str_highlighted(self):
-        raise NotImplementedError("Subclasses must implement format_special()")
-    
-    
+
         
     def _emphasize_in(self, validation_msg, validation_node_str:str, fmt, color='black'):
         if validation_msg.highlight_sub_patterns:
@@ -164,9 +159,9 @@ class LabFREED_BaseModel(BaseModel):
     
     
     def print_validation_messages(self, target='console'):
-        msgs = self.get_nested_validation_messages()
+        msgs = self._get_nested_validation_messages()
         
-        table = Table(title=f"Validation Results", show_header=False, title_justify='left')
+        table = Table(title="Validation Results", show_header=False, title_justify='left')
 
         col = lambda s:  table.add_column(s, vertical='top')
         col("-")
@@ -197,13 +192,18 @@ class LabFREED_BaseModel(BaseModel):
             emphazised_highlight = emphazised_highlight.replace('👈👉','') # removes two consecutive markers, to make it cleaner
             
             txt =       f'[bold {color}]{m.level.name} [/bold {color}] in {m.source}'
-            txt += '\n' + f'{m.problem_msg}'
+            txt += '\n' + f'{m.msg}'
             txt += '\n\n' + emphazised_highlight
 
             table.add_row( txt)
             table.add_section()
 
+        logging.info(table)
         print(table)
+            
+
+        
+    
     
     # def print_validation_messages_(self, str_to_highlight_in=None, target='console'):
     #     if not str_to_highlight_in:
@@ -243,15 +243,15 @@ class LabFREED_BaseModel(BaseModel):
         
     
     
-def filter_errors(val_msg:list[ValidationMessage]) -> list[ValidationMessage]:
+    
+    
+def _filter_errors(val_msg:list[ValidationMessage]) -> list[ValidationMessage]:
     return [ m for m in val_msg if m.level == ValidationMsgLevel.ERROR ]
 
-def filter_warnings(val_msg:list[ValidationMessage]) -> list[ValidationMessage]:
+def _filter_warnings(val_msg:list[ValidationMessage]) -> list[ValidationMessage]:
     return [ m for m in val_msg if m.level != ValidationMsgLevel.ERROR  ]     
 
-
-
-def quote_texts(texts:list[str]):
+def _quote_texts(texts:list[str]):
     return ','.join([f"'{t}'" for t in texts])
 
 
