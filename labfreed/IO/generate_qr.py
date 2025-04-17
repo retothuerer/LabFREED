@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import typer
-import io
 from rich import print
 from typing_extensions import Annotated
 import numpy as np
@@ -369,12 +368,10 @@ def _generate_qr_with_markers(qr_str, text, title, direction):
     #try to use standard size 10. Go bigger if 10 does not fit the data
         try:
             qr = segno.make_qr(qr_str, error="L", version=10)
-        except DataOverflowError as e:
+        except DataOverflowError:
             qr = segno.make_qr(qr_str, error="L")
-        v = qr.version
     else: 
         qr = segno.make_qr(qr_str, error="L")
-        v = qr.version
     
     if(qr.mode != "alphanumeric"):
         print("[bold yellow]Large QR:[/bold yellow] Provided URL is not alphanumeric!")
