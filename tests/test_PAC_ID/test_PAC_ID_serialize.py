@@ -1,4 +1,4 @@
-from labfreed.PAC_ID.data_model import PACID, IDSegment
+from labfreed.pac_id import PACID, IDSegment
 
 pac_id = PACID(issuer = 'METTORIUS.COM',
             identifier = [  IDSegment(value='-DR'), 

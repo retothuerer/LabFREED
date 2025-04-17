@@ -1,17 +1,19 @@
+from typing import Self
 import pytest
-from labfreed.PAC_ID.extensions import Extension
-from labfreed.parse import PAC_Parser
+from labfreed.pac_id import Extension
+from labfreed.IO.parse_pac import PAC_Parser
 
 
 valid_base = "HTTPS://PAC.METTORIUS.COM/"
 valid_standard_segments = "-MD/240:B-800/21:12345"
 valid_dummy_extension = "DUMMY$MYTYPE/DUMMYDATA"
 
-parser = PAC_Parser()
+
+parser = PAC_Parser(suppress_validation_errors=True)
 
 # Extensions
 def test_valid_extensions():
-    pac = parser.parse_pac_with_extensions(valid_base + valid_standard_segments + "*name1$t1/data1*name2$t2/data2")
+    pac = parser.parse(valid_base + valid_standard_segments + "*name1$t1/data1*name2$t2/data2")
     extensions = pac.extensions
     ext: Extension = extensions[0]
     assert ext.name == 'name1'
@@ -25,6 +27,7 @@ def test_valid_extensions():
     
 def test_known_extension_types_are_parsed():
     class ExtensionMockType(Extension):
+        
         @property
         def name(self)->str:
             return 'name__foo'
@@ -38,14 +41,14 @@ def test_known_extension_types_are_parsed():
             return 'data__foo'
         
         @staticmethod
-        def from_spec_fields(name, type, data):
+        def create(*,name, type, data) -> Self:
             return ExtensionMockType()
         
     extension_interpreters = {
             'KNOWN_EXTENSION': ExtensionMockType,
     }  
-    parser_with_known_extension = PAC_Parser(extension_interpreters)
-    pac = parser_with_known_extension.parse_pac_with_extensions(valid_base + valid_standard_segments + "*name1$KNOWN_EXTENSION/data1")
+    parser_with_known_extension = PAC_Parser(extension_interpreters, suppress_validation_errors=True)
+    pac = parser_with_known_extension.parse(valid_base + valid_standard_segments + "*name1$KNOWN_EXTENSION/data1")
     extensions= pac.extensions
     ext: Extension = extensions[0]
     assert isinstance(ext, ExtensionMockType)
@@ -55,7 +58,7 @@ def test_known_extension_types_are_parsed():
     
     
 def test_imply_display_name_and_summary_extension():
-    pac = parser.parse_pac_with_extensions(valid_base + valid_standard_segments + "*data1*data2")
+    pac = parser.parse(valid_base + valid_standard_segments + "*ABC*S1$T.A:ABC")
     extensions = pac.extensions
     ext: Extension = extensions[0]
     assert ext.name == 'N'
@@ -67,13 +70,13 @@ def test_imply_display_name_and_summary_extension():
     
 def test_stop_imply_extensions_after_explicit():
     with pytest.raises(Exception):
-        pac = parser.parse_pac_with_extensions(valid_base + valid_standard_segments + "*N$T/data1*data2")
+        pac = parser.parse(valid_base + valid_standard_segments + "*N$T/data1*data2")
         pac.extensions
         
 
 def test_extension_parsing():
     s = '*NAME$MYFORMAT/AUGDSJGTZFRDGJHDSFRTZGHJAAUTZSGADT*NAME$ANOTHERFORMAT/BLUBBER'
-    extensions = parser.parse_extensions(s)
+    extensions = parser._parse_extensions(s)
     ext: Extension = extensions[0]
     assert ext.name == 'NAME'
     assert ext.type == 'MYFORMAT'

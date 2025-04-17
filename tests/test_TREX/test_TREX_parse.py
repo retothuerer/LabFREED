@@ -1,24 +1,27 @@
-import re
 import pytest
 
-from labfreed.TREX.data_model import *
-from labfreed.TREX.parse import _from_trex_string, TREX_Parser
+from labfreed.trex import TREX, TableSegment
 
-from labfreed.validation import LabFREEDValidationError
+from labfreed.labfreed_infrastructure import LabFREED_ValidationError
+from labfreed.trex.value_segments import TextSegment
 
-parser = TREX_Parser()
+def trex_deserialization_helper(trex_str):
+    trex = TREX.deserialize(trex_str, name="A", enforce_type=False, suppress_validation_errors=True)
+    return trex
+
 
     
 def test_trex_parse():
     trex_str = 'SUM$TREX/A$T.A:ASDFAS+B$T.B:T'
-    trex = parser.parse_trex_str(trex_str)
+    trex = TREX.deserialize(trex_str)
     assert trex.name == 'SUM'
     assert trex.type == 'TREX'
-    seg = trex.segments
-    assert trex.get_segment('A').type == 'T.A'
-    assert trex.get_segment('A').value == 'ASDFAS'
-    assert trex.get_segment('B').type == 'T.B'
-    assert trex.get_segment('B').value == 'T'
+    seg = trex.get_segment('A')
+    assert seg.type == 'T.A'
+    assert seg.value == 'ASDFAS'
+    seg = trex.get_segment('B')
+    assert seg.type == 'T.B'
+    assert seg.value == 'T'
     
     
     
@@ -26,12 +29,12 @@ def test_trex_parse():
 # Segment Key   
 def test_invalid_keys():
     trex_str = '£TIM$HUR:1'
-    with pytest.raises(LabFREEDValidationError) as e:
-        trex = parser.parse_trex_str(trex_str, name="A")
+    trex = trex_deserialization_helper(trex_str)
+    assert not trex.is_valid
         
     trex_str = 'tImE$HUR:1'
-    with pytest.raises(LabFREEDValidationError) as e:
-        trex = parser.parse_trex_str(trex_str, name="A")
+    trex = trex_deserialization_helper(trex_str)
+    assert not trex.is_valid
 
 
 # Numeric Segment
@@ -43,7 +46,7 @@ def test_numeric_segment_valid():
         'TIME$HUR:-25'
     ]
     for trex_str in valid_strs:
-        trex = parser.parse_trex_str(trex_str, name="A")
+        trex = trex_deserialization_helper(trex_str)
         assert trex.data == trex_str
     
 
@@ -56,27 +59,27 @@ def test_numeric_segment_scientific_valid():
         'TIME$HUR:-25.12E-2'
     ]
     for trex_str in valid_strs:
-        trex = parser.parse_trex_str(trex_str, name="A")
+        trex = trex_deserialization_helper(trex_str)
         assert trex.data == trex_str
 
     
     
 def test_numeric_segment_invalid_values():
-    with pytest.raises(LabFREEDValidationError):
-        trex_str ='TIME$HUR:A'
-        trex = parser.parse_trex_str(trex_str, name="A")
-        assert trex.data == trex_str
+    trex_str ='TIME$HUR:A'
+    trex = trex_deserialization_helper(trex_str)
+    assert not trex.is_valid
+    assert trex.data == trex_str
     
-    with pytest.raises(LabFREEDValidationError):
-        trex_str ='TIME$HUR:1.1.1'
-        trex = parser.parse_trex_str(trex_str, name="A")
-        assert trex.data == trex_str
+    trex_str ='TIME$HUR:1.1.1'
+    trex = trex_deserialization_helper(trex_str)
+    assert not trex.is_valid
+    assert trex.data == trex_str
         
 def test_numeric_segment_invalid_unit():
-    with pytest.raises(LabFREEDValidationError):
-        trex_str ='TIME$HIP:A'
-        trex = parser.parse_trex_str(trex_str, name="A")
-        assert trex.data == trex_str
+    trex_str ='TIME$HIP:A'
+    trex = trex_deserialization_helper(trex_str)
+    assert not trex.is_valid
+    assert trex.data == trex_str
     
         
         
@@ -86,32 +89,36 @@ def test_valid_dates():
         '20240305'
     ]
     for e in dates:
-        trex = parser.parse_trex_str(f'A$T.D:{e}', name='A')
-        assert not trex.get_nested_validation_messages()
+        trex_str = f'A$T.D:{e}'
+        trex = trex_deserialization_helper(trex_str)
+        assert not trex._get_nested_validation_messages()
 
 def test_valid_times():
     times = [
         'T0102', 'T010203', 'T010203.456'
     ]
     for e in times:
-        trex = parser.parse_trex_str(f'A$T.D:{e}', name='A')
-        assert not trex.get_nested_validation_messages()
+        trex_str = f'A$T.D:{e}'
+        trex = trex_deserialization_helper(trex_str)
+        assert not trex._get_nested_validation_messages()
     
 def test_valid_datetimes():
     datetimes = [
         '20240305T0102', '20240305T010203', '20240305T010203', '20240305T010203.456'
     ]
     for e in datetimes:
-        trex = parser.parse_trex_str(f'A$T.D:{e}', name='A')
-        assert not trex.get_nested_validation_messages()
+        trex_str = f'A$T.D:{e}'
+        trex = trex_deserialization_helper(trex_str)
+        assert not trex._get_nested_validation_messages()
         
 def test_invalid_dates_format():
     dates = [
         '2024030'
     ]
     for e in dates:
-        with pytest.raises(LabFREEDValidationError):
-            trex = parser.parse_trex_str(f'A$T.D:{e}', name='A')
+        trex_str = f'A$T.D:{e}'
+        trex = trex_deserialization_helper(trex_str)
+        assert not trex.is_valid
             
             
 def test_invalid_dates():
@@ -119,8 +126,9 @@ def test_invalid_dates():
         '20241331', '20240000'
     ]
     for e in dates:
-        with pytest.raises(LabFREEDValidationError):
-            trex = parser.parse_trex_str(f'A$T.D:{e}', name='A')
+        trex_str = f'A$T.D:{e}'
+        trex = trex_deserialization_helper(trex_str)
+        assert not trex.is_valid
             
             
 def test_invalid_times_format():
@@ -128,8 +136,9 @@ def test_invalid_times_format():
         'T2561'
     ]
     for e in times:
-        with pytest.raises(LabFREEDValidationError):
-            trex = parser.parse_trex_str(f'A$T.D:{e}', name='A')
+        trex_str = f'A$T.D:{e}'
+        trex = trex_deserialization_helper(trex_str)
+        assert not trex.is_valid
     
 
 
@@ -139,16 +148,18 @@ def test_valid_bool():
         'T', 'F'
     ]
     for e in b:
-        trex = parser.parse_trex_str(f'A$T.B:{e}', name='A')
-        assert not trex.get_nested_validation_messages()
+        trex_str = f'A$T.B:{e}'
+        trex = trex_deserialization_helper(trex_str)
+        assert not trex._get_nested_validation_messages()
         
 def test_invalid_bool():
     b = [
         '1', '0', 'TRUE', 'FALSE'
     ]
     for e in b:
-        with pytest.raises(LabFREEDValidationError):
-            trex = parser.parse_trex_str(f'A$T.B:{e}', name='A')
+        trex_str = f'A$T.B:{e}'
+        trex = trex_deserialization_helper(trex_str)
+        assert not trex.is_valid
             
             
             
@@ -158,16 +169,18 @@ def test_valid_alphanumeric():
         'ABCDEFGHIJKLMNOPQRSTUVW012345678.-', 
     ]
     for e in b:
-        trex = parser.parse_trex_str(f'A$T.A:{e}', name='A')
-        assert not trex.get_nested_validation_messages()
+        trex_str = f'A$T.A:{e}'
+        trex = trex_deserialization_helper(trex_str)
+        assert not trex._get_nested_validation_messages()
         
 def test_invalid_alphanumeric():
     b = [
         'a', '£', '<', 'ABCDeFGh'
     ]
     for e in b:
-        with pytest.raises(LabFREEDValidationError):
-            trex = parser.parse_trex_str(f'A$T.A:{e}', name='A')
+        trex_str = f'A$T.A:{e}'
+        trex = trex_deserialization_helper(trex_str)
+        assert not trex.is_valid
 
 
 
@@ -178,8 +191,9 @@ def test_valid_text():
         'ABCD'
     ]
     for e in b:
-        trex = parser.parse_trex_str(f'A$T.T:{e}', name='A')
-        assert not trex.get_nested_validation_messages()
+        trex_str = f'A$T.T:{e}'
+        trex = trex_deserialization_helper(trex_str)
+        assert not trex._get_nested_validation_messages()
         assert trex.get_segment('A').value == e
           
 def test_invalid_text():
@@ -187,8 +201,9 @@ def test_invalid_text():
         'a', '£', '<', 'ABCDeFGh', 'ABCDEFGHIJKLMNOPQRSTUVW012345678.-'
     ]
     for e in b:
-        with pytest.raises(ValueError):
-            trex = parser.parse_trex_str(f'A$T.X:{e}', name='A')
+        trex_str = f'A$T.X:{e}'
+        trex = trex_deserialization_helper(trex_str)
+        assert not trex.is_valid
             
 def test_valid__with_b36_conversion_text():
     b = [
@@ -196,7 +211,7 @@ def test_valid__with_b36_conversion_text():
     ]
     for e in b:
         trex = TREX(segments=[TextSegment(key='A', value=e[0])], name_='A')
-        assert not trex.get_nested_validation_messages()
+        assert not trex._get_nested_validation_messages()
         assert trex.get_segment('A').value == e[1]
         
 
@@ -207,16 +222,18 @@ def test_valid_binary():
         'ABCDEFGHIJKLMNOPQRSTUVW012345678'
     ]
     for e in b:
-        trex = parser.parse_trex_str(f'A$T.X:{e}', name='A')
-        assert not trex.get_nested_validation_messages()
+        trex_str = f'A$T.X:{e}'
+        trex = trex_deserialization_helper(trex_str)
+        assert not trex._get_nested_validation_messages()
         
 def test_invalid_binary():
     b = [
         'a', '£', '<', 'ABCDeFGh', 'ABCDEFGHIJKLMNOPQRSTUVW012345678.-'
     ]
     for e in b:
-        with pytest.raises(ValueError):
-            trex = parser.parse_trex_str(f'A$T.X:{e}', name='A')
+        trex_str = f'A$T.X:{e}'
+        trex = trex_deserialization_helper(trex_str)
+        assert not trex.is_valid
             
             
 # Error Segment
@@ -225,25 +242,27 @@ def test_valid_error():
         'ABCDEFGHIJKLMNOPQRSTUVW012345678.-'
     ]
     for e in b:
-        trex = parser.parse_trex_str(f'A$E:{e}', name='A')
-        assert not trex.get_nested_validation_messages()
+        trex_str = f'A$E:{e}'
+        trex = trex_deserialization_helper(trex_str)
+        assert not trex._get_nested_validation_messages()
         
 def test_invalid_error():
     b = [
         'a', '£', '<', 'ABCDeFGh'
     ]
     for e in b:
-        with pytest.raises(LabFREEDValidationError):
-            trex = parser.parse_trex_str(f'A$E:{e}', name='A')
+        trex_str = f'A$E:{e}'
+        trex = trex_deserialization_helper(trex_str)
+        assert not trex.is_valid
             
             
 # Table
 def test_valid_table():
     tab = 'TAB$$C-0$T.A:C.1$T.B::TRUE:T::FALSE:F'
-    trex = parser.parse_trex_str(tab, name='A')
-    assert not trex.get_errors()
+    trex = trex_deserialization_helper(tab)
+    assert trex.is_valid
     t = trex.segments[0]
-    assert isinstance(t, TREX_Table)
+    assert isinstance(t, TableSegment)
     assert t.column_headers[0].key == 'C-0'
     assert t.column_headers[0].type == 'T.A'
     assert t.column_headers[1].key == 'C.1'
@@ -254,8 +273,8 @@ def test_valid_table():
     
 def test_invalid_header_keys():
     tab = 'TAB$$C£0$T.A:C1$T.B::TRUE:T::FALSE:F' # character £ in key
-    with pytest.raises(LabFREEDValidationError):
-        trex = parser.parse_trex_str(tab, name='A')
+    trex = trex_deserialization_helper(tab)
+    assert not trex.is_valid
         
 def test_valid_header_types():
     d = [
@@ -270,24 +289,24 @@ def test_valid_header_types():
         ]
     for e in d:
         tab = f'TAB$$A${e[0]}::{e[1]}'
-        trex = parser.parse_trex_str(tab, name='A')
-        assert not trex.get_errors()
+        trex = trex_deserialization_helper(tab)
+        assert  trex.is_valid
         
 def test_invalid_header_types():
     types = ['T.Q', 'T.', 'HURR', 'W70']
     for t in types:
         tab = f'TAB$$A${t}::V'
-        with pytest.raises(LabFREEDValidationError):
-            trex = parser.parse_trex_str(tab, name='A')
+        trex = trex_deserialization_helper(tab)
+        assert not trex.is_valid
             
 def test_size_mismatch():
     tab = 'TAB$$C0$T.A:C1$T.B:C2$C63::TRUE:T::FALSE:T:1' #row 0 has only 2 elements
-    with pytest.raises(LabFREEDValidationError):
-        trex = parser.parse_trex_str(tab, name='A')
+    trex = trex_deserialization_helper(tab)
+    assert not trex.is_valid
         
 def test_type_mismatch():
     tab = 'TAB$$C0$T.A:C1$T.B::TRUE:TRUE::FALSE:T' #element (0,1) has wrong type. should be boolean (T or F) but is text 
-    with pytest.raises(LabFREEDValidationError):
-        trex = parser.parse_trex_str(tab, name='A')
+    trex = trex_deserialization_helper(tab)
+    assert not trex.is_valid
         
             

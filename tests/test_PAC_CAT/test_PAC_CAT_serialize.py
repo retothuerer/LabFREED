@@ -1,7 +1,8 @@
 import pytest
 from pydantic import ValidationError
 
-from labfreed.PAC_CAT.data_model import *
+from labfreed.pac_id import IDSegment
+from labfreed.pac_cat import *
 
 additional_segments=[IDSegment(key='K1', value='V1'),
                                          IDSegment(value='V2')]
@@ -12,17 +13,18 @@ def test_alias():
     md = Material_Device(serial_number='123', model_number='aa')
     md2 = Material_Device(**{'21': '123', '240': 'aa'})
     assert md == md2
+    
+def test_required_fields_MD():
+    md = Material_Device(serial_number=None, model_number=None)
+    assert not md.is_valid
 
 
 md = Material_Device(model_number='BAL500', 
                     serial_number='1234', 
                     additional_segments=[IDSegment(key='K1', value='V1'),
                                          IDSegment(value='V2')])
-def test_required_fields_MD():
-    with pytest.raises(ValidationError):
-        Material_Device(serial_number=None, model_number=None)
-        
 
+        
 def test_MD_segments():
     cat = md.to_identifier_category()
     assert cat.key == '-MD'
@@ -73,7 +75,7 @@ ms_some_empty = Material_Substance(product_number='X67678',
                         )
     
 def test_empty_segments_not_written():
-    cat = ms_some_empty.to_identifier_category()
+    cat = PAC_CAT(categories=[md])
     assert cat.key == '-MS'
     assert cat.segments[0].key == '240'
     assert cat.segments[0].value == 'X67678'
