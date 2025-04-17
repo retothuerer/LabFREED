@@ -1,13 +1,13 @@
 
 from abc import ABC, abstractproperty, abstractstaticmethod
+from typing import Self
 
-from labfreed.validation import LabFREED_BaseModel
-from labfreed.PAC_ID.data_model import PACID
+from labfreed.labfreed_infrastructure import LabFREED_BaseModel
 
 
-    
 
 class Extension(ABC, LabFREED_BaseModel): 
+    ''' Represents a PAC-ID extension.'''
     
     @abstractproperty
     def name(self)->str:
@@ -22,15 +22,23 @@ class Extension(ABC, LabFREED_BaseModel):
         pass
     
     @abstractstaticmethod
-    def from_spec_fields(*, name, type, data):
+    def create(*, name, type, data) -> Self:
+        '''Creates the Extension from the name, type and data strings 
+        example: *EXTNAME$MYEXTTYPE/FOOOOBAR
+        > create('EXTNAME', 'MYEXTTYPE','FOOBAR')
+        '''
         pass
+    
     
     def __str__(self):
         return f'{self.name}${self.type}/{self.data}'
     
     
+    
+    
 
 class UnknownExtension(Extension):
+    '''Implementation of Extension for unknown extension types'''
     name_:str
     type_:str
     data_:str
@@ -48,5 +56,5 @@ class UnknownExtension(Extension):
         return self.data_
        
     @staticmethod
-    def from_spec_fields(*, name, type, data):
+    def create(*, name, type, data):
         return UnknownExtension(name_=name, type_=type, data_=data)
