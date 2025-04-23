@@ -106,14 +106,14 @@ class LabFREED_BaseModel(PDOC_Workaround_Base):
             self._validation_messages.append(w)
 
     # Function to extract warnings from a model and its nested models
-    def _get_nested_validation_messages(self, parent_name: str = "", visited: Set[int] = None) -> List[ValidationMessage]:
+    def _get_nested_validation_messages(self, parent_name: str = "", visited: Set[int] = None) -> List['ValidationMessage']:
         """
-        Recursively extract warnings from a Pydantic model and its nested fields.
-        
-        :param model: The Pydantic model instance to inspect.
+        Recursively extract warnings from a Pydantic model and its nested fields, including computed fields.
+
         :param parent_name: The name of the parent model to track the path.
-        :return: List of tuples containing (model name, warning message).
-        """                   
+        :param visited: Set of visited object IDs to prevent infinite loops.
+        :return: List of ValidationMessages from this and nested models.
+        """
         if visited is None:
             visited = set()
 
@@ -121,11 +121,10 @@ class LabFREED_BaseModel(PDOC_Workaround_Base):
         if model_id in visited:
             return []
         visited.add(model_id)
-        
+
         warnings_list = [warning for warning in self.validation_messages(nested=False)]
-        # warnings_list = [(parent_name or self.__class__.__name__, model_id,  warning) for warning in self.get_validation_messages()]
 
-
+        # Traverse regular fields
         for field_name, field in self.__fields__.items():
             full_path = f"{parent_name}.{field_name}" if parent_name else field_name
             value = getattr(self, field_name)
@@ -137,8 +136,25 @@ class LabFREED_BaseModel(PDOC_Workaround_Base):
                     if isinstance(item, LabFREED_BaseModel):
                         list_path = f"{full_path}[{index}]"
                         warnings_list.extend(item._get_nested_validation_messages(list_path, visited))
+
+        # Traverse computed fields
+        computed_fields = getattr(self, '__pydantic_decorators__', {}).computed_fields or {}
+        for field_name in computed_fields:
+            full_path = f"{parent_name}.{field_name}" if parent_name else field_name
+            try:
+                value = getattr(self, field_name)
+            except Exception:
+                continue  # Safely skip computed properties that raise errors
+
+            if isinstance(value, LabFREED_BaseModel):
+                warnings_list.extend(value._get_nested_validation_messages(full_path, visited))
+            elif isinstance(value, list):
+                for index, item in enumerate(value):
+                    if isinstance(item, LabFREED_BaseModel):
+                        list_path = f"{full_path}[{index}]"
+                        warnings_list.extend(item._get_nested_validation_messages(list_path, visited))
+
         return warnings_list
-    
         
 
         
