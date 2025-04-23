@@ -6,8 +6,7 @@ build-backend = "flit_core.buildapi"
 name = "labfreed"
 requires-python = ">=3.10"
 authors = [{name = "Reto Thürer", email = "thuerer.r@buchi.com"}]
-license = "MIT"
-license-files = ["LICENSE"]
+license = { file = "LICENSE" }
 dynamic = ["version", "description"]
 readme = {file = "README.md", content-type = "text/markdown"}
 dependencies = [
@@ -19,7 +18,6 @@ dependencies = [
     "jsonpath-ng>=1.7.0"
 ]
 classifiers = [
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
