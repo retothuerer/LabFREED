@@ -1,8 +1,6 @@
 import logging
-import pytest
 from labfreed.pac_cat import Category, PAC_CAT
 from labfreed.pac_id import IDSegment, PAC_ID
-from labfreed.labfreed_infrastructure import LabFREED_ValidationError
 
 logging.basicConfig(level=logging.INFO)  # or DEBUG if needed
 logger = logging.getLogger(__name__)
@@ -30,12 +28,12 @@ def test_if_no_category_is_specified_default_to_unnamed_category():
         This is an invalid PAC-CAT. (Manuel confirmed that, 22.04.2025)
     '''
     pac = from_url(valid_base + "KEY:VAL")
-    assert type(pac) == PAC_ID 
+    assert type(pac) == PAC_ID  # noqa: E721
     
 def test_no_segment_with_dash_means_it_is_no_pac_cat():
     # when no dash is found, this is not a PAC-CAT
     pac = from_url(valid_base + "DM/21:VAL")
-    assert type(pac) == PAC_ID 
+    assert type(pac) == PAC_ID  # noqa: E721
     
 def test_category_with_multiple_segments():
     pac = from_url(valid_base + "-MX/KEY0:VAL0/VAL1/KEY2:VAL2")
@@ -122,13 +120,13 @@ def test_stop_implying_segments_after_an_explicit_one_is_found():
     assert cat.segments[0].key == '240'
     assert cat.segments[1].key == '10'
     assert cat.segments[2].key == 'KEY'
-    assert cat.segments[3].key == None
-    assert cat.segments[4].key == None
+    assert cat.segments[3].key is None
+    assert cat.segments[4].key is None
     
 def test_more_segments_than_implicit_keys():
     pac = from_url(valid_base + "-MD/IMPLIED1/IMPLIED2/ADDITIONAL")
     cat: Category = pac.categories[0]
-    assert cat.segments[2].key == None
+    assert cat.segments[2].key is None
     
     
     

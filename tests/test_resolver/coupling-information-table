@@ -1,0 +1,15 @@
+# coupling information table version: 1.0
+Service Name	Application Intent	Service Type	Applicable If	Template Url
+
+Test1	shop	userhandover-generic	{id}	https://mettorius.com/{id}/END
+Test2	shop	userhandover-generic	{isu}	https://mettorius.com/{isu}/END
+Test3	shop	userhandover-generic	{pac}	https://mettorius.com/{pac}/END
+Test4	shop	userhandover-generic	{idSeg1}	https://mettorius.com/{idSeg1}/END
+Test5	shop	userhandover-generic	{idVal21}	https://mettorius.com/{idVal21}/END
+Test6	shop	userhandover-generic	{ext}	https://mettorius.com/{ext}/END
+Test7	shop	userhandover-generic	{ext1}	https://mettorius.com/{ext1}/END
+Test8	shop	userhandover-generic	{id}	https://mettorius.com/shop.html/{id}/{isu}/{pac}/{idSeg1}/{idVal21}/{ext}/{ext1}/END
+
+Test9	shop	userhandover-generic	{idVal21}=ABC	https://mettorius.com/{idVal21}/END
+Test10	shop	userhandover-generic	{isu}=METTORIUS.COM;{idVal21}=ABC	https://mettorius.com/{idVal21}/END
+Test11	shop	userhandover-generic	{isu};{idVal21}=ABC	https://mettorius.com/{idVal21}/END

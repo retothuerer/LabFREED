@@ -1,9 +1,7 @@
-import pytest
-from pydantic import ValidationError
 
-from labfreed.pac_cat.predefined_categories import Data_Static
+from labfreed.pac_cat.pac_cat import PAC_CAT
+from labfreed.pac_cat.predefined_categories import Data_Calibration, Data_Method, Data_Progress, Data_Result, Data_Static, Material_Consumable, Material_Device, Material_Misc, Material_Substance
 from labfreed.pac_id import IDSegment
-from labfreed.pac_cat import *
 
 additional_segments=[IDSegment(key='K1', value='V1'),
                      IDSegment(value='V2')]

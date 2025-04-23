@@ -1,8 +1,6 @@
-import pytest
 
 from labfreed.trex import TREX, TableSegment, TextSegment
 
-from labfreed.labfreed_infrastructure import LabFREED_ValidationError
 
 def trex_deserialization_helper(trex_str):
     trex = TREX.deserialize(trex_str)

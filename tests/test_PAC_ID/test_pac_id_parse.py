@@ -1,4 +1,3 @@
-import pytest
 from labfreed.pac_id import PAC_ID, IDSegment
 
 
@@ -17,10 +16,6 @@ def test_standard_base_gives_correct_issuer():
     assert pac.is_valid
     assert pac.issuer == "METTORIUS.COM"
        
-def test_pac_can_be_missing_from_domain():
-    pac = from_url("HTTPS://METTORIUS.COM/" + valid_standard_segments)
-    assert pac.is_valid
-    assert pac.issuer == "METTORIUS.COM"
      
 def test_pac_can_be_missing_from_domain():
     pac = from_url("METTORIUS.COM/" + valid_standard_segments)
