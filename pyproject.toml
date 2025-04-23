@@ -4,7 +4,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "labfreed"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 authors = [{name = "Reto Thürer", email = "thuerer.r@buchi.com"}]
 license = { file = "LICENSE" }
 dynamic = ["version", "description"]
@@ -20,9 +20,9 @@ dependencies = [
 classifiers = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Operating System :: OS Independent",
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 2 - Beta",
     "Topic :: Scientific/Engineering",
     "Topic :: Utilities",
     "Intended Audience :: Developers",

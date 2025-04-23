@@ -1,4 +1,3 @@
-from typing import Self
 import pytest
 from labfreed.pac_id import PAC_ID
 from labfreed.pac_id.extension import ExtensionBase, Extension
@@ -44,7 +43,7 @@ def test_known_extensions_are_interpreted():
             return 'data__foo'
         
         @staticmethod
-        def create(*,name, type, data) -> Self:
+        def create(*,name, type, data):
             return ExtensionMockType()
         
         @staticmethod
