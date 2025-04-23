@@ -38,3 +38,15 @@ dev = [
 
 [tool.flit.module]
 name = "labfreed"
+
+[tool.flit.sdist]
+exclude = [
+    "tests/",
+    "examples/",
+    "docs/",
+    "dist/",
+    "build_tools/",
+    "main.py",
+    "pytest.ini",
+    ".gitattributes"
+]

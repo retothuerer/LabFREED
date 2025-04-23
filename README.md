@@ -11,19 +11,21 @@ This is a Python implementation of [LabFREED](https://labfreed.wega-it.com) buil
 ## Supported Building Blocks
 - PAC-ID
   - Parsing
-  - Validation (with Errors Recommendations)
   - Serialization
 - PAC-CAT
   - Interpretation of PAC-ID as categories
-  - Validation (with Errors Recommendations)
 - T-REX
   - Parsing 
-  - Validation (with Errors Recommendations)
   - Serialization
 - Display Extension
   - base36 <> str conversions
 - PAC-ID Resolver
+  - support for CIT v1
+  - draft support for CIT v1 (improved version)
+  - combined use of multiple cit in any combination of version
 - Generation of QR codes (PAC-ID with extensions)
+  
+- Validation (with Errors Recommendations)
 
 ## Installation
 You can install LabFREED from [PyPI](https://pypi.org/project/labfreed/) using pip:
@@ -294,26 +296,4 @@ for sg in service_groups:
 
 
 ## Change Log
-
-### v0.1.1
-- minor internal improvements and bugfixes
-  
-### v0.1.0
-- DRAFT Support for PAC-ID Resolver
-
-### v0.0.20
-- bugfix in TREX table to dict conversion
-- markdown compatible validation printing 
-
-### v0.0.19
-- supports PAC-ID, PAC-CAT, TREX and DisplayName
-- QR generation 
-- ok-ish test coverage
-
-# Attributions
-The following tools were used:
-- Json with UNECE units from (https://github.com/quadient/unece-units/blob/main/python/src/unece_excel_parser/parsedUneceUnits.json)
-- Json with GS1 codes from (https://ref.gs1.org/ai/GS1_Application_Identifiers.jsonld)
-- [pdoc](https://pdoc.dev/) was a great help with generating documentation
-- [Pydantic](https://docs.pydantic.dev/latest/)
-
+[> Change Log](/CHANGELOG.md)
