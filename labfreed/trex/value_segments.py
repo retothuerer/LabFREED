@@ -3,15 +3,14 @@ import logging
 import re
 from typing import Literal
 from pydantic import Field, model_validator
-from labfreed.labfreed_infrastructure import ValidationMsgLevel
-from labfreed.trex.trex_base_models import AlphanumericValue, BinaryValue, BoolValue, DateValue, ErrorValue, NumericValue, TREX_Segment, TextValue, ValueMixin
-from labfreed.utilities.unece_units.unece_units import unece_unit_codes, unit_name, unit_symbol, unece_unit
 from labfreed.utilities.base36 import base36
-from labfreed.python_convenience.data_table import DataTable, Quantity, Unit, unece_unit_code_from_quantity
+from labfreed.well_known_keys.unece.unece_units import unece_unit_codes
+from labfreed.labfreed_infrastructure import ValidationMsgLevel
+from labfreed.trex.trex_base_models import AlphanumericValue, BinaryValue, BoolValue, DateValue, ErrorValue, NumericValue, TREX_Segment, TextValue, Value
 
 
 
-class ValueSegment(TREX_Segment, ValueMixin, ABC):
+class ValueSegment(TREX_Segment, Value, ABC):
     '''@private: Abstract base class for value segments'''
     type:str
     
@@ -31,20 +30,12 @@ class ValueSegment(TREX_Segment, ValueMixin, ABC):
     def serialize(self) -> str:
         return f'{self.key}${self.type}:{self.value}'
     
-    def to_python_type(self):
-        return self._value_to_python_type()
-    
     
 class NumericSegment(ValueSegment, NumericValue):
     '''Represents a TREX segment holding a numeric value'''
     type: str 
     key:str   
     value:str
-    
-    def to_python_type(self):
-        unit = unece_unit(self.type)
-        out = Quantity(value=self._value_to_python_type(), unit=Unit(name=unit_name(unit), symbol=unit_symbol(unit)))
-        return out
     
 class DateSegment(ValueSegment, DateValue):
     '''Represents a TREX segment holding a date'''

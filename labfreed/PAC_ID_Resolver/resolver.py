@@ -4,7 +4,8 @@ import yaml
 
 
 
-from labfreed.IO.parse_pac import PAC_Parser, PACID_With_Extensions
+from labfreed.pac_cat.pac_cat import PAC_CAT
+from labfreed.pac_id.pac_id import PAC_ID
 from labfreed.pac_id_resolver.services import ServiceGroup
 from labfreed.pac_id_resolver.cit_v1 import CIT_v1
 from labfreed.pac_id_resolver.cit_v2 import CIT_v2
@@ -38,10 +39,10 @@ class PAC_ID_Resolver():
             self._cits.append(cit)
         
         
-    def resolve(self, pac_id:PACID_With_Extensions|str) -> list[ServiceGroup]:
+    def resolve(self, pac_id:PAC_ID|str) -> list[ServiceGroup]:
         '''Resolve a PAC-ID'''
         if isinstance(pac_id, str):
-            pac_id = PAC_Parser().parse(pac_id)
+            pac_id = PAC_CAT.from_url(pac_id)
         
         pac_id_json = pac_id.model_dump(by_alias=True)
         

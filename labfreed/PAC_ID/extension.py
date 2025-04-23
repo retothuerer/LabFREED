@@ -1,60 +1,48 @@
 
-from abc import ABC, abstractproperty, abstractstaticmethod
-from typing import Self
+from abc import ABC, abstractproperty
+
+from pydantic import PrivateAttr,computed_field, model_validator
 
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel
 
+    
+class ExtensionBase(ABC):
+    name: str
+    type: str
 
 
-class Extension(ABC, LabFREED_BaseModel): 
-    ''' Represents a PAC-ID extension.'''
-    
     @abstractproperty
-    def name(self)->str:
-        pass
-    
-    @abstractproperty
-    def type(self)->str:
-        pass
-    
-    @abstractproperty
-    def data(self)->str:
-        pass
-    
-    @abstractstaticmethod
-    def create(*, name, type, data) -> Self:
-        '''Creates the Extension from the name, type and data strings 
-        example: *EXTNAME$MYEXTTYPE/FOOOOBAR
-        > create('EXTNAME', 'MYEXTTYPE','FOOBAR')
-        '''
-        pass
-    
-    
-    def __str__(self):
-        return f'{self.name}${self.type}/{self.data}'
-    
-    
+    def data(self) -> str:
+        raise NotImplementedError("Subclasses must implement 'data'")
     
     
 
-class UnknownExtension(Extension):
+
+class Extension(LabFREED_BaseModel,ExtensionBase):
     '''Implementation of Extension for unknown extension types'''
-    name_:str
-    type_:str
+    name:str
+    type:str
     data_:str
     
     @property
-    def name(self)->str:
-        return self.name_
-    
-    @property
-    def type(self)->str:
-        return self.type_
-    
-    @property
-    def data(self)->str:
+    def data(self) -> str:
         return self.data_
        
     @staticmethod
     def create(*, name, type, data):
-        return UnknownExtension(name_=name, type_=type, data_=data)
+        return Extension(name=name, type=type, data=data)
+    
+    @model_validator(mode='before')
+    @classmethod
+    def move_data_field(cls, values):
+        if "data" in values:
+            values["data_"] = values.pop("data")
+        return values
+    
+    model_config = {
+        "extra": "allow",  # Allow extra keys during pre-validation
+    }
+    
+    def __str__(self):
+        return f'{self.name}${self.type}/{self.data}'
+    

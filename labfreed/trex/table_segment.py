@@ -5,10 +5,10 @@ import logging
 import re
 
 from pydantic import RootModel, model_validator
-from labfreed.utilities.unece_units.unece_units import unece_unit_codes, unit_name, unit_symbol, unece_unit
-from labfreed.python_convenience.data_table import DataTable, Quantity, Unit, unece_unit_code_from_quantity
+from labfreed.trex.trex_base_models import Value
+from labfreed.well_known_keys.unece.unece_units import unece_unit_codes, unit_name, unit_symbol, unece_unit
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel, ValidationMsgLevel, _quote_texts
-from labfreed.trex.trex_base_models import AlphanumericValue, BinaryValue, BoolValue, DateValue, ErrorValue, NumericValue, TREX_Segment, TextValue, ValueMixin, str_to_value_type
+from labfreed.trex.trex_base_models import AlphanumericValue, BinaryValue, BoolValue, DateValue, ErrorValue, NumericValue, TREX_Segment, TextValue, str_to_value_type
 
 
 class ColumnHeader(LabFREED_BaseModel):
@@ -40,7 +40,7 @@ class ColumnHeader(LabFREED_BaseModel):
             )
         return self
 
-class TableRow(RootModel[list[ValueMixin]]):
+class TableRow(RootModel[list[Value]]):
     """
     Represents a row in a table.
 
@@ -60,7 +60,7 @@ class TableRow(RootModel[list[ValueMixin]]):
         return iter(self.root)
     
     def __repr__(self):
-        return f"TableRow({self.root!r})  # wraps list[{ValueMixin.__name__}]"
+        return f"TableRow({self.root!r})  # wraps list[{Value.__name__}]"
     
   
 class TableSegment(TREX_Segment):
@@ -165,23 +165,7 @@ class TableSegment(TREX_Segment):
         s = f'{self.key}$${header}::{data}'
         return s
     
-    
-    def to_python_type(self):
-        table = DataTable([ch.key for ch in self.column_headers])
-        for row in self.data:
-            r = []
-            for e, h in zip(row, self.column_headers):
-                if isinstance(e, NumericValue):
-                    u = unece_unit(h.type)
-                    unit = Unit(name=u.get('name'), symbol=u.get('symbol'))
-                    r.append(Quantity(value=e.value, unit=unit))
-                else:
-                    r.append(e._value_to_python_type())
-            table.append(r)
-        return table
-        
-        
-        
+
     def n_rows(self) -> int:
         return len(self.data)
     

@@ -6,7 +6,7 @@ macros:
       service_name: Shop
       application_intents:
         - showdevicemanual-apinilabs
-      template_url: https://mettorius.com/shop/an={$.pac.identifier.categories[1].segments['240'].value}
+      template_url: https://mettorius.com/shop/an={$.categories[1].segments['240'].value}
         
     manual: &manual
       service_type: userhandover-generic
@@ -31,20 +31,20 @@ macros:
 
 cit:
 # Test
-- if: mettorius.com == $.pac.issuer
+- if: mettorius.com == $.issuer
   entries:
   - <<: *shop
   - <<: *manual
 
 # Instruments
-- if: mettorius.com == $.pac.issuer AND $.pac.id.categories['-MD']
+- if: mettorius.com == $.issuer AND $.categories['-MD']
   entries:
   - <<: *shop
   - <<: *manual
     
 
 # Consumables
-- if: mettorius.com == $.pac.issuer AND $.pac.id.categories['-MC']
+- if: mettorius.com == $.issuer AND $.categories['-MC']
   entries:
   - <<: *shop
   - <<: *manual
@@ -56,29 +56,29 @@ cit:
 ##############################
 
 # multiline string
-- if: "($.pac.issuer == mettorius.com) 
-       AND $.pac.id.categories['-MD']"
+- if: "($.issuer == mettorius.com) 
+       AND $.categories['-MD']"
   entries:
   - <<: *dummy
     service_name: multiline applicable_if
 
 # folded string
 - if: | 
-    ($.pac.issuer == mettorius.com) 
-    AND $.pac.id.categories['-MD']
+    ($.issuer == mettorius.com) 
+    AND $.categories['-MD']
   entries:
   - <<: *dummy
     service_name: folded applicable_if
 
 # multiline  string
 - if: | 
-    NOT NOT ($.pac.issuer == mettorius.com) 
-    AND $.pac.id.categories['-MD']
+    NOT NOT ($.issuer == mettorius.com) 
+    AND $.categories['-MD']
   entries:
   - <<: *dummy
     service_name: multiline applicable_if
 
-- if: NOT ($.pac.issuer != METTORIUS.COM)
+- if: NOT ($.issuer != METTORIUS.COM)
   entries:
   - <<: *dummy
     service_name: _3

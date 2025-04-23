@@ -1,23 +1,27 @@
 import logging
-from pydantic import BaseModel
-from labfreed.pac_id.extension import Extension
+from typing import Literal, Self
+from pydantic import BaseModel,  computed_field
+from labfreed.labfreed_infrastructure import LabFREED_BaseModel
+from labfreed.pac_id.extension import ExtensionBase
 from labfreed.utilities.base36 import from_base36, to_base36
 
 
-class DisplayName(Extension, BaseModel):
+class DisplayNameExtension(ExtensionBase, LabFREED_BaseModel):
+    name:Literal['N'] = 'N'
+    type:Literal['N'] = 'N'
     display_name: str       
-    @property
-    def name(self)->str:
-        return 'N'
     
-    @property
-    def type(self)->str:
-        return 'N'
-    
+    @computed_field
     @property
     def data(self)->str:
         # return '/'.join([to_base36(dn) for dn in self.display_name])
         return to_base36(self.display_name) 
+    
+    @staticmethod
+    def from_extension(ext:ExtensionBase) -> Self:
+        return DisplayNameExtension.create(name=ext.name,
+                                  type=ext.type,
+                                  data=ext.data)
     
     @staticmethod
     def create(*, name, type, data):
@@ -29,7 +33,7 @@ class DisplayName(Extension, BaseModel):
         
         display_name = from_base36(data)
          
-        return DisplayName(display_name=display_name)
+        return DisplayNameExtension(display_name=display_name)
     
     def __str__(self):
         return 'Display name: '+ self.display_name

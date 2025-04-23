@@ -1,25 +1,38 @@
-from pydantic import RootModel, computed_field
+from pydantic import BaseModel, model_validator
 from labfreed.well_known_keys.unece.unece_units import unece_units
 
 
-class Quantity(RootModel[float | int]):
+class Quantity(BaseModel):
     ''' Represents a quantity'''
+    value: float|int
     unit: str
     significant_digits: int|None = None
     
+    @model_validator(mode='after')
+    def significat_digits_for_int(self):
+        if isinstance(self.value, int):
+            self.significant_digits = 0
+        return self
+        
     @property
-    @computed_field
-    def value(self):
+    def float(self) -> float:
         ''' for clarity returns the value'''
-        return self.root
-      
+        return self.value
+    
     def __str__(self):
         unit_symbol = self.unit
         if self.unit == "dimensionless" or not self.unit:
             unit_symbol = ""
-        
-        s = f"{str(self.root)} {unit_symbol}" 
-        return s
+        if self.significant_digits is not None:
+            val = f"{self.value:.{self.significant_digits}f}"
+        else:
+            val = str(self.value)
+        return f"{val} {self.unit}"
+      
+    def __repr__(self):
+        return f'Quantity: {self.__repr__()}'
+    
+    
     
     
 def unece_unit_code_from_quantity(q:Quantity):

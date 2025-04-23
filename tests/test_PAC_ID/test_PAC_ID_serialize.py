@@ -1,6 +1,6 @@
-from labfreed.pac_id import PACID, IDSegment
+from labfreed.pac_id import PAC_ID, IDSegment
 
-pac_id = PACID(issuer = 'METTORIUS.COM',
+pac_id = PAC_ID(issuer = 'METTORIUS.COM',
             identifier = [  IDSegment(value='-DR'), 
                             IDSegment(value='999'),
                             IDSegment(value="-MD"),
@@ -11,5 +11,5 @@ pac_id = PACID(issuer = 'METTORIUS.COM',
 
  
 def test_url_serialization():
-    url = pac_id.serialize()
+    url = pac_id.to_url()
     assert url == 'HTTPS://PAC.METTORIUS.COM/-DR/999/-MD/240:1/21:2'

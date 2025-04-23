@@ -11,31 +11,36 @@ from rich.table import Table
 from labfreed.labfreed_infrastructure import ValidationMsgLevel
 
 from labfreed.pac_cat.category_base import Category
-from labfreed.pac_cat.predefined_categories import Data_Calibration, Data_Method, Data_Progress, Data_Result, Material_Consumable, Material_Device, Material_Misc, Material_Substance, Data_Static
-from labfreed.pac_id import PACID, IDSegment
+from labfreed.pac_cat.predefined_categories import Data_Calibration, Data_Method, Data_Progress, Data_Result, Material_Consumable, Material_Device, Material_Misc, Material_Substance, Data_Static, PredefinedCategory
+from labfreed.pac_id.id_segment import IDSegment
+from labfreed.pac_id.pac_id import PAC_ID
 
 ''' Configure pdoc'''
 
     
-class PAC_CAT(PACID):
+class PAC_CAT(PAC_ID):
     ''' 
     Extends a PAC-ID with interpretation of the identifier as categories
     '''
-    categories:list[Category] = Field(default_factory=list)
-    '''The categories present in the PAC-ID's identifier'''
-    
+    @computed_field
     @property
-    def identifier(self) -> list[IDSegment]:
-        out = list()
-        for category in self.categories:
-            out.append(IDSegment(value=category.key))
-            out.extend(category.segments)
-        return out
+    def categories(self) -> list[Category]: 
+        '''The categories present in the PAC-ID's identifier'''
+        category_segments = self._split_segments_by_category(self.identifier)
+        categories = list()
+        for c in category_segments:
+            categories.append(self._cat_from_cat_segments(c))
+        return categories
     
-    def serialize(self, use_short_notation=True):
+
+    def to_url(self, use_short_notation=True, uppercase_only=False):
         id_segments = ''
         for c in self.categories:
-            segments = c.segments(use_short_notation=use_short_notation)
+            segments = [IDSegment(value=c.key)]
+            if isinstance(c, PredefinedCategory):
+                segments += c._get_segments(use_short_notation=use_short_notation)
+            else:
+                segments += c.segments
             for s in segments:
                 s:IDSegment = s
                 if s.key:
@@ -44,15 +49,14 @@ class PAC_CAT(PACID):
                     id_segments += f'/{s.value}'
     
         out = f"HTTPS://PAC.{self.issuer}{id_segments}"
+        if uppercase_only:
+            out = out.upper()
         return out
     
 
-    
-    
     def get_category(self, key) -> Category:
         """Helper to get a category by key
-        """
-        
+        """ 
         tmp = [c for c in self.categories if c.key == key]
         if not tmp:
             return None
@@ -60,16 +64,24 @@ class PAC_CAT(PACID):
     
     
     @classmethod
-    def from_pac_id(cls, pac_id:PACID) -> Self:
+    def from_categories(cls, issuer:str, categories:list[Category]) -> PAC_CAT:
+        identifier = list()
+        for category in categories:
+            identifier.append(IDSegment(value=category.key))
+            s = category.segments
+            identifier.extend(category.segments)
+        return PAC_CAT(issuer=issuer, identifier=identifier)
+    
+    
+    @classmethod
+    def from_pac_id(cls, pac_id:PAC_ID) -> Self:
         '''Constructs a PAC-CAT from a PAC-ID'''
-        issuer = pac_id.issuer
-        
-        category_segments = cls._split_segments_by_category(pac_id.identifier)
-        categories = list()
-        for c in category_segments:
-            categories.append(cls._cat_from_cat_segments(c))
-        
-        return PAC_CAT(issuer=issuer, categories=categories, identifier=pac_id.identifier)
+        return PAC_CAT(issuer=pac_id.issuer, identifier=pac_id.identifier)
+    
+
+    
+    def to_pac_id(self) -> PAC_ID:
+        return PAC_ID(issuer=self.issuer, identifier=self.identifier)
         
             
     @classmethod
@@ -103,14 +115,15 @@ class PAC_CAT(PACID):
             segments.pop(0)
             
         # try to fill model keys if not already set
-        for s in segments:
-            if s.key in model_dict and not model_dict.get(s.key):
+        for s in segments.copy():
+            if s.key in model_dict.keys() and not model_dict.get(s.key):
                 model_dict[s.key] = s.value
                 segments.remove(s)
             
         model_dict['additional_segments'] = segments
         model_dict['key'] = category_key
-        return known_cat(**model_dict)
+        cat= known_cat(**model_dict)
+        return cat
     
     @staticmethod
     def _split_segments_by_category(segments:list[IDSegment]) -> list[list[IDSegment]]:

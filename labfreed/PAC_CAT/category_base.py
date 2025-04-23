@@ -2,7 +2,7 @@
 from typing import Any
 from pydantic import Field, PrivateAttr, computed_field, model_validator
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel, ValidationMsgLevel
-from labfreed.pac_id import IDSegment
+from labfreed.pac_id.id_segment import IDSegment
 
 
 class Category(LabFREED_BaseModel):
@@ -17,7 +17,7 @@ class Category(LabFREED_BaseModel):
         
     @computed_field
     @property
-    def segments(self, use_short_notation=False) -> list[IDSegment]:
+    def segments(self) -> list[IDSegment]:
         return self._segments
     
     def __init__(self, **data: Any):

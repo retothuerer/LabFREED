@@ -1,21 +1,18 @@
 import pytest
 
-from labfreed.trex import TREX, TableSegment
+from labfreed.trex import TREX, TableSegment, TextSegment
 
 from labfreed.labfreed_infrastructure import LabFREED_ValidationError
-from labfreed.trex.value_segments import TextSegment
 
 def trex_deserialization_helper(trex_str):
-    trex = TREX.deserialize(trex_str, name="A", enforce_type=False, suppress_validation_errors=True)
+    trex = TREX.deserialize(trex_str)
     return trex
 
 
     
 def test_trex_parse():
-    trex_str = 'SUM$TREX/A$T.A:ASDFAS+B$T.B:T'
+    trex_str = 'A$T.A:ASDFAS+B$T.B:T'
     trex = TREX.deserialize(trex_str)
-    assert trex.name == 'SUM'
-    assert trex.type == 'TREX'
     seg = trex.get_segment('A')
     assert seg.type == 'T.A'
     assert seg.value == 'ASDFAS'
@@ -47,7 +44,7 @@ def test_numeric_segment_valid():
     ]
     for trex_str in valid_strs:
         trex = trex_deserialization_helper(trex_str)
-        assert trex.data == trex_str
+        assert trex.serialize() == trex_str
     
 
         
@@ -60,7 +57,7 @@ def test_numeric_segment_scientific_valid():
     ]
     for trex_str in valid_strs:
         trex = trex_deserialization_helper(trex_str)
-        assert trex.data == trex_str
+        assert trex.serialize() == trex_str
 
     
     
@@ -68,18 +65,18 @@ def test_numeric_segment_invalid_values():
     trex_str ='TIME$HUR:A'
     trex = trex_deserialization_helper(trex_str)
     assert not trex.is_valid
-    assert trex.data == trex_str
+    assert trex.serialize() == trex_str
     
     trex_str ='TIME$HUR:1.1.1'
     trex = trex_deserialization_helper(trex_str)
     assert not trex.is_valid
-    assert trex.data == trex_str
+    assert trex.serialize() == trex_str
         
 def test_numeric_segment_invalid_unit():
     trex_str ='TIME$HIP:A'
     trex = trex_deserialization_helper(trex_str)
     assert not trex.is_valid
-    assert trex.data == trex_str
+    assert trex.serialize() == trex_str
     
         
         
@@ -210,7 +207,7 @@ def test_valid__with_b36_conversion_text():
         ('🐯', '1URIOQ7')
     ]
     for e in b:
-        trex = TREX(segments=[TextSegment(key='A', value=e[0])], name_='A')
+        trex = TREX(segments=[TextSegment(key='A', value=e[0])])
         assert not trex._get_nested_validation_messages()
         assert trex.get_segment('A').value == e[1]
         

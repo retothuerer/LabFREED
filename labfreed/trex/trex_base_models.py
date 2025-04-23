@@ -23,7 +23,7 @@ __all__ = ["TREX"] + v_segs + ["TableSegment"]
             
            
 
-class ValueMixin(LabFREED_BaseModel, ABC):
+class Value(LabFREED_BaseModel, ABC):
     '''@private
     Helper to add validation for various types to ValueSegments and Tables
     '''
@@ -41,7 +41,7 @@ class ValueMixin(LabFREED_BaseModel, ABC):
         ...
         
         
-class NumericValue(ValueMixin):
+class NumericValue(Value):
     @field_validator('value', mode='before')
     @classmethod
     def _from_python_type(cls, v:str| int|float):
@@ -77,7 +77,7 @@ class NumericValue(ValueMixin):
             return v
 
 
-class DateValue(ValueMixin):
+class DateValue(Value):
     _date_time_dict:dict|None = PrivateAttr(default=None)
     @field_validator('value', mode='before')
     @classmethod
@@ -144,7 +144,7 @@ class DateValue(ValueMixin):
             return time(**d)
     
    
-class BoolValue(ValueMixin):
+class BoolValue(Value):
     @field_validator('value', mode='before')
     @classmethod
     def _from_python_type(cls, v:str| bool):
@@ -174,7 +174,7 @@ class BoolValue(ValueMixin):
             Exception(f'{self} is not valid boolean. That really should not have been possible -- Contact the maintainers of the library')
                     
                     
-class AlphanumericValue(ValueMixin):
+class AlphanumericValue(Value):
     @field_validator('value', mode='before')
     @classmethod
     def _from_python_type(cls, v:str):
@@ -204,7 +204,7 @@ class AlphanumericValue(ValueMixin):
         return self.value
     
     
-class TextValue(ValueMixin):
+class TextValue(Value):
     @field_validator('value', mode='before')
     @classmethod
     def _from_python_type(cls, v:base36|str):
@@ -231,7 +231,7 @@ class TextValue(ValueMixin):
         return decoded
     
     
-class BinaryValue(ValueMixin):
+class BinaryValue(Value):
     @field_validator('value', mode='before')
     @classmethod
     def _from_python_type(cls, v:base36|str):
@@ -257,7 +257,7 @@ class BinaryValue(ValueMixin):
         return decoded
     
     
-class ErrorValue(ValueMixin):
+class ErrorValue(Value):
     @field_validator('value', mode='before')
     @classmethod
     def _from_python_type(cls, v:str):
@@ -290,9 +290,6 @@ class TREX_Segment(LabFREED_BaseModel, ABC):
     def serialize(self):
         raise NotImplementedError("Subclasses must implement 'serialize_as_trex()' method")
     
-    @abstractmethod
-    def to_python_type(self):
-        ...
     
     @model_validator(mode='after')
     def _validate_key(self):

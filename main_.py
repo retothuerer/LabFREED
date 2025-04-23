@@ -3,15 +3,15 @@ from datetime import datetime
 import os
 
 import yaml
-from labfreed.IO.parse_pac import PAC_Parser
+from labfreed.QR.parse_pac import PAC_Parser
 from labfreed.pac_id_resolver import PAC_ID_Resolver, load_cit
 from labfreed.trex import TREX
-from labfreed.display_name_extension.display_name_extension import DisplayName
+from labfreed.well_known_extensions.display_name_extension import DisplayName
 from labfreed.pac_cat import PAC_CAT
 from labfreed.utilities.base36 import base36
 from labfreed.python_convenience.utility_types import DataTable, Quantity, Unit
 
-from labfreed.IO.generate_qr import save_qr_with_markers
+from labfreed.QR.generate_qr import save_qr_with_markers
 
 if __name__ == "__main__":
     
@@ -67,8 +67,8 @@ if __name__ == "__main__":
 
     
     trex = TREX(name_='TEST')
-    trex.update({'TABLE': table})
-    trex.update({'TEMP': Quantity(value=100, unit=Unit(name='kelvin', symbol='K'))})
+    trex.update_from_dict({'TABLE': table})
+    trex.update_from_dict({'TEMP': Quantity(value=100, unit=Unit(name='kelvin', symbol='K'))})
     trex.print_validation_messages()
     print(trex)
     

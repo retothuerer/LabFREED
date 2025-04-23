@@ -4,7 +4,7 @@ from pydantic import Field, computed_field, model_validator
 
 from labfreed.labfreed_infrastructure import ValidationMsgLevel
 from labfreed.pac_cat.category_base import Category
-from labfreed.pac_id.pac_id import IDSegment
+from labfreed.pac_id.id_segment import IDSegment
 
 class PredefinedCategory(Category, ABC):
     '''@private 
@@ -15,7 +15,10 @@ class PredefinedCategory(Category, ABC):
     
     @computed_field
     @property
-    def segments(self, use_short_notation=False) -> list[IDSegment]:
+    def segments(self) -> list[IDSegment]:
+        return self._get_segments(use_short_notation=False)
+    
+    def _get_segments(self, use_short_notation=False) -> list[IDSegment]:
         segments = []
         can_omit_keys = use_short_notation # keeps track of whether keys can still be omitted. That is the case when the segment recommendation is followed
         for field_name, field_info in self.model_fields.items():
@@ -95,7 +98,7 @@ class Material_Consumable(PredefinedCategory):
     key: str = Field(default='-MC', frozen=True)
     product_number:str|None =   Field(              alias='240')
     batch_number:str|None =     Field(default=None, alias='10')
-    packing_size:str|None =     Field(default=None, alias='20')
+    packaging_size:str|None =     Field(default=None, alias='20')
     serial_number:str|None =    Field(default=None, alias='21')
     aliquot:str|None =          Field(default=None, alias='250')
     additional_segments: list[IDSegment] = Field(default_factory=list, exclude=True)
@@ -118,7 +121,7 @@ class Material_Misc(Material_Consumable):
     key: str = Field(default='-MM', frozen=True)
     product_number:str|None =   Field(              alias='240')
     batch_number:str|None =     Field(default=None, alias='10')
-    packing_size:str|None =     Field(default=None, alias='20')
+    packaging_size:str|None =     Field(default=None, alias='20')
     serial_number:str|None =    Field(default=None, alias='21')
     aliquot:str|None =          Field(default=None, alias='250')
     additional_segments: list[IDSegment] = Field(default_factory=list, exclude=True)
