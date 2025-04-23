@@ -6,7 +6,7 @@ import re
 
 from pydantic import RootModel, model_validator
 from labfreed.trex.trex_base_models import Value
-from labfreed.well_known_keys.unece.unece_units import unece_unit_codes, unit_name, unit_symbol, unece_unit
+from labfreed.well_known_keys.unece.unece_units import unece_unit_codes
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel, ValidationMsgLevel, _quote_texts
 from labfreed.trex.trex_base_models import AlphanumericValue, BinaryValue, BoolValue, DateValue, ErrorValue, NumericValue, TREX_Segment, TextValue, str_to_value_type
 
@@ -179,7 +179,6 @@ class TableSegment(TREX_Segment):
     
     def column_data(self, col:str|int) -> list:
         col_index = self._get_col_index(col)
-        type = self.column_headers[col_index].type
         out =  [row[col_index] for row in self.data]
         return out
      

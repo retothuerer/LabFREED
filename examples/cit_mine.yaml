@@ -1,21 +1,15 @@
-origin: MINE
+origin: PERSONAL
 
 cit:
-# Test
-- if: 
+# CAS Search
+- if: $.categories[?(@.key == "-MS")].segments[?(@.key == "CAS")]
   entries:
   - service_type: userhandover-generic
-    service_name: AAAAAAAAAAAAAAAAAAhhhhhh
+    service_name: CAS Search
     application_intents:
-      - foo
-    template_url: https://AAAAAAAAAAAA.{$.issuer}.com/{$.identifier[1].value}
+      - chem-info
+    template_url: https://pubchem.ncbi.nlm.nih.gov/#query={$.categories[?(@.key == "-MS")].segments[?(@.key == 'CAS')].value}
 
-  - service_type: userhand2over-generic2
-    service_name: abc
-    application_intents:
-      - foo-generic
-      - bar
-    template_url: https://AAAAAAAAAAAA.{$.issuer}.com/{$.identifier[1].value}
 
 
 

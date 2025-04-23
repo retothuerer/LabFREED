@@ -62,7 +62,7 @@ class PAC_Parser():
                 pac_cat = PAC_CAT.from_pac_id(pac_id)
                 if pac_cat.categories:
                     pac_id = pac_cat
-            except LabFREED_ValidationError as e:
+            except LabFREED_ValidationError:
                 pass 
               
         extensions = cls._parse_extensions(ext_str)
@@ -84,7 +84,6 @@ class PAC_Parser():
         d = m.groupdict()
         
         id_segments = list()
-        default_keys = None
         id_segments = cls._parse_id_segments(d.get('identifier'))
         
         from labfreed.pac_id import PAC_ID

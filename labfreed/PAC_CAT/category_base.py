@@ -1,6 +1,6 @@
                
 from typing import Any
-from pydantic import Field, PrivateAttr, computed_field, model_validator
+from pydantic import PrivateAttr, computed_field, model_validator
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel, ValidationMsgLevel
 from labfreed.pac_id.id_segment import IDSegment
 

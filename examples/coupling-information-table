@@ -1,0 +1,3 @@
+# coupling information table version: 1.0
+Service Name	Application Intent	Service Type	Applicable If	Template Url
+Chemical Management	chem-mgmt	userhandover-generic	{idSeg1}=-MS	https://chem-manager.com/{isu}/{id}

@@ -1,6 +1,7 @@
-import os
+import logging
 from typing import Self
 import yaml
+from requests import get
 
 
 
@@ -17,9 +18,41 @@ __all__ = ["PAC_ID_Resolver"]
 
 def load_cit(path):
     with open(path, 'r') as f:
-        cit_yml= yaml.safe_load(f)
-        cit = CIT_v2.from_yaml(cit_yml)
-        return cit
+        s = f.read()
+        return _cit_from_str(s)
+
+    
+def _cit_from_str(s:str, issuer:str='') -> CIT_v1|CIT_v2:
+    try:
+        cit_yml= yaml.safe_load(s)
+        cit2 = CIT_v2.from_yaml(cit_yml)
+    except Exception:
+        cit2 = None
+    
+    try:
+        cit1 = CIT_v1.from_csv(s, issuer)
+    except Exception:
+        cit1 = None
+    
+    cit = cit2 or cit1 or None
+    return cit
+
+def _get_issuer_cit(issuer:str):
+    '''Gets the issuer's cit.'''
+    url = 'HTTPS://PAC.' + issuer + '/coupling-information-table'
+    try:
+        r = get(url, timeout=2)
+        if r.status_code < 400:
+            cit_str = r.text
+        else: 
+            logging.error(f"Could not get CIT form {issuer}")
+            cit_str  = None
+    except Exception:
+        logging.error(f"Could not get CIT form {issuer}")
+        cit_str  = None
+    cit = _cit_from_str(cit_str, issuer=issuer)
+    return cit
+    
 
 
 class PAC_ID_Resolver():
@@ -28,36 +61,19 @@ class PAC_ID_Resolver():
         if not cits:
             cits = []
         self._cits = cits
-        
-        # load the default cit
-        dir = os.path.dirname(__file__)
-        fn ='cit.yaml'
-        p = os.path.join(dir, fn)       
-        with open(p, 'r') as f:
-            cit = yaml.safe_load(f)
-            cit = CIT_v2.from_yaml(cit)
-            self._cits.append(cit)
-        
+            
         
     def resolve(self, pac_id:PAC_ID|str) -> list[ServiceGroup]:
         '''Resolve a PAC-ID'''
         if isinstance(pac_id, str):
             pac_id = PAC_CAT.from_url(pac_id)
-        
-        pac_id_json = pac_id.model_dump(by_alias=True)
-        
-        
-        # dir = os.path.dirname(__file__)
-        # p = os.path.join(dir, 'pac-id.json')
-        # with open(p , 'r') as f:
-        #     _json = f.read()
-        #     pac_id_json = json.loads(_json)
-        
-        matches = [cit.evaluate_pac_id(pac_id_json) for cit in self._cits]
+                
+        if issuer_cit := _get_issuer_cit(pac_id.issuer):
+            self._cits.append(issuer_cit)
+         
+        matches = [cit.evaluate_pac_id(pac_id) for cit in self._cits]
         return matches
             
-
-
     
     
 if __name__ == '__main__':

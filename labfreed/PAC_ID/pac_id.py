@@ -1,6 +1,6 @@
 import re
 from typing_extensions import Self
-from pydantic import Field, computed_field, conlist, model_validator
+from pydantic import Field, conlist, model_validator
 
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel, ValidationMsgLevel
 from labfreed.pac_id.id_segment import IDSegment
@@ -9,8 +9,7 @@ from labfreed.pac_id.extension import Extension
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from labfreed.pac_id.url_parser import PAC_Parser
-    from labfreed.pac_id.url_serializer import PACID_Serializer
+    pass
 
 
 _domain_name_pattern = r"(?!-)([A-Za-z0-9-]{1,63}(?<!-)\.)+[A-Za-z]{2,63}"
@@ -50,8 +49,14 @@ class PAC_ID(LabFREED_BaseModel):
         from labfreed.pac_id.url_serializer import PACID_Serializer
         return PACID_Serializer.to_url(self, use_short_notation=use_short_notation, uppercase_only=uppercase_only)
     
-    def to_json(self) -> str:
-        return self.model_dump_json(indent=2)
+    def to_json(self, indent=None) -> str:
+        if not indent:
+            return self.model_dump_json()
+        else:
+            return self.model_dump_json(indent=indent)
+        
+    def to_dict(self) -> dict:
+        return self.model_dump()
     
     def __str__(self):
         return self.to_url()
@@ -63,7 +68,7 @@ class PAC_ID(LabFREED_BaseModel):
             self._add_validation_message(
                         source="identifier",
                         level = ValidationMsgLevel.ERROR,
-                        msg=f'Identifier must contain et least one segment.'
+                        msg='Identifier must contain et least one segment.'
                     )
         return self
     

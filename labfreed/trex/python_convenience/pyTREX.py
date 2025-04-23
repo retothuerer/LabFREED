@@ -12,7 +12,7 @@ from labfreed.trex.python_convenience.quantity import Quantity, unece_unit_code_
 from labfreed.trex.table_segment import ColumnHeader, TableSegment
 from labfreed.trex.trex import TREX
 from labfreed.trex.trex_base_models import AlphanumericValue, BinaryValue, BoolValue, DateValue, ErrorValue, NumericValue, TextValue
-from labfreed.trex.value_segments import BinarySegment, BoolSegment, ErrorSegment, TextSegment, NumericSegment, AlphanumericSegment, DateSegment, ValueSegment
+from labfreed.trex.value_segments import BoolSegment, TextSegment, NumericSegment, AlphanumericSegment, DateSegment, ValueSegment
 
 
 class pyTREX(RootModel[dict[str, Quantity | datetime | time | date | bool | str | base36 | DataTable]]):

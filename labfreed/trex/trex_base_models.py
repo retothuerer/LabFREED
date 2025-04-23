@@ -18,7 +18,7 @@ v_segs  = ["NumericSegment",
            "AlphanumericSegment", 
            "TextSegment", 
            "BinarySegment"]
-__all__ = ["TREX"] + v_segs + ["TableSegment"]
+__all__ = ["TREX"] + v_segs + ["TableSegment"]  # noqa: F822
 
             
            

@@ -1,3 +1,5 @@
+from labfreed.pac_cat.pac_cat import PAC_CAT
+from labfreed.pac_cat.predefined_categories import PredefinedCategory
 from labfreed.pac_id.id_segment import IDSegment
 from labfreed.pac_id.extension import Extension
 from labfreed.pac_id import PAC_ID  
@@ -18,9 +20,9 @@ class PACID_Serializer():
             str: Something like this HTTPS://PAC.METTORIUS.COM/-MD/BAL500/1234*N$N/ABC*SUM$TREX/A$T.A:ABC
 
         """
-        extensions_str = cls._serialize_extensions(pac.extensions, use_short_notation)
+        extensions_str = cls._serialize_extensions(pac.extensions, use_short_notation=use_short_notation)
             
-        identifier_str = cls._serialize_identifier(pac)
+        identifier_str = cls._serialize_identifier(pac, use_short_notation=use_short_notation)
         out = f"HTTPS://PAC.{pac.issuer}{identifier_str}{extensions_str}"
         
         if uppercase_only:
@@ -28,10 +30,20 @@ class PACID_Serializer():
         return out
     
     @classmethod
-    def _serialize_identifier(cls, pac:PAC_ID):
+    def _serialize_identifier(cls, pac:PAC_ID|PAC_CAT, use_short_notation=True):
         ''' Serializes the PAC-ID'''
+        if isinstance(pac, PAC_CAT):
+            for c in pac.categories:
+                segments = [IDSegment(value=c.key)]
+                if isinstance(c, PredefinedCategory):
+                    segments += c._get_segments(use_short_notation=use_short_notation)
+                else:
+                    segments += c.segments
+        else:
+            segments = pac.identifier
+        
         identifier_str = ''
-        for s in pac.identifier:
+        for s in segments:
             s:IDSegment = s
             if s.key:
                 identifier_str += f'/{s.key}:{s.value}'
@@ -41,9 +53,9 @@ class PACID_Serializer():
           
 
     @classmethod
-    def _serialize_extensions(cls, extensions:list[Extension], use_short_notation_for_extensions):
+    def _serialize_extensions(cls, extensions:list[Extension], use_short_notation):
         out = ''
-        short_notation = use_short_notation_for_extensions
+        short_notation = use_short_notation
         for i, e in enumerate(extensions):
             
             if short_notation and i==0:
@@ -59,7 +71,6 @@ class PACID_Serializer():
                 else: 
                     short_notation = False
                 
-            data = e.data
             out += f'*{e.name}${e.type}/{e.data}'
         return out
         

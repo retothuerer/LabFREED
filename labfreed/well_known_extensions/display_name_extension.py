@@ -1,6 +1,6 @@
 import logging
 from typing import Literal, Self
-from pydantic import BaseModel,  computed_field
+from pydantic import computed_field
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel
 from labfreed.pac_id.extension import ExtensionBase
 from labfreed.utilities.base36 import from_base36, to_base36

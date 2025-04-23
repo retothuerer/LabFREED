@@ -1,6 +1,6 @@
 from typing import Literal, Self
 
-from pydantic import Field, computed_field 
+from pydantic import computed_field 
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel
 from labfreed.pac_id.extension import ExtensionBase
 from labfreed.trex.trex import TREX

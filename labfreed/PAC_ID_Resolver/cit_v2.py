@@ -1,5 +1,5 @@
 from enum import Enum
-from functools import cache
+import json
 import re
 from typing import Self
 from pydantic import Field, field_validator, model_validator
@@ -133,7 +133,8 @@ class CIT_v2(LabFREED_BaseModel):
         yml = yaml.dump(self.model_dump()                        )
         return yml
     
-    def evaluate_pac_id(self, pac_id_json):
+    def evaluate_pac_id(self, pac):
+        pac_id_json = pac.to_dict()
         cit_evaluated = ServiceGroup(origin=self.origin)   
         for block in self.cit:
             _, is_applicable = self._evaluate_applicable_if(pac_id_json, block.applicable_if)
@@ -166,7 +167,7 @@ class CIT_v2(LabFREED_BaseModel):
         ''' applies a few substitutions, which enable abbreviated syntax.'''
         
         # allow access to array elements by key
-        q_mod = re.sub(r"\[('.+?')\]", r"[?(@.key == \1)]", query )
+        q_mod = re.sub(r'\[(".+?")\]', r'[?(@.key == \1)]', query )
         
         # allow shorter path
         # substitutions = [
@@ -211,7 +212,7 @@ class CIT_v2(LabFREED_BaseModel):
                 )+                              # one or more bracket/segment blocks
             ) |
             (?P<LITERAL>
-                [A-Za-z_][\w\.\-]*[A-Za-z0-9]   # domain-like literals
+                -?[\w\.\-]+   # domain-like literals
             )
             """,
             re.VERBOSE
@@ -289,6 +290,8 @@ class CIT_v2(LabFREED_BaseModel):
 
     
     def _evaluate_jsonpath(self, pac_id_json, jp_query):
+        if isinstance(pac_id_json, str):
+            pac_id_json = json.loads(pac_id_json)
         jsonpath_expr = jsonpath.parse(jp_query)
         matches = [match.value for match in jsonpath_expr.find(pac_id_json)]
         return matches

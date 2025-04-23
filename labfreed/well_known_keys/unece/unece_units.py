@@ -9,7 +9,7 @@ from pathlib import Path
 def unece_units() -> list[dict]:
     p = Path(__file__).parent / 'UneceUnits.json'
     with open(p) as f:
-        l = json.load(f)
+        l = json.load(f)  # noqa: E741
     return l
 
 @cache

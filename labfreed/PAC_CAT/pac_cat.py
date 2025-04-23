@@ -1,8 +1,7 @@
 from __future__ import annotations  # optional in 3.11, but recommended for consistency
 
-from abc import ABC
 from typing import Self
-from pydantic import Field, computed_field, model_validator
+from pydantic import computed_field, model_validator
 
 from rich import print
 from rich.text import Text
@@ -11,7 +10,7 @@ from rich.table import Table
 from labfreed.labfreed_infrastructure import ValidationMsgLevel
 
 from labfreed.pac_cat.category_base import Category
-from labfreed.pac_cat.predefined_categories import Data_Calibration, Data_Method, Data_Progress, Data_Result, Material_Consumable, Material_Device, Material_Misc, Material_Substance, Data_Static, PredefinedCategory
+from labfreed.pac_cat.predefined_categories import Data_Calibration, Data_Method, Data_Progress, Data_Result, Material_Consumable, Material_Device, Material_Misc, Material_Substance, Data_Static
 from labfreed.pac_id.id_segment import IDSegment
 from labfreed.pac_id.pac_id import PAC_ID
 
@@ -32,26 +31,6 @@ class PAC_CAT(PAC_ID):
             categories.append(self._cat_from_cat_segments(c))
         return categories
     
-
-    def to_url(self, use_short_notation=True, uppercase_only=False):
-        id_segments = ''
-        for c in self.categories:
-            segments = [IDSegment(value=c.key)]
-            if isinstance(c, PredefinedCategory):
-                segments += c._get_segments(use_short_notation=use_short_notation)
-            else:
-                segments += c.segments
-            for s in segments:
-                s:IDSegment = s
-                if s.key:
-                    id_segments += f'/{s.key}:{s.value}'
-                else:
-                    id_segments += f'/{s.value}'
-    
-        out = f"HTTPS://PAC.{self.issuer}{id_segments}"
-        if uppercase_only:
-            out = out.upper()
-        return out
     
 
     def get_category(self, key) -> Category:
@@ -68,7 +47,6 @@ class PAC_CAT(PAC_ID):
         identifier = list()
         for category in categories:
             identifier.append(IDSegment(value=category.key))
-            s = category.segments
             identifier.extend(category.segments)
         return PAC_CAT(issuer=issuer, identifier=identifier)
     
@@ -132,7 +110,6 @@ class PAC_CAT(PAC_ID):
         for s in segments:
             # new category starts with "-"
             if s.value[0] == '-':
-                cat_key = s.value
                 c = [s]
                 category_segments.append(c)
             else:
@@ -163,7 +140,6 @@ class PAC_CAT(PAC_ID):
         table = Table(title=f'Categories in {str(self)}', show_header=False)
         table.add_column('0')
         table.add_column('1')
-        s = ''
         for i, c in enumerate(self.categories):
             if i == 0:
                 title = Text('Main Category', style='bold')

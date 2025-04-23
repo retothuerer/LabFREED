@@ -1,7 +1,7 @@
 
 from abc import ABC, abstractproperty
 
-from pydantic import PrivateAttr,computed_field, model_validator
+from pydantic import model_validator
 
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel
 

@@ -27,7 +27,7 @@ class Quantity(BaseModel):
             val = f"{self.value:.{self.significant_digits}f}"
         else:
             val = str(self.value)
-        return f"{val} {self.unit}"
+        return f"{val} {unit_symbol}"
       
     def __repr__(self):
         return f'Quantity: {self.__repr__()}'

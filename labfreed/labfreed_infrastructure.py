@@ -30,6 +30,8 @@ class ValidationMsgLevel(Enum):
     '''
     ERROR = auto() 
     '''Model is **invalid**'''
+    WARNING = auto() 
+    '''Model is **valid**, but has issues'''
     RECOMMENDATION = auto()
     '''Model is **valid**, but recommendations apply'''
     INFO = auto()
@@ -179,7 +181,8 @@ class LabFREED_BaseModel(PDOC_Workaround_Base):
         
         table = Table(title="Validation Results", show_header=False, title_justify='left')
 
-        col = lambda s:  table.add_column(s, vertical='top')
+        def col(s):
+            return table.add_column(s, vertical='top')
         col("-")
         
              
@@ -195,13 +198,13 @@ class LabFREED_BaseModel(PDOC_Workaround_Base):
                 
             match target:
                 case 'markdown':
-                    fmt = lambda s: f'👉{s}👈'
+                    fmt = lambda s: f'👉{s}👈'  # noqa: E731
                 case 'console':     
-                    fmt = lambda s: f'[{color} bold]{s}[/{color} bold]'
+                    fmt = lambda s: f'[{color} bold]{s}[/{color} bold]'  # noqa: E731
                 case 'html':
-                    fmt = lambda s: f'<span class="val_{color}">{s}</span>'
+                    fmt = lambda s: f'<span class="val_{color}">{s}</span>'  # noqa: E731
                 case 'html_styled':
-                    fmt = lambda s: f'<b style="color:{color}>{s}</b>'
+                    fmt = lambda s: f'<b style="color:{color}>{s}</b>'  # noqa: E731
                 
             serialized = str(self)
             emphazised_highlight = self._emphasize_in(m, serialized, fmt=fmt, color=color)

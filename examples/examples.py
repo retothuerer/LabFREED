@@ -6,12 +6,13 @@ target = 'console'
 ### Parse a simple PAC-ID 
 '''
 # Parse the PAC-ID
-from labfreed.pac_id import PAC_ID
+from labfreed.labfreed_infrastructure import LabFREED_ValidationError  # noqa: E402
+from labfreed import PAC_ID, LabFREED_ValidationError  # noqa: E402, F811
 
 pac_str = 'HTTPS://PAC.METTORIUS.COM/-MD/bal500/@1234'
 try:
     pac = PAC_ID.from_url(pac_str)
-except:
+except LabFREED_ValidationError:
     pass
 # Check validity of this PAC-ID
 is_valid = pac.is_valid
@@ -28,7 +29,7 @@ pac.print_validation_messages(target=target)
 '''
 ### Save as QR Code
 '''
-from labfreed.qr import save_qr_with_markers
+from labfreed.qr import save_qr_with_markers  # noqa: E402
 
 save_qr_with_markers(pac_str, fmt='png')
 
@@ -37,28 +38,14 @@ save_qr_with_markers(pac_str, fmt='png')
 PAC-CAT defines a (optional) way how the identifier is structured.
 PAC_ID.from_url() automatically converts to PAC-CAT if possible.
 '''
-from labfreed.pac_cat import PAC_CAT
+from labfreed.pac_cat import PAC_CAT  # noqa: E402
 pac_str = 'HTTPS://PAC.METTORIUS.COM/-DR/XQ908756/-MD/bal500/@1234'
 pac = PAC_ID.from_url(pac_str)
 if isinstance(pac, PAC_CAT):
     categories = pac.categories 
     pac.print_categories()
 
-'''if the PAC-ID has no valid categories no PAC-CAT will be created'''
-pac_str = 'HTTPS://PAC.METTORIUS.COM/XQ908756/bal500/@1234' # not valid PAC-CAT
-pac = PAC_ID.from_url(pac_str) 
 
-'''You can also use getattr'''
-categories = getattr(pac, 'categories', None) 
-
-''' or catch the Attribute Error'''
-try:
-    categories = pac.categories
-except AttributeError as e:
-    pass
-    
-
-    
 
 
 ''' 
@@ -89,8 +76,8 @@ print(f'WEIGHT = {v.value}')
 
 #### Create PAC-ID
 '''
-from labfreed.pac_id import PAC_ID, IDSegment
-from labfreed.well_known_keys.labfreed.well_known_keys import WellKnownKeys
+from labfreed.pac_id import PAC_ID, IDSegment  # noqa: E402
+from labfreed.well_known_keys.labfreed.well_known_keys import WellKnownKeys  # noqa: E402
 
 pac = PAC_ID(issuer='METTORIUS.COM', identifier=[IDSegment(key=WellKnownKeys.SERIAL, value='1234')])
 pac_str = pac.to_url()
@@ -102,11 +89,10 @@ print(pac_str)
 TREX can conveniently be created from a python dictionary.
 Note that utility types for Quantity (number with unit) and table are needed
 '''
-from datetime import datetime
-from labfreed.trex import TREX
-from labfreed.trex.python_convenience.pyTREX import pyTREX
-from labfreed.trex.python_convenience.data_table import DataTable
-from labfreed.trex.python_convenience.quantity import Quantity
+from datetime import datetime  # noqa: E402
+from labfreed.trex.python_convenience.pyTREX import pyTREX  # noqa: E402
+from labfreed.trex.python_convenience.data_table import DataTable  # noqa: E402
+from labfreed.trex.python_convenience.quantity import Quantity  # noqa: E402
 
 # Value segments of different type
 segments = {
@@ -137,7 +123,7 @@ trex.print_validation_messages(target=target)
 ''' 
 #### Combine PAC-ID and TREX and serialize
 '''
-from labfreed.well_known_extensions import TREX_Extension
+from labfreed.well_known_extensions import TREX_Extension  # noqa: E402
 pac.extensions = [TREX_Extension(name='MYTREX', trex=trex)]
 pac_str = pac.to_url()
 print(pac_str)
@@ -147,9 +133,9 @@ print(pac_str)
 '''
 ## PAC-ID Resolver
 '''
-from labfreed.pac_id_resolver import PAC_ID_Resolver, load_cit
+from labfreed.pac_id_resolver import PAC_ID_Resolver, load_cit  # noqa: E402
 # Get a CIT
-dir = os.path.dirname(__file__)
+dir = os.path.join(os.getcwd(), 'examples')
 p = os.path.join(dir, 'cit_mine.yaml')       
 cit = load_cit(p)
 
@@ -158,8 +144,15 @@ cit.is_valid
 cit.print_validation_messages(target=target)
 
 ''''''
+# get a second cit
+p = os.path.join(dir, 'coupling-information-table')       
+cit2 = load_cit(p)
+cit2.origin = 'MY_COMPANY'
+
+''''''
 # resolve a pac id
-service_groups = PAC_ID_Resolver(cits=[cit]).resolve(pac)
+pac_str = 'HTTPS://PAC.METTORIUS.COM/-MS/X3511/CAS:7732-18-5'
+service_groups = PAC_ID_Resolver(cits=[cit, cit2]).resolve(pac_str)
 for sg in service_groups:
     sg.update_states()
     sg.print()

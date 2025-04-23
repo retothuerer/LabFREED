@@ -1,7 +1,7 @@
 
 
 from datetime import date, datetime, time
-from pydantic import BaseModel, Field, PrivateAttr, model_validator
+from pydantic import BaseModel, Field, PrivateAttr
 
 from labfreed.utilities.base36 import base36
 from labfreed.trex.python_convenience.quantity import Quantity

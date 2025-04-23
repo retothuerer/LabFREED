@@ -2,7 +2,7 @@
 from enum import auto, Enum
 
 from pydantic import Field
-from requests import RequestException, request, get, head
+from requests import RequestException, get, head
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
