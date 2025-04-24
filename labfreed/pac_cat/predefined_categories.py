@@ -188,3 +188,14 @@ class Data_Static(Data_Abstract):
     ''' Category segments, which are not defined in the specification'''
     
     
+category_key_to_class_map  = {
+        '-MD': Material_Device,
+        '-MS': Material_Substance,
+        '-MC': Material_Consumable,
+        '-MM': Material_Misc,
+        '-DM': Data_Method,
+        '-DR': Data_Result,
+        '-DC': Data_Calibration,
+        '-DP': Data_Progress,
+        '-DS': Data_Static 
+}

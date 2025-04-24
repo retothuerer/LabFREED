@@ -10,7 +10,7 @@ from rich.table import Table
 from labfreed.labfreed_infrastructure import ValidationMsgLevel
 
 from labfreed.pac_cat.category_base import Category
-from labfreed.pac_cat.predefined_categories import Data_Calibration, Data_Method, Data_Progress, Data_Result, Material_Consumable, Material_Device, Material_Misc, Material_Substance, Data_Static
+from labfreed.pac_cat.predefined_categories import category_key_to_class_map
 from labfreed.pac_id.id_segment import IDSegment
 from labfreed.pac_id.pac_id import PAC_ID
 
@@ -68,18 +68,7 @@ class PAC_CAT(PAC_ID):
         category_key = segments[0].value         
         segments.pop(0)
         
-        mapping  = {
-                '-MD': Material_Device,
-                '-MS': Material_Substance,
-                '-MC': Material_Consumable,
-                '-MM': Material_Misc,
-                '-DM': Data_Method,
-                '-DR': Data_Result,
-                '-DC': Data_Calibration,
-                '-DP': Data_Progress,
-                '-DS': Data_Static 
-        }
-        known_cat = mapping.get(category_key)
+        known_cat = category_key_to_class_map.get(category_key)
         
         if not known_cat:
             return Category(key=category_key, segments=segments)
@@ -156,4 +145,6 @@ class PAC_CAT(PAC_ID):
                               )      
             table.add_section()        
         print(table)
+        
+
         
