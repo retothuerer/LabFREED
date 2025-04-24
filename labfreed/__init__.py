@@ -2,7 +2,10 @@
 Python implementation of LabFREED building blocks
 '''
 
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 
-from labfreed.pac_id import PAC_ID  # noqa: F401
-from labfreed.labfreed_infrastructure import LabFREED_ValidationError  # noqa: F401
+from labfreed.pac_id import *  # noqa: F403
+from labfreed.pac_cat import * # noqa: F403
+from labfreed.pac_id_resolver import * # noqa: F403
+from labfreed.trex import * # noqa: F403
+from labfreed.labfreed_infrastructure import *  # noqa: F403

@@ -37,7 +37,7 @@ save_qr_with_markers(pac_str, fmt='png')
 PAC-CAT defines a (optional) way how the identifier is structured.
 PAC_ID.from_url() automatically converts to PAC-CAT if possible.
 '''
-from labfreed.pac_cat import PAC_CAT  # noqa: E402
+from labfreed import PAC_CAT  # noqa: E402
 pac_str = 'HTTPS://PAC.METTORIUS.COM/-DR/XQ908756/-MD/bal500/@1234'
 pac = PAC_ID.from_url(pac_str)
 if isinstance(pac, PAC_CAT):
@@ -75,7 +75,7 @@ print(f'WEIGHT = {v.value}')
 
 #### Create PAC-ID
 '''
-from labfreed.pac_id import PAC_ID, IDSegment  # noqa: E402
+from labfreed import PAC_ID, IDSegment  # noqa: E402
 from labfreed.well_known_keys.labfreed.well_known_keys import WellKnownKeys  # noqa: E402
 
 pac = PAC_ID(issuer='METTORIUS.COM', identifier=[IDSegment(key=WellKnownKeys.SERIAL, value='1234')])
@@ -89,9 +89,9 @@ TREX can conveniently be created from a python dictionary.
 Note that utility types for Quantity (number with unit) and table are needed
 '''
 from datetime import datetime  # noqa: E402
-from labfreed.trex.python_convenience.pyTREX import pyTREX  # noqa: E402
-from labfreed.trex.python_convenience.data_table import DataTable  # noqa: E402
-from labfreed.trex.python_convenience.quantity import Quantity  # noqa: E402
+from labfreed.trex.python_convenience import pyTREX  # noqa: E402
+from labfreed.trex.python_convenience import DataTable  # noqa: E402
+from labfreed.trex.python_convenience import Quantity  # noqa: E402
 
 # Value segments of different type
 segments = {
@@ -132,7 +132,7 @@ print(pac_str)
 '''
 ## PAC-ID Resolver
 '''
-from labfreed.pac_id_resolver import PAC_ID_Resolver, load_cit  # noqa: E402
+from labfreed import PAC_ID_Resolver, load_cit  # noqa: E402
 # Get a CIT
 dir = os.path.join(os.getcwd(), 'examples')
 p = os.path.join(dir, 'cit_mine.yaml')       
