@@ -110,7 +110,7 @@ class CIT_v1(LabFREED_BaseModel):
             i = int(m.group(1)) - 1 # CIT is 1 based
             seg = pac.identifier[i] if i < len(pac.identifier) else None
             if seg:
-                return f"{(seg.key + ':') if seg.key else ""}{seg.value}"
+                return f"{(seg.key + ':') if seg.key else ''}{seg.value}"
             
         elif m := re.match(r'\{idVal(\w+)\}', value):
             k = m.group(1)
