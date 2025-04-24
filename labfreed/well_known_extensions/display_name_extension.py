@@ -15,7 +15,7 @@ class DisplayNameExtension(ExtensionBase, LabFREED_BaseModel):
     @property
     def data(self)->str:
         # return '/'.join([to_base36(dn) for dn in self.display_name])
-        return to_base36(self.display_name) 
+        return to_base36(self.display_name).root
     
     @staticmethod
     def from_extension(ext:ExtensionBase) -> Self:
