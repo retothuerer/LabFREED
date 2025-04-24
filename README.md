@@ -1,9 +1,7 @@
 # LabFREED for Python
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![PyPI](https://img.shields.io/pypi/v/labfreed.svg)](https://pypi.org/project/labfreed/) ![Python Version](https://img.shields.io/pypi/pyversions/labfreed)
-<!--
-![Tests](https://github.com/retothuerer/LabFREED/workflows/run-tests.yml/badge.svg)
--->
+[![PyPI](https://img.shields.io/pypi/v/labfreed.svg)](https://pypi.org/project/labfreed/) ![Python Version](https://img.shields.io/pypi/pyversions/labfreed) [![Test Labfreed](https://github.com/retothuerer/LabFREED/actions/workflows/run-tests.yml/badge.svg)](https://github.com/retothuerer/LabFREED/actions/workflows/run-tests.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) 
+
 
 This is a Python implementation of [LabFREED](https://labfreed.wega-it.com) building blocks.
 
@@ -69,30 +67,28 @@ There is a nice function to highlight problems
 pac.print_validation_messages()
 ```
 ```text
->> Validation Results                                                                                                               
->> ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
->> │ RECOMMENDATION  in id segment value bal500                                                                                    │
->> │ Characters 'a','l','b' should not be used., Characters SHOULD be limited to upper case letters (A-Z), numbers (0-9), '-' and  │
->> │ '+'                                                                                                                           │
->> │                                                                                                                               │
->> │ HTTPS://PAC.METTORIUS.COM/-MD/240:👉bal👈500/21:@1234                                                                         │
->> ├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
->> │ RECOMMENDATION  in id segment value @1234                                                                                     │
->> │ Characters '@' should not be used., Characters SHOULD be limited to upper case letters (A-Z), numbers (0-9), '-' and '+'      │
->> │                                                                                                                               │
->> │ HTTPS://PAC.METTORIUS.COM/-MD/240:bal500/21:👉@👈1234                                                                         │
->> ├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
->> │ RECOMMENDATION  in id segment value bal500                                                                                    │
->> │ Characters 'a','l','b' should not be used., Characters SHOULD be limited to upper case letters (A-Z), numbers (0-9), '-' and  │
->> │ '+'                                                                                                                           │
->> │                                                                                                                               │
->> │ HTTPS://PAC.METTORIUS.COM/-MD/240:👉bal👈500/21:@1234                                                                         │
->> ├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
->> │ RECOMMENDATION  in id segment value @1234                                                                                     │
->> │ Characters '@' should not be used., Characters SHOULD be limited to upper case letters (A-Z), numbers (0-9), '-' and '+'      │
->> │                                                                                                                               │
->> │ HTTPS://PAC.METTORIUS.COM/-MD/240:bal500/21:👉@👈1234                                                                         │
->> └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+>> Validation Results                                                                                                                   
+>> ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+>> │ RECOMMENDATION  in id segment value bal500                                                                                        │
+>> │ Characters 'b','l','a' should not be used., Characters SHOULD be limited to upper case letters (A-Z), numbers (0-9), '-' and '+'  │
+>> │                                                                                                                                   │
+>> │ HTTPS://PAC.METTORIUS.COM/-MD/240:👉bal👈500/21:@1234                                                                             │
+>> ├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+>> │ RECOMMENDATION  in id segment value @1234                                                                                         │
+>> │ Characters '@' should not be used., Characters SHOULD be limited to upper case letters (A-Z), numbers (0-9), '-' and '+'          │
+>> │                                                                                                                                   │
+>> │ HTTPS://PAC.METTORIUS.COM/-MD/240:bal500/21:👉@👈1234                                                                             │
+>> ├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+>> │ RECOMMENDATION  in id segment value bal500                                                                                        │
+>> │ Characters 'b','l','a' should not be used., Characters SHOULD be limited to upper case letters (A-Z), numbers (0-9), '-' and '+'  │
+>> │                                                                                                                                   │
+>> │ HTTPS://PAC.METTORIUS.COM/-MD/240:👉bal👈500/21:@1234                                                                             │
+>> ├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+>> │ RECOMMENDATION  in id segment value @1234                                                                                         │
+>> │ Characters '@' should not be used., Characters SHOULD be limited to upper case letters (A-Z), numbers (0-9), '-' and '+'          │
+>> │                                                                                                                                   │
+>> │ HTTPS://PAC.METTORIUS.COM/-MD/240:bal500/21:👉@👈1234                                                                             │
+>> └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 ### Save as QR Code
 
@@ -112,7 +108,7 @@ PAC-CAT defines a (optional) way how the identifier is structured.
 PAC_ID.from_url() automatically converts to PAC-CAT if possible.
 
 ```python
-from labfreed.pac_cat import PAC_CAT  
+from labfreed import PAC_CAT  
 pac_str = 'HTTPS://PAC.METTORIUS.COM/-DR/XQ908756/-MD/bal500/@1234'
 pac = PAC_ID.from_url(pac_str)
 if isinstance(pac, PAC_CAT):
@@ -168,7 +164,7 @@ print(f'WEIGHT = {v.value}')
 #### Create PAC-ID
 
 ```python
-from labfreed.pac_id import PAC_ID, IDSegment  
+from labfreed import PAC_ID, IDSegment  
 from labfreed.well_known_keys.labfreed.well_known_keys import WellKnownKeys  
 
 pac = PAC_ID(issuer='METTORIUS.COM', identifier=[IDSegment(key=WellKnownKeys.SERIAL, value='1234')])
@@ -184,9 +180,9 @@ Note that utility types for Quantity (number with unit) and table are needed
 
 ```python
 from datetime import datetime  
-from labfreed.trex.python_convenience.pyTREX import pyTREX  
-from labfreed.trex.python_convenience.data_table import DataTable  
-from labfreed.trex.python_convenience.quantity import Quantity  
+from labfreed.trex.python_convenience import pyTREX  
+from labfreed.trex.python_convenience import DataTable  
+from labfreed.trex.python_convenience import Quantity  
 
 # Value segments of different type
 segments = {
@@ -217,7 +213,7 @@ trex.print_validation_messages()
 >> Validation Results                                            
 >> ┌────────────────────────────────────────────────────────────┐
 >> │ ERROR  in TREX table column Date                           │
->> │ Column header key contains invalid characters: 'a','e','t' │
+>> │ Column header key contains invalid characters: 'e','t','a' │
 >> │                                                            │
 >> │ STOP$T.D:20240505T1306                                     │
 >> │ +TEMP$KEL:10.15                                            │
@@ -225,9 +221,9 @@ trex.print_validation_messages()
 >> │ +COMMENT$T.A:FOO                                           │
 >> │ +COMMENT2$T.T:QMDTNXIKU                                    │
 >> │ +TABLE$$DURATION$HUR:D👉ate👈$T.D:OK$T.B:COMMENT$T.A::     │
->> │  1:20250424T161739.312:T:FOO::                             │
->> │  1.1:20250424T161739.312:T:BAR::                           │
->> │  1.3:20250424T161739.312:F:BLUBB                           │
+>> │  1:20250424T200626.801:T:FOO::                             │
+>> │  1.1:20250424T200626.801:T:BAR::                           │
+>> │  1.3:20250424T200626.801:F:BLUBB                           │
 >> └────────────────────────────────────────────────────────────┘
 ```
 #### Combine PAC-ID and TREX and serialize
@@ -239,12 +235,12 @@ pac_str = pac.to_url()
 print(pac_str)
 ```
 ```text
->> HTTPS://PAC.METTORIUS.COM/21:1234*MYTREX$TREX/STOP$T.D:20240505T1306+TEMP$KEL:10.15+OK$T.B:F+COMMENT$T.A:FOO+COMMENT2$T.T:QMDTNXIKU+TABLE$$DURATION$HUR:Date$T.D:OK$T.B:COMMENT$T.A::1:20250424T161739.312:T:FOO::1.1:20250424T161739.312:T:BAR::1.3:20250424T161739.312:F:BLUBB
+>> HTTPS://PAC.METTORIUS.COM/21:1234*MYTREX$TREX/STOP$T.D:20240505T1306+TEMP$KEL:10.15+OK$T.B:F+COMMENT$T.A:FOO+COMMENT2$T.T:QMDTNXIKU+TABLE$$DURATION$HUR:Date$T.D:OK$T.B:COMMENT$T.A::1:20250424T200626.801:T:FOO::1.1:20250424T200626.801:T:BAR::1.3:20250424T200626.801:F:BLUBB
 ```
 ## PAC-ID Resolver
 
 ```python
-from labfreed.pac_id_resolver import PAC_ID_Resolver, load_cit  
+from labfreed import PAC_ID_Resolver, load_cit  
 # Get a CIT
 dir = os.path.join(os.getcwd(), 'examples')
 p = os.path.join(dir, 'cit_mine.yaml')       
@@ -270,7 +266,26 @@ for sg in service_groups:
     
 ```
 ```text
->> [Error during execution: No Internet Connection]
+>> Services from origin 'PERSONAL                         
+>> ┏━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┓
+>> ┃ Service Name ┃ URL                                               ┃ Reachable ┃
+>> ┡━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━┩
+>> │ CAS Search   │ https://pubchem.ncbi.nlm.nih.gov/#query=7732-18-5 │ ACTIVE    │
+>> └──────────────┴───────────────────────────────────────────────────┴───────────┘
+>>                                     Services from origin 'MY_COMPANY                                    
+>> ┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┓
+>> ┃ Service Name        ┃ URL                                                                ┃ Reachable ┃
+>> ┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━┩
+>> │ Chemical Management │ https://chem-manager.com/METTORIUS.COM/-MS/240:X3511/CAS:7732-18-5 │ INACTIVE  │
+>> └─────────────────────┴────────────────────────────────────────────────────────────────────┴───────────┘
+>>              Services from origin 'METTORIUS.COM              
+>> ┏━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┓
+>> ┃ Service Name ┃ URL                             ┃ Reachable ┃
+>> ┡━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━┩
+>> │ CoA          │ https://mettorius.com/CoA.pdf   │ ACTIVE    │
+>> │ MSDS         │ https://mettorius.com/MSDS.pdf  │ ACTIVE    │
+>> │ Shop         │ https://mettorius.com/shop.html │ ACTIVE    │
+>> └──────────────┴─────────────────────────────────┴───────────┘
 ```
 <!-- END EXAMPLES -->
 
@@ -278,6 +293,9 @@ for sg in service_groups:
 
 <!-- BEGIN CHANGELOG -->
 ## Change Log
+### v0.2.2
+- minor changes for better access of subfunctions. No change in existing API
+  
 ### v0.2.1
 - improved docu. no code changes
 
@@ -300,6 +318,7 @@ for sg in service_groups:
 - supports PAC-ID, PAC-CAT, TREX and DisplayName
 - QR generation 
 - ok-ish test coverage
+<!-- END CHANGELOG -->
 
 # Attributions
 The following tools were used:
@@ -307,4 +326,3 @@ The following tools were used:
 - [Pydantic](https://docs.pydantic.dev/latest/)
 - json with UNECE units from (https://github.com/quadient/unece-units/blob/main/python/src/unece_excel_parser/parsedUneceUnits.json)
 - json with GS1 codes from (https://ref.gs1.org/ai/GS1_Application_Identifiers.jsonld)
-<!-- END CHANGELOG -->

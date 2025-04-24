@@ -1,4 +1,7 @@
 ## Change Log
+### v0.2.2
+- minor changes for better access of subfunctions. No change in existing API
+  
 ### v0.2.1
 - improved docu. no code changes
 
@@ -22,11 +25,5 @@
 - QR generation 
 - ok-ish test coverage
 
-# Attributions
-The following tools were used:
-- [pdoc](https://pdoc.dev/) was a great help with generating documentation
-- [Pydantic](https://docs.pydantic.dev/latest/)
-- json with UNECE units from (https://github.com/quadient/unece-units/blob/main/python/src/unece_excel_parser/parsedUneceUnits.json)
-- json with GS1 codes from (https://ref.gs1.org/ai/GS1_Application_Identifiers.jsonld)
 
 
