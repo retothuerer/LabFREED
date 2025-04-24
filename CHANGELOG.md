@@ -1,5 +1,5 @@
 ## Change Log
-### v0.2.0b
+### v0.2.0b2
 - improvements in api consistency and ease of use
 - restructured code for better separation of concerns
 - support for coupling information table v1

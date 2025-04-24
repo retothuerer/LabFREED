@@ -94,5 +94,26 @@ new_readme = (
     + readme.split(end_marker)[1]
 )
 
+
+
+# ChangeLog
+changelog_start_marker = "<!-- BEGIN CHANGELOG -->"
+changelog_end_marker = "<!-- END CHANGELOG -->"
+
+with open("CHANGELOG.md", encoding="utf-8") as changelog_file:
+    changelog_content = changelog_file.read().strip()
+
+if changelog_start_marker not in new_readme or changelog_end_marker not in new_readme:
+    raise ValueError("CHANGELOG markers not found in README.md")
+
+new_readme = (
+    new_readme.split(changelog_start_marker)[0]
+    + changelog_start_marker + "\n"
+    + changelog_content + "\n"
+    + changelog_end_marker
+    + new_readme.split(changelog_end_marker)[1]
+)
+
+
 with open("README.md", "w", encoding="utf-8") as readme_file:
     readme_file.write(new_readme)
