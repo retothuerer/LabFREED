@@ -41,7 +41,7 @@ class Category(LabFREED_BaseModel):
     
     
     def __str__(self):
-        s = '\n'.join( [f'{field_name} \t ({field_info.alias or ''}): \t {getattr(self, field_name)}' for  field_name, field_info in self.model_fields.items() if getattr(self, field_name)]) 
+        s = '\n'.join( [f"{field_name} \t ({field_info.alias or ''}): \t {getattr(self, field_name)}" for  field_name, field_info in self.model_fields.items() if getattr(self, field_name)]) 
         return s 
 
 
