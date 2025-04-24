@@ -1,13 +1,12 @@
 # import built ins
 import os
 
-target = 'console'
+target = 'markdown'
 ''' 
 ### Parse a simple PAC-ID 
 '''
 # Parse the PAC-ID
-from labfreed.labfreed_infrastructure import LabFREED_ValidationError  # noqa: E402
-from labfreed import PAC_ID, LabFREED_ValidationError  # noqa: E402, F811
+from labfreed import PAC_ID, LabFREED_ValidationError  # noqa: E402
 
 pac_str = 'HTTPS://PAC.METTORIUS.COM/-MD/bal500/@1234'
 try:

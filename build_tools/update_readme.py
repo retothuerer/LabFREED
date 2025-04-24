@@ -3,6 +3,16 @@ import re
 import io
 import contextlib
 from rich.text import Text
+from pathlib import Path
+
+
+import sys
+
+print("Updating README")
+#print("\n".join(sys.path))
+root_path = Path(__file__).resolve().parents[1]
+if str(root_path) not in sys.path:
+    sys.path.insert(0, str(root_path))
 
 start_marker = "<!-- BEGIN EXAMPLES -->"
 end_marker = "<!-- END EXAMPLES -->"
@@ -95,6 +105,12 @@ new_readme = (
 )
 
 
+# remove some artefacts
+new_readme.replace("target = 'markdown'","")
+new_readme.replace("# noqa: E402","")
+new_readme.replace("target=target","")
+
+
 
 # ChangeLog
 changelog_start_marker = "<!-- BEGIN CHANGELOG -->"
@@ -117,3 +133,6 @@ new_readme = (
 
 with open("README.md", "w", encoding="utf-8") as readme_file:
     readme_file.write(new_readme)
+
+
+print("Updated README")
