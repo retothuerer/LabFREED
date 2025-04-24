@@ -1,9 +1,8 @@
 # LabFREED for Python
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![PyPI](https://img.shields.io/pypi/v/labfreed.svg)](https://pypi.org/project/labfreed/) ![Python Version](https://img.shields.io/pypi/pyversions/labfreed)
-
 <!--
-[![Tests](https://github.com/retothuerer/LabFREED/actions/workflows/ci.yml/badge.svg)](https://github.com/retothuerer/LabFREED/actions/workflows/ci.yml)
+![Tests](https://github.com/retothuerer/LabFREED/workflows/run-tests.yml/badge.svg)
 -->
 
 This is a Python implementation of [LabFREED](https://labfreed.wega-it.com) building blocks.
@@ -42,14 +41,13 @@ pip install labfreed
 # import built ins
 import os
 
-target = 'console'
+
 ```
 ### Parse a simple PAC-ID
 
 ```python
 # Parse the PAC-ID
-from labfreed.labfreed_infrastructure import LabFREED_ValidationError  # noqa: E402
-from labfreed import PAC_ID, LabFREED_ValidationError  # noqa: E402, F811
+from labfreed import PAC_ID, LabFREED_ValidationError  
 
 pac_str = 'HTTPS://PAC.METTORIUS.COM/-MD/bal500/@1234'
 try:
@@ -68,7 +66,7 @@ Note that the PAC-ID -- while valid -- uses characters which are not recommended
 There is a nice function to highlight problems
 
 ```python
-pac.print_validation_messages(target=target)
+pac.print_validation_messages()
 ```
 ```text
 >> Validation Results                                                                                                                   
@@ -76,28 +74,28 @@ pac.print_validation_messages(target=target)
 >> │ RECOMMENDATION  in id segment value bal500                                                                                        │
 >> │ Characters 'b','a','l' should not be used., Characters SHOULD be limited to upper case letters (A-Z), numbers (0-9), '-' and '+'  │
 >> │                                                                                                                                   │
->> │ HTTPS://PAC.METTORIUS.COM/-MD/240:bal500/21:@1234                                                                                 │
+>> │ HTTPS://PAC.METTORIUS.COM/-MD/240:👉bal👈500/21:@1234                                                                             │
 >> ├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 >> │ RECOMMENDATION  in id segment value @1234                                                                                         │
 >> │ Characters '@' should not be used., Characters SHOULD be limited to upper case letters (A-Z), numbers (0-9), '-' and '+'          │
 >> │                                                                                                                                   │
->> │ HTTPS://PAC.METTORIUS.COM/-MD/240:bal500/21:@1234                                                                                 │
+>> │ HTTPS://PAC.METTORIUS.COM/-MD/240:bal500/21:👉@👈1234                                                                             │
 >> ├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 >> │ RECOMMENDATION  in id segment value bal500                                                                                        │
 >> │ Characters 'b','a','l' should not be used., Characters SHOULD be limited to upper case letters (A-Z), numbers (0-9), '-' and '+'  │
 >> │                                                                                                                                   │
->> │ HTTPS://PAC.METTORIUS.COM/-MD/240:bal500/21:@1234                                                                                 │
+>> │ HTTPS://PAC.METTORIUS.COM/-MD/240:👉bal👈500/21:@1234                                                                             │
 >> ├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 >> │ RECOMMENDATION  in id segment value @1234                                                                                         │
 >> │ Characters '@' should not be used., Characters SHOULD be limited to upper case letters (A-Z), numbers (0-9), '-' and '+'          │
 >> │                                                                                                                                   │
->> │ HTTPS://PAC.METTORIUS.COM/-MD/240:bal500/21:@1234                                                                                 │
+>> │ HTTPS://PAC.METTORIUS.COM/-MD/240:bal500/21:👉@👈1234                                                                             │
 >> └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 ### Save as QR Code
 
 ```python
-from labfreed.qr import save_qr_with_markers  # noqa: E402
+from labfreed.qr import save_qr_with_markers  
 
 save_qr_with_markers(pac_str, fmt='png')
 ```
@@ -112,7 +110,7 @@ PAC-CAT defines a (optional) way how the identifier is structured.
 PAC_ID.from_url() automatically converts to PAC-CAT if possible.
 
 ```python
-from labfreed.pac_cat import PAC_CAT  # noqa: E402
+from labfreed.pac_cat import PAC_CAT  
 pac_str = 'HTTPS://PAC.METTORIUS.COM/-DR/XQ908756/-MD/bal500/@1234'
 pac = PAC_ID.from_url(pac_str)
 if isinstance(pac, PAC_CAT):
@@ -168,8 +166,8 @@ print(f'WEIGHT = {v.value}')
 #### Create PAC-ID
 
 ```python
-from labfreed.pac_id import PAC_ID, IDSegment  # noqa: E402
-from labfreed.well_known_keys.labfreed.well_known_keys import WellKnownKeys  # noqa: E402
+from labfreed.pac_id import PAC_ID, IDSegment  
+from labfreed.well_known_keys.labfreed.well_known_keys import WellKnownKeys  
 
 pac = PAC_ID(issuer='METTORIUS.COM', identifier=[IDSegment(key=WellKnownKeys.SERIAL, value='1234')])
 pac_str = pac.to_url()
@@ -183,10 +181,10 @@ TREX can conveniently be created from a python dictionary.
 Note that utility types for Quantity (number with unit) and table are needed
 
 ```python
-from datetime import datetime  # noqa: E402
-from labfreed.trex.python_convenience.pyTREX import pyTREX  # noqa: E402
-from labfreed.trex.python_convenience.data_table import DataTable  # noqa: E402
-from labfreed.trex.python_convenience.quantity import Quantity  # noqa: E402
+from datetime import datetime  
+from labfreed.trex.python_convenience.pyTREX import pyTREX  
+from labfreed.trex.python_convenience.data_table import DataTable  
+from labfreed.trex.python_convenience.quantity import Quantity  
 
 # Value segments of different type
 segments = {
@@ -211,40 +209,40 @@ trex = mydata.to_trex()
 
 
 # Validation also works the same way for TREX
-trex.print_validation_messages(target=target)
+trex.print_validation_messages()
 ```
 ```text
 >> Validation Results                                            
 >> ┌────────────────────────────────────────────────────────────┐
 >> │ ERROR  in TREX table column Date                           │
->> │ Column header key contains invalid characters: 'a','t','e' │
+>> │ Column header key contains invalid characters: 't','a','e' │
 >> │                                                            │
 >> │ STOP$T.D:20240505T1306                                     │
 >> │ +TEMP$KEL:10.15                                            │
 >> │ +OK$T.B:F                                                  │
 >> │ +COMMENT$T.A:FOO                                           │
 >> │ +COMMENT2$T.T:QMDTNXIKU                                    │
->> │ +TABLE$$DURATION$HUR:Date$T.D:OK$T.B:COMMENT$T.A::         │
->> │  1:20250423T142912.783:T:FOO::                             │
->> │  1.1:20250423T142912.783:T:BAR::                           │
->> │  1.3:20250423T142912.783:F:BLUBB                           │
+>> │ +TABLE$$DURATION$HUR:D👉ate👈$T.D:OK$T.B:COMMENT$T.A::     │
+>> │  1:20250424T155333.352:T:FOO::                             │
+>> │  1.1:20250424T155333.352:T:BAR::                           │
+>> │  1.3:20250424T155333.352:F:BLUBB                           │
 >> └────────────────────────────────────────────────────────────┘
 ```
 #### Combine PAC-ID and TREX and serialize
 
 ```python
-from labfreed.well_known_extensions import TREX_Extension  # noqa: E402
+from labfreed.well_known_extensions import TREX_Extension  
 pac.extensions = [TREX_Extension(name='MYTREX', trex=trex)]
 pac_str = pac.to_url()
 print(pac_str)
 ```
 ```text
->> HTTPS://PAC.METTORIUS.COM/21:1234*MYTREX$TREX/STOP$T.D:20240505T1306+TEMP$KEL:10.15+OK$T.B:F+COMMENT$T.A:FOO+COMMENT2$T.T:QMDTNXIKU+TABLE$$DURATION$HUR:Date$T.D:OK$T.B:COMMENT$T.A::1:20250423T142912.783:T:FOO::1.1:20250423T142912.783:T:BAR::1.3:20250423T142912.783:F:BLUBB
+>> HTTPS://PAC.METTORIUS.COM/21:1234*MYTREX$TREX/STOP$T.D:20240505T1306+TEMP$KEL:10.15+OK$T.B:F+COMMENT$T.A:FOO+COMMENT2$T.T:QMDTNXIKU+TABLE$$DURATION$HUR:Date$T.D:OK$T.B:COMMENT$T.A::1:20250424T155333.352:T:FOO::1.1:20250424T155333.352:T:BAR::1.3:20250424T155333.352:F:BLUBB
 ```
 ## PAC-ID Resolver
 
 ```python
-from labfreed.pac_id_resolver import PAC_ID_Resolver, load_cit  # noqa: E402
+from labfreed.pac_id_resolver import PAC_ID_Resolver, load_cit  
 # Get a CIT
 dir = os.path.join(os.getcwd(), 'examples')
 p = os.path.join(dir, 'cit_mine.yaml')       
@@ -252,7 +250,7 @@ cit = load_cit(p)
 
 # validate the CIT
 cit.is_valid
-cit.print_validation_messages(target=target)
+cit.print_validation_messages()
 ```
 ```python
 # get a second cit
@@ -295,5 +293,32 @@ for sg in service_groups:
 
 
 
+<!-- BEGIN CHANGELOG -->
 ## Change Log
-[> Change Log](/CHANGELOG.md)
+### v0.2.0b2
+- improvements in api consistency and ease of use
+- restructured code for better separation of concerns
+- support for coupling information table v1
+
+### v0.1.1
+- minor internal improvements and bugfixes
+  
+### v0.1.0
+- DRAFT Support for PAC-ID Resolver
+
+### v0.0.20
+- bugfix in TREX table to dict conversion
+- markdown compatible validation printing 
+
+### v0.0.19
+- supports PAC-ID, PAC-CAT, TREX and DisplayName
+- QR generation 
+- ok-ish test coverage
+
+# Attributions
+The following tools were used:
+- [pdoc](https://pdoc.dev/) was a great help with generating documentation
+- [Pydantic](https://docs.pydantic.dev/latest/)
+- json with UNECE units from (https://github.com/quadient/unece-units/blob/main/python/src/unece_excel_parser/parsedUneceUnits.json)
+- json with GS1 codes from (https://ref.gs1.org/ai/GS1_Application_Identifiers.jsonld)
+<!-- END CHANGELOG -->
