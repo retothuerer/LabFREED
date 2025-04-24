@@ -106,9 +106,9 @@ new_readme = (
 
 
 # remove some artefacts
-new_readme.replace("target = 'markdown'","")
-new_readme.replace("# noqa: E402","")
-new_readme.replace("target=target","")
+new_readme = new_readme.replace("target = 'markdown'","")
+new_readme = new_readme.replace("# noqa: E402","")
+new_readme = new_readme.replace("target=target","")
 
 
 
