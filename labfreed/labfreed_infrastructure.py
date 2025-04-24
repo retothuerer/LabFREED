@@ -177,7 +177,7 @@ class LabFREED_BaseModel(PDOC_Workaround_Base):
     
     
     def print_validation_messages(self, target='console'):
-        msgs = self._get_nested_validation_messages()
+        msgs = self.format_validation_messages(target=target)
         
         table = Table(title="Validation Results", show_header=False, title_justify='left')
 
@@ -185,12 +185,29 @@ class LabFREED_BaseModel(PDOC_Workaround_Base):
             return table.add_column(s, vertical='top')
         col("-")
         
-             
         if not msgs:
             table.add_row('All clear!', end_section=True)
             return
 
         for m in msgs:
+            table.add_row(m)
+            table.add_section()
+
+        logging.info(table)
+        print(table)
+        
+        
+    def format_validation_messages(self, target='console') -> list[str]:
+        """Format validation messages
+
+        Args:
+            target (str, optional): Target format: 'markdown', 'console', 'html', 'html_styled'.
+
+        Returns:
+            list[str]: formated messages
+        """
+        formatted_msg = list()
+        for m in self.validation_messages():
             if m.level == ValidationMsgLevel.ERROR:
                 color = 'red'
             else:
@@ -213,12 +230,9 @@ class LabFREED_BaseModel(PDOC_Workaround_Base):
             txt =       f'[bold {color}]{m.level.name} [/bold {color}] in {m.source}'
             txt += '\n' + f'{m.msg}'
             txt += '\n\n' + emphazised_highlight
-
-            table.add_row( txt)
-            table.add_section()
-
-        logging.info(table)
-        print(table)
+            
+            formatted_msg.append(txt)
+        return formatted_msg
             
 
         
