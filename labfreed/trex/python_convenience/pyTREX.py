@@ -77,9 +77,9 @@ class pyTREX(RootModel[dict[str, Quantity | datetime | time | date | bool | str 
                         if re.fullmatch(r'[A-Z0-9\-\.]*', rt):
                             t = 'T.A'
                         else:
-                            t = 'T.X'
+                            t = 'T.T'
                     elif isinstance(rt, base36):
-                        t = 'T.X'
+                        t = 'T.T'
                     
                     headers.append(ColumnHeader(key=nm, type=t))
                 data = []
@@ -238,7 +238,7 @@ def _trex_value_to_python_type(v):
         return decoded
         
     elif isinstance(v, BinaryValue):
-        decoded = bytes(from_base36(v.value))
+        decoded = bytes(from_base36(v.value), encoding='utf-8')
         return decoded
         
     elif isinstance(v, ErrorValue):
