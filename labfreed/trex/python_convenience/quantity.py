@@ -11,19 +11,20 @@ class Quantity(BaseModel):
     
     @model_validator(mode='before')
     @classmethod
-    def decimals_to_log_significant_digits(cls, d:dict):
+    def transform_inputs(cls, d:dict):
+        if isinstance(d, str):
+            raise ValueError(f'validator input {d} is string')
+        # decimals_to_log_significant_digits
         if decimals:= d.pop('decimals', None):
             d['log_least_significant_digit'] = - decimals
-        return d
-    
-    @model_validator(mode='before')
-    @classmethod
-    def dimensionless_unit(cls, d:dict):
+        
+        #dimensionless_unit
         unit= d.get('unit')
         if unit and unit in ['1', '', 'dimensionless']:
             d['unit'] = None
         return d
     
+        
     @model_validator(mode='after')
     def significat_digits_for_int(self):
         if isinstance(self.value, int):
