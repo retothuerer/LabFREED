@@ -1,9 +1,7 @@
 from abc import ABC
-import logging
 import re
 from typing import Literal
 from pydantic import Field, model_validator
-from labfreed.utilities.base36 import base36
 from labfreed.well_known_keys.unece.unece_units import unece_unit_codes
 from labfreed.labfreed_infrastructure import ValidationMsgLevel
 from labfreed.trex.trex_base_models import AlphanumericValue, BinaryValue, BoolValue, DateValue, ErrorValue, NumericValue, TREX_Segment, TextValue, Value

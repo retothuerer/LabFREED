@@ -1,5 +1,4 @@
-from datetime import date, datetime, time
-import logging
+from datetime import datetime, time
 import re
 
 

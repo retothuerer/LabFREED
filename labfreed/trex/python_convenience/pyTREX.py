@@ -2,6 +2,7 @@
 from datetime import date, datetime, time
 import logging
 import re
+from typing import Self
 
 from pydantic import RootModel
 from labfreed.well_known_keys.unece.unece_units import unece_unit
@@ -24,7 +25,7 @@ class pyTREX(RootModel[dict[str, Quantity | datetime | time | date | bool | str 
 
     
     @classmethod
-    def from_trex(cls, trex:TREX) -> pyTREX:
+    def from_trex(cls, trex:TREX) -> Self:
         '''Creates a pyTREX from a TREX'''
         return {seg.key: _trex_segment_to_python_type(seg) for seg in trex.segments}
              
