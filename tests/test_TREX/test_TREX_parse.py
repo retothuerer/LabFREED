@@ -199,16 +199,7 @@ def test_invalid_text():
         trex_str = f'A$T.X:{e}'
         trex = trex_deserialization_helper(trex_str)
         assert not trex.is_valid
-            
-def test_valid__with_b36_conversion_text():
-    b = [
-        ('🐯', '1URIOQ7')
-    ]
-    for e in b:
-        trex = TREX(segments=[TextSegment(key='A', value=e[0])])
-        assert not trex._get_nested_validation_messages()
-        assert trex.get_segment('A').value == e[1]
-        
+                   
 
       
 # Binary Segment

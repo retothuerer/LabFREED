@@ -8,7 +8,7 @@ from pydantic import RootModel, model_validator
 from labfreed.trex.trex_base_models import Value
 from labfreed.well_known_keys.unece.unece_units import unece_unit_codes
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel, ValidationMsgLevel, _quote_texts
-from labfreed.trex.trex_base_models import AlphanumericValue, BinaryValue, BoolValue, DateValue, ErrorValue, NumericValue, TREX_Segment, TextValue, str_to_value_type
+from labfreed.trex.trex_base_models import AlphanumericValue, BinaryValue, BoolValue, DateValue, ErrorValue, NumericValue, TREX_Segment, TextValue
 
 
 class ColumnHeader(LabFREED_BaseModel):
@@ -217,11 +217,28 @@ def _deserialize_table_segment_from_trex_segment_str(trex_segment_str) -> TableS
          headers.append(ColumnHeader(key=col_key, type=col_type))
     
     data = [row.split(':') for row in body.split('::') ]
-    col_types = [h.type for h in headers]
     # convert to correct value types
-    data_with_types = [[str_to_value_type(c,t) for c, t in zip(r, col_types)] for r in data]
+    data_with_types = [[_str_to_value_type(h.type, cv) for cv, h in zip(r, headers)] for r in data]
     data = [ TableRow(r) for r in data_with_types]
              
-    out = TableSegment(column_headers=headers, data=data_with_types, key=name)
+    out = TableSegment(column_headers=headers, data=data, key=name)
+    return out
+
+def _str_to_value_type(type_, s):
+    match type_:
+        case 'T.D':
+            out = DateValue(value=s)
+        case 'T.B':
+            out = BoolValue(value=s)
+        case 'T.A':
+            out = AlphanumericValue(value=s)
+        case 'T.T':
+            out = TextValue(value=s)
+        case 'T.X':
+            out = BinaryValue(value=s)
+        case 'E':
+            out = ErrorValue(value=s)
+        case _:
+            out = NumericValue(value=s)
     return out
         

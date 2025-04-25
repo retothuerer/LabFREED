@@ -219,9 +219,9 @@ class LabFREED_BaseModel(PDOC_Workaround_Base):
                 case 'console':     
                     fmt = lambda s: f'[{color} bold]{s}[/{color} bold]'  # noqa: E731
                 case 'html':
-                    fmt = lambda s: f'<span class="val_{color}">{s}</span>'  # noqa: E731
+                    fmt = lambda s: f'<span class="validation-{m.level.name.lower()}">{s}</span>'  # noqa: E731
                 case 'html_styled':
-                    fmt = lambda s: f'<b style="color:{color}>{s}</b>'  # noqa: E731
+                    fmt = lambda s: f'<b style="color:{color}">{s}</b>'  # noqa: E731
                 
             serialized = str(self)
             emphazised_highlight = self._emphasize_in(m, serialized, fmt=fmt, color=color)

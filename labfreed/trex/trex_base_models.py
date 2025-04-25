@@ -4,11 +4,10 @@ import re
 
 
 
-from pydantic import PrivateAttr,  field_validator, model_validator
+from pydantic import PrivateAttr, model_validator
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel, ValidationMsgLevel, _quote_texts
-from abc import ABC, abstractclassmethod,  abstractmethod
+from abc import ABC, abstractmethod
 
-from labfreed.utilities.base36 import base36, to_base36, from_base36
 
 
 ''' Configure pdoc'''
@@ -32,22 +31,9 @@ class Value(LabFREED_BaseModel, ABC):
     def serialize(self):
         return self.value
         
-    @abstractclassmethod
-    def _from_python_type(cls, v):
-        ...
-        
-    @abstractmethod
-    def _value_to_python_type(self):
-        ...
         
         
 class NumericValue(Value):
-    @field_validator('value', mode='before')
-    @classmethod
-    def _from_python_type(cls, v:str| int|float):
-        if isinstance(v, str):
-            return v
-        return str(v)
         
     @model_validator(mode='after')
     def _validate(self):
@@ -56,7 +42,7 @@ class NumericValue(Value):
             self._add_validation_message(
                 source=f"TREX numeric value {value}",
                 level=ValidationMsgLevel.ERROR,
-                msg=f"Characters {_quote_texts(not_allowed_chars)} are not allowed in quantity segment. Base36 encoding only allows A-Z0-9",
+                msg=f"Characters {_quote_texts(not_allowed_chars)} are not allowed in quantity segment. Must be a number.",
                 highlight_pattern = f'{value}',
                 highlight_sub=not_allowed_chars
             )
@@ -68,36 +54,9 @@ class NumericValue(Value):
                 highlight_pattern = f'{value}'               
             )
         return self
-    
-    def _value_to_python_type(self) -> str:
-        v = float(self.value)  
-        if '.' not in self.value and 'E' not in self.value: 
-            return int(v)
-        else:
-            return v
-
 
 class DateValue(Value):
     _date_time_dict:dict|None = PrivateAttr(default=None)
-    @field_validator('value', mode='before')
-    @classmethod
-    def _from_python_type(cls, v:str| date|time|datetime):
-        if isinstance(v, str):
-            return v
-        
-        sd = ""
-        st = ""
-        if isinstance(v, date) or isinstance(v, datetime):
-            sd = v.strftime('%Y%m%d')
-        if isinstance(v, time) or isinstance(v, datetime):
-            if v.microsecond:
-                st = v.strftime("T%H%M%S.") + f"{v.microsecond // 1000:03d}"
-            elif v.second:
-                st = v.strftime("T%H%M%S")
-            else:
-                st = v.strftime("T%H%M")
-                         
-        return sd + st
     
     @model_validator(mode='after')
     def _validate(self):
@@ -134,24 +93,8 @@ class DateValue(Value):
         self._date_time_dict = d
         return self
     
-    def _value_to_python_type(self) -> str:
-        d = self._date_time_dict
-        if d.get('year') and d.get('hour'): # input is only a time
-            return datetime(**d)
-        elif d.get('year'):
-            return date(**d)
-        else:
-            return time(**d)
-    
-   
+
 class BoolValue(Value):
-    @field_validator('value', mode='before')
-    @classmethod
-    def _from_python_type(cls, v:str| bool):
-        if isinstance(v, str):
-            return v
-        
-        return 'T' if v else 'F'
 
     @model_validator(mode='after')
     def _validate(self):
@@ -164,21 +107,9 @@ class BoolValue(Value):
                 highlight_sub=[c for c in self.value]
             )
         return self
-    
-    def _value_to_python_type(self) -> str:
-        if self.value == 'T':
-            return True
-        elif self.value == 'F':
-            return False
-        else:
-            Exception(f'{self} is not valid boolean. That really should not have been possible -- Contact the maintainers of the library')
-                    
+                  
                     
 class AlphanumericValue(Value):
-    @field_validator('value', mode='before')
-    @classmethod
-    def _from_python_type(cls, v:str):
-        return v
         
     @model_validator(mode='after')
     def _validate(self):
@@ -199,20 +130,9 @@ class AlphanumericValue(Value):
                     highlight_sub=not_allowed_chars
             )
         return self
-           
-    def _value_to_python_type(self) -> str:
-        return self.value
-    
+             
     
 class TextValue(Value):
-    @field_validator('value', mode='before')
-    @classmethod
-    def _from_python_type(cls, v:base36|str):
-        if isinstance(v, str):
-            logging.info('Got str for text value > converting to base36')
-            return to_base36(v).root
-        else:
-            return v.root
         
     @model_validator(mode='after')
     def _validate(self):
@@ -225,20 +145,9 @@ class TextValue(Value):
                     highlight_sub=not_allowed_chars
             )
         return self
-              
-    def _value_to_python_type(self) -> str:
-        decoded = from_base36(self.value)
-        return decoded
-    
+                
     
 class BinaryValue(Value):
-    @field_validator('value', mode='before')
-    @classmethod
-    def _from_python_type(cls, v:base36|str):
-        if isinstance(v, str):
-            return v
-        else:
-            return v.root
         
     @model_validator(mode='after')
     def _validate(self):
@@ -251,17 +160,9 @@ class BinaryValue(Value):
                     highlight_sub=not_allowed_chars
             )
         return self
-              
-    def _value_to_python_type(self) -> bytes:
-        decoded = bytes(from_base36(self))
-        return decoded
-    
+                 
     
 class ErrorValue(Value):
-    @field_validator('value', mode='before')
-    @classmethod
-    def _from_python_type(cls, v:str):
-        return v
     
     @model_validator(mode='after')
     def _validate(self):
@@ -274,10 +175,6 @@ class ErrorValue(Value):
                     highlight_sub=not_allowed_chars
             )
         return self
-       
-    
-    def _value_to_python_type(self) -> str:
-        return self.value
 
 
 class TREX_Segment(LabFREED_BaseModel, ABC):
@@ -305,31 +202,8 @@ class TREX_Segment(LabFREED_BaseModel, ABC):
     
 
         
-      
- 
-def str_to_value_type(s:str, t:str):
-    match t:
-        case 'T.D': 
-            v = DateValue(value=s)
-        case 'T.B': 
-            v = BoolValue(value=s)
-        case 'T.A': 
-            v = AlphanumericValue(value=s)
-        case 'T.T': 
-            try:
-                value = base36(s)
-            except ValueError:
-                logging.error('String given as T.T contains characters which base36 should not')
-                value = s
-            v = TextValue(value=value)
-        case 'T.X': 
-            v = BinaryValue(value=s)
-        case 'E'  : 
-            v = ErrorValue(value=s)
-        case _    : 
-            v = NumericValue(value=s)         
-    return v   
-    
+
+
 
     
 

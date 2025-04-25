@@ -89,19 +89,9 @@ def _deserialize_value_segment_from_trex_segment_str(trex_segment_str) -> ValueS
         case 'T.A':
             out = AlphanumericSegment(key=key, value=value, type=type_)
         case 'T.T':
-            try:
-                value = base36(value)
-            except ValueError:
-                logging.error('String given as T.T contains characters which base36 should not')
-                value = value
-            out = TextSegment(key=key, value=value, type=type_)  # prevent repeated conversion from str to base36 and make explict that when parsing we assume the string tpo be base36 already
+            out = TextSegment(key=key, value=value, type=type_)  
         case 'T.X':
-            try:
-                value = base36(value)
-            except ValueError:
-                logging.error('String given as T.X contains characters which base36 should not')
-                value = value
-            out = BinarySegment(key=key, value=value, type=type_) # prevent repeated conversion from str to base36 and make explict that when parsing we assume the string tpo be base36 already
+            out = BinarySegment(key=key, value=value, type=type_) 
         case 'E':
             out = ErrorSegment(key=key, value=value, type=type_)
         case _:
