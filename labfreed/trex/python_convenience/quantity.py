@@ -12,8 +12,8 @@ class Quantity(BaseModel):
     @model_validator(mode='before')
     @classmethod
     def transform_inputs(cls, d:dict):
-        if isinstance(d, str):
-            raise ValueError(f'validator input {d} is string')
+        if not isinstance(d, dict):
+            raise ValueError(f'validator input {d} is not dict')
         # decimals_to_log_significant_digits
         if decimals:= d.pop('decimals', None):
             d['log_least_significant_digit'] = - decimals
