@@ -159,22 +159,6 @@ class LabFREED_BaseModel(PDOC_Workaround_Base):
         return warnings_list
         
 
-        
-    def _emphasize_in(self, validation_msg, validation_node_str:str, fmt, color='black'):
-        if validation_msg.highlight_sub_patterns:
-            replacements = validation_msg.highlight_sub_patterns
-        else:
-            replacements = [validation_msg.highlight]
-        # Sort patterns by length descending to avoid subpattern clobbering
-        sorted_patterns = sorted(replacements, key=len, reverse=True)
-        # Escape the patterns for regex safety
-        escaped_patterns = [re.escape(p) for p in sorted_patterns]
-        # Create one regex pattern with alternation (longest first)
-        pattern = re.compile("|".join(escaped_patterns))
-        
-        out = pattern.sub(lambda m: fmt(m.group(0)), validation_node_str)
-        return out
-    
     
     def print_validation_messages(self, target='console'):
         msgs = self.format_validation_messages(target=target)
@@ -216,67 +200,48 @@ class LabFREED_BaseModel(PDOC_Workaround_Base):
             match target:
                 case 'markdown':
                     fmt = lambda s: f'👉{s}👈'  # noqa: E731
+                    fmt_title = lambda s: f'**{s}**'  # noqa: E731
+                    br = '\n'
                 case 'console':     
                     fmt = lambda s: f'[{color} bold]{s}[/{color} bold]'  # noqa: E731
+                    fmt_title = fmt
+                    br = '\n'
                 case 'html':
                     fmt = lambda s: f'<span class="validation-{m.level.name.lower()}">{s}</span>'  # noqa: E731
+                    fmt_title = lambda s: f'<span class="validation-title">{s}</span>'  # noqa: E731
+                    br = '<br>'
                 case 'html_styled':
                     fmt = lambda s: f'<b style="color:{color}">{s}</b>'  # noqa: E731
+                    fmt_title = fmt
+                    br = '<br>'
                 
             serialized = str(self)
-            emphazised_highlight = self._emphasize_in(m, serialized, fmt=fmt, color=color)
+            emphazised_highlight = self._emphasize_in(m, serialized, fmt=fmt)
             emphazised_highlight = emphazised_highlight.replace('👈👉','') # removes two consecutive markers, to make it cleaner
             
-            txt =       f'[bold {color}]{m.level.name} [/bold {color}] in {m.source}'
-            txt += '\n' + f'{m.msg}'
-            txt += '\n\n' + emphazised_highlight
+            txt =   f'{fmt_title(m.level.name)} in {m.source}'
+            txt += br + f'{m.msg}'
+            txt += br+br + emphazised_highlight
             
             formatted_msg.append(txt)
         return formatted_msg
+    
+    def _emphasize_in(self, validation_msg, validation_node_str:str, fmt):
+        if validation_msg.highlight_sub_patterns:
+            replacements = validation_msg.highlight_sub_patterns
+        else:
+            replacements = [validation_msg.highlight]
+        # Sort patterns by length descending to avoid subpattern clobbering
+        sorted_patterns = sorted(replacements, key=len, reverse=True)
+        # Escape the patterns for regex safety
+        escaped_patterns = [re.escape(p) for p in sorted_patterns]
+        # Create one regex pattern with alternation (longest first)
+        pattern = re.compile("|".join(escaped_patterns))
+        
+        out = pattern.sub(lambda m: fmt(m.group(0)), validation_node_str)
+        return out
             
 
-        
-    
-    
-    # def print_validation_messages_(self, str_to_highlight_in=None, target='console'):
-    #     if not str_to_highlight_in:
-    #         str_to_highlight_in = str(self)
-    #     msgs = self.get_nested_validation_messages()
-    #     print('\n'.join(['\n',
-    #                      '=======================================',
-    #                      'Validation Results',
-    #                      '---------------------------------------'
-    #                     ]
-    #                     )
-    #     )
-        
-    #     if not msgs:
-    #         print('All clear!')
-    #         return
-
-    #     for m in msgs:
-    #         if m.level.casefold() == "error":
-    #             color = 'red'
-    #         else:
-    #             color = 'yellow'
-                
-    #         text = Text.from_markup(f'\n [bold {color}]{m.level} [/bold {color}] in \t {m.source}' )
-    #         print(text)
-    #         match target:
-    #             case 'markdown':
-    #                 formatted_highlight = m.emphazised_highlight.replace('emph', f'🔸').replace('[/', '').replace('[', '').replace(']', '')
-    #             case 'console':     
-    #                 formatted_highlight = m.emphazised_highlight.replace('emph', f'bold {color}')
-    #             case 'html':
-    #                 formatted_highlight = m.emphazised_highlight.replace('emph', f'b').replace('[', '<').replace(']', '>')
-    #         fmtd = str_to_highlight_in.replace(m.highlight, formatted_highlight)
-    #         fmtd = Text.from_markup(fmtd)
-    #         print(fmtd)
-    #         print(Text.from_markup(f'{m.problem_msg}'))
-        
-    
-    
-    
     
 def _filter_errors(val_msg:list[ValidationMessage]) -> list[ValidationMessage]:
     return [ m for m in val_msg if m.level == ValidationMsgLevel.ERROR ]
