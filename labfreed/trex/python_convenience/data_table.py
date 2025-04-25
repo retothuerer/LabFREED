@@ -51,6 +51,7 @@ class DataTable(BaseModel):
             if not len(item) == len(self._row_template):
                 raise ValueError('row is not of same length as the row template.')
             self.data.append(item) 
+       
             
     def get_column(self, col:str|int) -> list:
         if isinstance(col, str):
@@ -60,8 +61,15 @@ class DataTable(BaseModel):
         col_data = [row[col_index] for row in self.data]
         return col_data
     
+    
     def get_row(self, row_index:int) -> list:
         return self.data[row_index]
+    
+    
+    def get_row_as_dict(self, row_index:int) -> list:
+        d = {k:v for k, v in zip(self.col_names, self.data[row_index])}
+        return d
+    
     
     def get_cell(self, row_index:int, col:str|int):
         if isinstance(col, str):
