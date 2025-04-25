@@ -2,7 +2,7 @@
 
 from datetime import date, datetime, time
 from typing import Union
-from pydantic import BaseModel, Field, PrivateAttr
+from pydantic import BaseModel, Field, PrivateAttr, model_validator
 
 from labfreed.utilities.base36 import base36
 from labfreed.trex.python_convenience.quantity import Quantity
@@ -16,6 +16,17 @@ class DataTable(BaseModel):
     @property
     def row_template(self):
         return self._row_template
+    
+    @model_validator(mode='after')
+    def get_row_template(self):
+        for r in self.data:
+            if all(r is not None):
+                self._row_template = r.copy()
+            break
+        if not self._row_template:
+            raise ValueError('All columns contained at least one None. This is invalid')
+        return self
+        
        
     def append(self, row:list):
         if not isinstance(row, list):
