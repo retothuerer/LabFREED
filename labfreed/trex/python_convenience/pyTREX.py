@@ -170,7 +170,7 @@ def _binary_value_from_python_type(v:base36|str):
     
 
 def _error_value_from_python_type(v:str):
-    if v in None:
+    if v is None:
         v = '-'
     return ErrorValue(value = v)
     
