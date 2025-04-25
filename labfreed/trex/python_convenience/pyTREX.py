@@ -209,7 +209,7 @@ def _trex_value_to_python_type(v):
     '''Converts a TREX value to the corresponding python type'''
     if isinstance(v, NumericValue):
         if '.' not in v.value and 'E' not in v.value: 
-            return int(v)
+            return int(v.value)
         else:
             return float(v.value)  
         

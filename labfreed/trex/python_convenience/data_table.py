@@ -19,6 +19,9 @@ class DataTable(BaseModel):
     
     @model_validator(mode='after')
     def get_row_template(self):
+        if not self.data: # data not initialized during construction. This is valid
+            return self
+        
         for r in self.data:
             if all([e is not None for e in r]):
                 self._row_template = r.copy()
@@ -28,7 +31,7 @@ class DataTable(BaseModel):
         return self
         
        
-    def append(self, row:list):
+    def append(self, row:list, validate=True):
         if not isinstance(row, list):
             raise ValueError('row must be a list of values')
         if not self._row_template:
@@ -44,13 +47,16 @@ class DataTable(BaseModel):
                 unit = self._row_template[i].unit
                 row[i] = Quantity(value=e, unit=unit)     
         self.data.append(row)
+        if validate:
+            self.model_rebuild()
         
         
     def extend(self, iterable):
         for item in iterable:
             if not len(item) == len(self._row_template):
                 raise ValueError('row is not of same length as the row template.')
-            self.data.append(item) 
+            self.append(item, validate=False) 
+        self.model_rebuild()
        
             
     def get_column(self, col:str|int) -> list:
