@@ -19,7 +19,7 @@ class Quantity(BaseModel):
     @model_validator(mode='before')
     @classmethod
     def dimensionless_unit(cls, d:dict):
-        unit= d.get('decimals')
+        unit= d.get('unit')
         if unit and unit in ['1', '', 'dimensionless']:
             d['unit'] = None
         return d
