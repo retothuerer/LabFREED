@@ -146,6 +146,7 @@ class TableSegment(TREX_Segment):
                             highlight_sub=[c for c in e.value]
                         )
                 i += 1
+        return self
                 
             
     def _get_col_index(self, col:str|int):
