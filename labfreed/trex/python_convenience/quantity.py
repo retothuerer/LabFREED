@@ -7,12 +7,27 @@ class Quantity(BaseModel):
     value: float|int
     unit: str | None 
     '''unit. Use SI symbols. Set to None of the Quantity is dimensionless'''
-    significant_digits: int|None = None
+    log_least_significant_digit: int|None = None
+    
+    @model_validator(mode='before')
+    @classmethod
+    def decimals_to_log_significant_digits(cls, d:dict):
+        if decimals:= d.pop('decimals', None):
+            d['log_least_significant_digit'] = - decimals
+        return d
+    
+    @model_validator(mode='before')
+    @classmethod
+    def dimensionless_unit(cls, d:dict):
+        unit= d.get('decimals', None)
+        if unit in ['1', '', 'dimensionless']:
+            d['unit'] = None
+        return d
     
     @model_validator(mode='after')
     def significat_digits_for_int(self):
         if isinstance(self.value, int):
-            self.significant_digits = 0
+            self.log_least_significant_digit = 0
         return self
         
     @property
@@ -24,8 +39,8 @@ class Quantity(BaseModel):
         unit_symbol = self.unit
         if self.unit == "dimensionless" or not self.unit:
             unit_symbol = ""
-        if self.significant_digits is not None:
-            val = f"{self.value:.{self.significant_digits}f}"
+        if self.log_least_significant_digit is not None:
+            val = f"{self.value:.{self.log_least_significant_digit}f}"
         else:
             val = str(self.value)
         return f"{val} {unit_symbol}"
