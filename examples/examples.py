@@ -153,6 +153,5 @@ cit2.origin = 'MY_COMPANY'
 pac_str = 'HTTPS://PAC.METTORIUS.COM/-MS/X3511/CAS:7732-18-5'
 service_groups = PAC_ID_Resolver(cits=[cit, cit2]).resolve(pac_str)
 for sg in service_groups:
-    sg.update_states()
     sg.print()
     
