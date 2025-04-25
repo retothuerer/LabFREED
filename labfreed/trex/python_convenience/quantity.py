@@ -13,7 +13,7 @@ class Quantity(BaseModel):
     @classmethod
     def transform_inputs(cls, d:dict):
         if not isinstance(d, dict):
-            raise ValueError(f'validator input {d} is not dict')
+            return d
         # decimals_to_log_significant_digits
         if decimals:= d.pop('decimals', None):
             d['log_least_significant_digit'] = - decimals
