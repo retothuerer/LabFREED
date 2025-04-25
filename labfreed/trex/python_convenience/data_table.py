@@ -20,7 +20,7 @@ class DataTable(BaseModel):
     @model_validator(mode='after')
     def get_row_template(self):
         for r in self.data:
-            if all(r is not None):
+            if all([e is not None for e in r]):
                 self._row_template = r.copy()
             break
         if not self._row_template:
