@@ -10,7 +10,7 @@ from labfreed.trex.python_convenience.quantity import Quantity
 class DataTable(BaseModel):
     _row_template:list[str, Quantity | datetime | time | date | bool | str | base36] =  PrivateAttr(default_factory=list)
     col_names: list[str] = Field(default_factory=list)
-    data:list[str, Quantity | datetime | time | date | bool | str | base36] = Field(default_factory=list)
+    data:list[Quantity | datetime | time | date | bool | str | base36] = Field(default_factory=list)
     
     @property
     def row_template(self):
