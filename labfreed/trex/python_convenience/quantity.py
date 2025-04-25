@@ -6,6 +6,7 @@ class Quantity(BaseModel):
     ''' Represents a quantity'''
     value: float|int
     unit: str | None 
+    '''unit. Use SI symbols. Set to None of the Quantity is dimensionless'''
     significant_digits: int|None = None
     
     @model_validator(mode='after')
@@ -37,10 +38,11 @@ class Quantity(BaseModel):
     
 def unece_unit_code_from_quantity(q:Quantity):
         if not q.unit:
-            return 'C63' # dimensionless
+            return 'C62' # dimensionless
         by_name =   [ u['commonCode'] for u in unece_units() if u.get('name','') == q.unit] 
         by_symbol = [ u['commonCode'] for u in unece_units() if u.get('symbol','') == q.unit]
-        code = list(set(by_name) | set(by_symbol))
+        by_code = [ u['commonCode'] for u in unece_units() if u.get('commonCode','') == q.unit]
+        code = list(set(by_name) | set(by_symbol) | set(by_code))
         if len(code) != 1:
             raise ValueError(f'No UNECE unit code found for Quantity {q}' ) 
         return code[0]
