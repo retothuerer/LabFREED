@@ -15,6 +15,8 @@ class ExtensionBase(ABC):
     def data(self) -> str:
         raise NotImplementedError("Subclasses must implement 'data'")
     
+    def __str__(self):
+        return f'{self.name}${self.type}/{self.data}'
     
 
 
@@ -43,6 +45,4 @@ class Extension(LabFREED_BaseModel,ExtensionBase):
         "extra": "allow",  # Allow extra keys during pre-validation
     }
     
-    def __str__(self):
-        return f'{self.name}${self.type}/{self.data}'
-    
+
