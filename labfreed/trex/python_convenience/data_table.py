@@ -61,7 +61,7 @@ class DataTable(BaseModel):
             
     def get_column(self, col:str|int) -> list:
         if isinstance(col, str):
-            col_index = self.col_names.index()
+            col_index = self.col_names.index(col)
         else:
             col_index = col
         col_data = [row[col_index] for row in self.data]
@@ -72,14 +72,14 @@ class DataTable(BaseModel):
         return self.data[row_index]
     
     
-    def get_row_as_dict(self, row_index:int) -> list:
+    def get_row_as_dict(self, row_index:int) -> dict:
         d = {k:v for k, v in zip(self.col_names, self.data[row_index])}
         return d
     
     
     def get_cell(self, row_index:int, col:str|int):
         if isinstance(col, str):
-            col_index = self.col_names.index()
+            col_index = self.col_names.index(col)
         else:
             col_index = col
         return self.data[row_index][col_index]
