@@ -207,8 +207,9 @@ class LabFREED_BaseModel(PDOC_Workaround_Base):
                     fmt_title = fmt
                     br = '\n'
                 case 'html':
-                    fmt = lambda s: f'<span class="validation-{m.level.name.lower()}">{s}</span>'  # noqa: E731
-                    fmt_title = lambda s: f'<span class="validation-title">{s}</span>'  # noqa: E731
+                    lvl = m.level.name.lower()
+                    fmt = lambda s: f'<span class="validation-problem {lvl}">{s}</span>'  # noqa: E731
+                    fmt_title = lambda s: f'<span class="validation-title {lvl}">{s}</span>'  # noqa: E731
                     br = '<br>'
                 case 'html_styled':
                     fmt = lambda s: f'<b style="color:{color}">{s}</b>'  # noqa: E731
