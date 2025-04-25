@@ -12,7 +12,7 @@ from labfreed.trex.python_convenience.quantity import Quantity, unece_unit_code_
 from labfreed.trex.table_segment import ColumnHeader, TableSegment
 from labfreed.trex.trex import TREX
 from labfreed.trex.trex_base_models import AlphanumericValue, BinaryValue, BoolValue, DateValue, ErrorValue, NumericValue, TextValue
-from labfreed.trex.value_segments import BoolSegment, TextSegment, NumericSegment, AlphanumericSegment, DateSegment, ValueSegment
+from labfreed.trex.value_segments import BoolSegment, ErrorSegment, TextSegment, NumericSegment, AlphanumericSegment, DateSegment, ValueSegment
 
 
 class pyTREX(RootModel[dict[str, Quantity | datetime | time | date | bool | str | base36 | DataTable]]):
@@ -33,7 +33,10 @@ class pyTREX(RootModel[dict[str, Quantity | datetime | time | date | bool | str 
         '''Creates a TREX'''
         segments = list()
         for k, v in self.root.items():
-            if isinstance(v, bool):
+            if v is None:
+                value = _error_value_from_python_type(v)
+                segments.append(ErrorSegment(key=k, value=value.value))
+            elif isinstance(v, bool):
                 value = _bool_value_from_python_type(v)
                 segments.append(BoolSegment(key=k, value=value.value))
             elif isinstance(v, Quantity):
@@ -84,7 +87,7 @@ class pyTREX(RootModel[dict[str, Quantity | datetime | time | date | bool | str 
                     r = []
                     for e in row:
                         if e is None:
-                            r.append(_error_value_from_python_type('-'))
+                            r.append(_error_value_from_python_type(e))
                         elif isinstance(e, bool): # must come first otherwise int matches the bool
                             r.append(_bool_value_from_python_type(e))
                         elif isinstance(e, Quantity):
@@ -167,6 +170,8 @@ def _binary_value_from_python_type(v:base36|str):
     
 
 def _error_value_from_python_type(v:str):
+    if v in None:
+        v = '-'
     return ErrorValue(value = v)
     
 
