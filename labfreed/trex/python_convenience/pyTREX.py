@@ -83,7 +83,9 @@ class pyTREX(RootModel[dict[str, Quantity | datetime | time | date | bool | str 
                 for row in v.data:
                     r = []
                     for e in row:
-                        if isinstance(e, bool): # must come first otherwise int matches the bool
+                        if e is None:
+                            r.append(_error_value_from_python_type('-'))
+                        elif isinstance(e, bool): # must come first otherwise int matches the bool
                             r.append(_bool_value_from_python_type(e))
                         elif isinstance(e, Quantity):
                             r.append(_numeric_value_from_python_type(e.value))

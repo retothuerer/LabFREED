@@ -1,6 +1,7 @@
 
 
 from datetime import date, datetime, time
+from typing import Union
 from pydantic import BaseModel, Field, PrivateAttr
 
 from labfreed.utilities.base36 import base36
@@ -10,7 +11,7 @@ from labfreed.trex.python_convenience.quantity import Quantity
 class DataTable(BaseModel):
     _row_template:list[str, Quantity | datetime | time | date | bool | str | base36] =  PrivateAttr(default_factory=list)
     col_names: list[str] = Field(default_factory=list)
-    data:list[Quantity | datetime | time | date | bool | str | base36] = Field(default_factory=list)
+    data:list[list[Union[Quantity, datetime, time, date, bool, str, base36, None]]] = Field(default_factory=list)
     
     @property
     def row_template(self):
