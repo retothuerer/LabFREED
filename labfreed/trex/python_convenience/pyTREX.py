@@ -24,12 +24,12 @@ class pyTREX(RootModel[dict[str, Quantity | datetime | time | date | bool | str 
 
     
     @classmethod
-    def from_trex(cls, trex:TREX):
+    def from_trex(cls, trex:TREX) -> pyTREX:
         '''Creates a pyTREX from a TREX'''
         return {seg.key: _trex_segment_to_python_type(seg) for seg in trex.segments}
              
              
-    def to_trex(self):
+    def to_trex(self) -> TREX:
         '''Creates a TREX'''
         segments = list()
         for k, v in self.root.items():
@@ -76,7 +76,6 @@ class pyTREX(RootModel[dict[str, Quantity | datetime | time | date | bool | str 
                         if re.fullmatch(r'[A-Z0-9\-\.]*', rt):
                             t = 'T.A'
                         else:
-                            v = to_base36(rt)
                             t = 'T.X'
                     elif isinstance(rt, base36):
                         t = 'T.X'
