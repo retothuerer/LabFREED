@@ -1,4 +1,8 @@
 ## Change Log
+### v0.2.3
+- improvements in formatting of validation messages
+- bugfix in DisplayNameExtension
+  
 ### v0.2.2
 - minor changes for better access of subfunctions. No change in existing API
   
