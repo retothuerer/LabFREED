@@ -1,4 +1,13 @@
 ## Change Log
+### v0.2.5
+- resolvers checks service states by default
+- improvements and bugfixes in conversion from python types to TREX
+- follow better naming conventions in CIT v1 
+  
+### v0.2.4
+- improvements in formatting of validation messages
+- bugfix in DataTable
+ 
 ### v0.2.3
 - improvements in formatting of validation messages
 - bugfix in DisplayNameExtension
