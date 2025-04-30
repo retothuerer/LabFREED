@@ -1,0 +1,228 @@
+# PAC-ID
+name: pac_id
+tests:
+  standard_base_gives_correct_issuer:
+    test_url: "HTTPS://PAC.METTORIUS.COM/-MD/240:B-800/21:12345"
+    is_valid: true
+    issuer: "METTORIUS.COM"
+
+  pac_can_be_missing_from_domain:
+    test_url: "METTORIUS.COM/-MD/240:B-800/21:12345"
+    is_valid: true
+    issuer: "METTORIUS.COM"
+
+  issuer_must_be_valid_domain:
+    test_url: "HTTPS://METTORIUS/-MD/240:B-800/21:12345"
+    is_valid: false
+
+  pac_must_have_at_least_one_segment:
+    test_url: "HTTPS://PAC.METTORIUS.COM/"
+    is_valid: false
+
+  identifier_named_segment:
+    test_url: "HTTPS://PAC.METTORIUS.COM/KEY:VAL"
+    identifier:
+      - key: "KEY"
+        value: "VAL"
+
+  identifier_unnamed_segment:
+    test_url: "HTTPS://PAC.METTORIUS.COM/VAL"
+    identifier:
+      - key: null
+        value: "VAL"
+
+  identifier_combination_of_named_and_unnamed_segments:
+    test_url: "HTTPS://PAC.METTORIUS.COM/KEY0:VAL0/VAL1/KEY2:VAL2"
+    identifier:
+      - key: "KEY0"
+        value: "VAL0"
+      - key: null
+        value: "VAL1"
+      - key: "KEY2"
+        value: "VAL2"
+
+  keys_must_be_unique:
+    test_url: "HTTPS://PAC.METTORIUS.COM/KEY:VAL/KEY:ANOTHERVAL/KEY:VAL/KEY2:ANOTHERVAL"
+    warnings_expected: true
+
+
+---
+# PAC-CAT
+name: pac_cat
+tests:
+  valid_category_md:
+    test_url: "HTTPS://PAC.METTORIUS.COM/-MD/ABC/1234"
+    is_valid: true
+    to_url: "HTTPS://PAC.METTORIUS.COM/-MD/240:ABC/21:1234"
+    to_url_short: "HTTPS://PAC.METTORIUS.COM/-MD/ABC/1234"
+
+  basic_valid_category:
+    comment: "Single valid category segment"
+    test_url: "HTTPS://PAC.METTORIUS.COM/-DM/21:VAL"
+    is_valid: true
+    categories:
+      - key: "-DM"
+        segments:
+          - key: "21"
+            value: "VAL"
+
+  category_with_multiple_segments:
+    test_url: "HTTPS://PAC.METTORIUS.COM/-MX/KEY0:VAL0/VAL1/KEY2:VAL2"
+    is_valid: true
+    categories:
+      - key: "-MX"
+        segments:
+          - key: "KEY0"
+            value: "VAL0"
+          - key: null
+            value: "VAL1"
+          - key: "KEY2"
+            value: "VAL2"
+
+  two_categories:
+    test_url: "HTTPS://PAC.METTORIUS.COM/-DX/KEY:VAL/-MX/KEY:VAL"
+    is_valid: true
+    categories:
+      - key: "-DX"
+        segments:
+          - key: "KEY"
+            value: "VAL"
+      - key: "-MX"
+        segments:
+          - key: "KEY"
+            value: "VAL"
+
+  three_categories:
+    test_url: "HTTPS://PAC.METTORIUS.COM/-DX/KEY0:VAL0/-MX/KEY1:VAL1/-CAT/KEY2:VAL2"
+    is_valid: true
+    categories:
+      - key: "-DX"
+        segments:
+          - key: "KEY0"
+            value: "VAL0"
+      - key: "-MX"
+        segments:
+          - key: "KEY1"
+            value: "VAL1"
+      - key: "-CAT"
+        segments:
+          - key: "KEY2"
+            value: "VAL2"
+
+  implied_segments_of_MD_category:
+    test_url: "HTTPS://PAC.METTORIUS.COM/-MD/0/1"
+    is_valid: true
+    categories:
+      - key: "-MD"
+        segments:
+          - key: "240"
+            value: "0"
+          - key: "21"
+            value: "1"
+
+  implied_segments_of_MS_category:
+    test_url: "HTTPS://PAC.METTORIUS.COM/-MS/0/1/2/3/4"
+    is_valid: true
+    categories:
+      - key: "-MS"
+        segments:
+          - key: "240"
+            value: "0"
+          - key: "10"
+            value: "1"
+          - key: "20"
+            value: "2"
+          - key: "21"
+            value: "3"
+          - key: "250"
+            value: "4"
+
+  implied_segments_of_MC_category:
+    test_url: "HTTPS://PAC.METTORIUS.COM/-MC/0/1/2/3/4"
+    is_valid: true
+    categories:
+      - key: "-MC"
+        segments:
+          - key: "240"
+            value: "0"
+          - key: "10"
+            value: "1"
+          - key: "20"
+            value: "2"
+          - key: "21"
+            value: "3"
+          - key: "250"
+            value: "4"
+
+  implied_segments_of_MM_category:
+    test_url: "HTTPS://PAC.METTORIUS.COM/-MM/0/1/2/3/4"
+    is_valid: true
+    categories:
+      - key: "-MM"
+        segments:
+          - key: "240"
+            value: "0"
+          - key: "10"
+            value: "1"
+          - key: "20"
+            value: "2"
+          - key: "21"
+            value: "3"
+          - key: "250"
+            value: "4"
+
+  stop_implying_segments_after_an_explicit_one_is_found:
+    test_url: "HTTPS://PAC.METTORIUS.COM/-MS/0/1/KEY:2/3/4"
+    is_valid: true
+    categories:
+      - key: "-MS"
+        segments:
+          - key: "240"
+            value: "0"
+          - key: "10"
+            value: "1"
+          - key: "KEY"
+            value: "2"
+          - key: null
+            value: "3"
+          - key: null
+            value: "4"
+
+  more_segments_than_implicit_keys:
+    test_url: "HTTPS://PAC.METTORIUS.COM/-MD/IMPLIED1/IMPLIED2/ADDITIONAL"
+    is_valid: true
+    categories:
+      - key: "-MD"
+        segments:
+          - key: "240"
+            value: "IMPLIED1"
+          - key: "21"
+            value: "IMPLIED2"
+          - key: null
+            value: "ADDITIONAL"
+
+  mandatory_fields_of_MD_category_invalid:
+    comment: "MD category missing required fields, should be invalid"
+    test_url: "HTTPS://PAC.METTORIUS.COM/-MD/KEY:VAL"
+    is_valid: false
+
+  mandatory_fields_of_MD_category_valid:
+    comment: "Valid MD category with required serial and model number"
+    test_url: "HTTPS://PAC.METTORIUS.COM/-MD/21:1234/KEY:VAL/240:BAL500"
+    is_valid: true
+    categories:
+      - key: "-MD"
+        segments:
+          - key: "240"
+            value: "BAL500"
+          - key: "21"
+            value: "1234"
+          - key: "KEY"
+            value: "VAL"
+          
+
+  keys_can_repeat_accross_categories:
+    comment: "Same key used in two categories is allowed"
+    test_url: "HTTPS://PAC.METTORIUS.COM/-MX/KEY:VAL/-MY/KEY:VAL"
+    is_valid: true
+

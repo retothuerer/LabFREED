@@ -1,5 +1,5 @@
 
-from labfreed.trex import TREX, TableSegment, TextSegment
+from labfreed.trex import TREX, TableSegment
 
 
 def trex_deserialization_helper(trex_str):

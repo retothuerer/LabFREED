@@ -1,0 +1,165 @@
+These are high level tests, which should exercise most of the code, but at the same time allow to pinpoint a problem
+
+Ressources
+
+Specs PAC-ID
+https://github.com/ApiniLabs/PAC-ID
+
+Specs PAC-CAT
+https://github.com/ApiniLabs/PAC-ID/blob/main/recommendation-for-identifier-structure.md >> will become PAC-CAT
+
+Specs T-REX
+https://github.com/ApiniLabs/T-REX
+
+
+Existing Python tests
+https://github.com/retothuerer/LabFREED/tree/main/tests
+
+Existing test data for web resolver:
+https://apinilabs.atlassian.net/wiki/spaces/CT/pages/414482443/PAC-ID+Resolver+Phase+II+pac.issuer.com
+
+
+
+
+
+---
+# general test structure for PAC-ID, PAC-CAT and extensions (generic form)
+# i would like to generate this Python test code from a YAML file. Other implementatiosn could do the same
+def test_valid_one_segment():
+	pac = PAC_ID.from_url(data.test_url)
+   
+	if test_def.is_valid:
+		assert pac.is_valid == test_def.is_valid
+	
+	if test_def.to_url:
+		assert pac.to_url(short_notation=False) == test_def.to_url
+		
+	if test_def.to_url_short:
+		assert pac.to_url(short_notation=True) == test_def.to_url_short
+		
+		
+   
+# PAC-ID
+tests:
+  valid_pac_with_one_segment:							 # this becomes the test name
+    test_url: "HTTPS://PAC.METTORIUS.COM/ABC"
+	is_valid: true
+	to_url: "HTTPS://PAC.METTORIUS.COM/ABC"
+	
+  empty_id_segment_is_invalid:
+  	comment: "Contains an empty ID segment"			    #comment is optional. Here to explain the test							
+	test_url: "HTTPS://PAC.METTORIUS.COM//ABC"
+	is_valid: false										# typically now now serializetion as done
+	
+	
+	
+	
+# PAC-CAT
+tests:
+  valid_category_md:
+    test_url: "HTTPS://PAC.METTORIUS.COM/-MD/ABC/1234"
+	is_valid: true
+	to_url: "HTTPS://PAC.METTORIUS.COM/-MD/240:ABC/21:1234"
+	to_url_short: "HTTPS://PAC.METTORIUS.COM/ABC"
+	
+	
+	
+	
+# Extensions
+tests:
+  implicit_display_name:
+    test_url: "HTTPS://PAC.METTORIUS.COM/A*NF0EB8"
+	is_valid: true
+	to_url: "HTTPS://PAC.METTORIUS.COM/A/*N$N:NF0EB8"
+	to_url_short: "HTTPS://PAC.METTORIUS.COM/ABC"
+	
+  implicit_display_name_and_summary:
+    test_url: "HTTPS://PAC.METTORIUS.COM/A*NF0EB8*KEY$T.A:val"
+	is_valid: true
+	to_url: "HTTPS://PAC.METTORIUS.COM/A/*N$N:NF0EB8*SUM$TREX/KEY$T.A:val"
+    to_url_short: "HTTPS://PAC.METTORIUS.COM/A*NF0EB8*KEY$T.A:val"
+
+	
+	
+	
+	
+	
+	
+# Generation II tests: Read into the models
+# not sure how much sense this makes. 
+  category_content:
+    test_url: "HTTPS://PAC.METTORIUS.COM/-DR/789/-MD/ABC/1234*ABC$TREX/"
+	is_valid: true
+	model:
+	  issuer: "METTORIUS.COM"
+	  identifier:
+	    - key: null
+		  value: -DR
+		- key: 21
+		  value: 789
+		- key: null
+		  value: -MD
+		- key: 240
+		  value: ABC
+		- key: 21
+		  value: 1234
+	  categories:
+	    - key: "-DR"
+		  segments:
+		    - key: 21
+			  value: 789
+	    - key: "-MD"
+		  segments:
+			- key: 240
+			  value: ABC
+			- key: 21
+			  value: 1234
+	  extensions:
+	    - name: "ABC"
+		- type: "TREX
+		- data: "KEY$T.A:VAL"	
+	
+	
+
+
+---
+	
+# TREX
+def test_name():
+	trex = TREX.deserialize(data.trex)
+   
+	if test_def.is_valid:
+		assert trex.is_valid == test_def.is_valid
+	
+		assert trex.serialize() == test_def.trex
+		
+
+
+tests:
+  - trex: "KEY$T.A:VAL"
+    is_valid: true
+	comment: ""
+	
+  - trex: trex: "KEY$T.A:val"
+    is_valid: false
+	comment: "Contains lower case characters
+	
+
+
+
+---	
+
+# CIT
+
+cit_1: &CIT_1 >
+  ...
+  
+tests:
+  case_1:
+    pac: "HTTPS://PAC.METTORIUS.COM/-MD/ABC/1234"
+	cit: *cit_v1
+	expected_services:
+	  - name: "Operation Manual"
+	    url: "https://test.com/documents?type=om&model=ABC
+	  - name: "TDS"
+	    url: "https://test.com/documents?type=tds&model=ABC
