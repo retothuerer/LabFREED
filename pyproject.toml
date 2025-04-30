@@ -39,6 +39,11 @@ dev = [
     "ruff>=0.11.5"
 ]
 
+Homepage = "https://github.com/retothuerer/LabFREED"
+Documentation = "https://github.com/retothuerer/LabFREED?tab=readme-ov-file#readme"
+Source = "https://github.com/retothuerer/LabFREED"
+Tracker = "https://github.com/retothuerer/LabFREED/issues"
+
 [tool.flit.module]
 name = "labfreed"
 
