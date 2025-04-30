@@ -48,6 +48,7 @@ class CIT_v1(LabFREED_BaseModel):
                                     applicable_if        = cols[3],
                                     template_url         = cols[4]
                                     )
+                entries.append(entry) 
             except ValueError:
                 logging.error(f'invalid line {line}')
                 msg = ValidationMessage(
@@ -59,7 +60,7 @@ class CIT_v1(LabFREED_BaseModel):
                 )
                 errors.append(msg)
 
-            entries.append(entry)           
+                      
         cit = CIT_v1(origin=origin, entries=entries)
         cit._validation_messages.extend(errors)
         cit._csv_original = csv
