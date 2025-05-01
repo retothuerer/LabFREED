@@ -1,5 +1,6 @@
 
 
+import logging
 import re
 from types import MappingProxyType
 
@@ -73,6 +74,7 @@ class PAC_Parser():
         pac_id.extensions = extensions
             
         if not pac_id.is_valid and not suppress_validation_errors:
+            logging.error(pac_id.print_validation_messages())
             raise LabFREED_ValidationError(validation_msgs = pac_id._get_nested_validation_messages())
         
         return pac_id

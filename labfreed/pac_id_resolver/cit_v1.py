@@ -66,7 +66,9 @@ class CIT_v1(LabFREED_BaseModel):
         cit._csv_original = csv
         return cit
     
-    def evaluate_pac_id(self, pac):
+    def evaluate_pac_id(self, pac:PAC_ID):
+        if not type(pac) is PAC_ID:
+            raise ValueError(f'CIT v1 does only handle PAC-IDs. PAC-CAT it does not know what to do')
         cit_evaluated = ServiceGroup(origin=self.origin)   
         for e in self.entries:
             conditions = e.applicable_if.split(';')

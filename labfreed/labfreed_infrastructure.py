@@ -179,6 +179,7 @@ class LabFREED_BaseModel(PDOC_Workaround_Base):
 
         logging.info(table)
         print(table)
+        return table
         
         
     def format_validation_messages(self, target='console') -> list[str]:

@@ -64,15 +64,23 @@ class PAC_ID_Resolver():
         self._cits = cits
             
         
-    def resolve(self, pac_id:PAC_ID|str, check_service_status=True) -> list[ServiceGroup]:
+    def resolve(self, pac_url:PAC_ID|str, check_service_status=True) -> list[ServiceGroup]:
         '''Resolve a PAC-ID'''
-        if isinstance(pac_id, str):
-            pac_id = PAC_CAT.from_url(pac_id)
+        if isinstance(pac_url, str):
+            pac_id = PAC_CAT.from_url(pac_url)
+            pac_id_catless = PAC_ID.from_url(pac_url, try_pac_cat=False)
                 
+        cits = self._cits.copy()
         if issuer_cit := _get_issuer_cit(pac_id.issuer):
-            self._cits.append(issuer_cit)
+            cits.append(issuer_cit)
          
-        matches = [cit.evaluate_pac_id(pac_id) for cit in self._cits]
+        matches = []
+        for cit in cits:
+            if isinstance(cit, CIT_v1):
+                # cit v1 has no concept of categories and implied keys. It would treat these segments as value segment
+                matches.append(cit.evaluate_pac_id(pac_id_catless))
+            else:
+                matches.append(cit.evaluate_pac_id(pac_id))
         
         if check_service_status:
             for m in matches:
