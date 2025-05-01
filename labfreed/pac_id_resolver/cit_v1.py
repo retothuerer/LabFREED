@@ -153,6 +153,9 @@ class CIT_v1(LabFREED_BaseModel):
             raise ValueError('CIT v1 does only handle PAC-IDs. PAC-CAT it does not know what to do')
         cit_evaluated = ServiceGroup(origin=self.origin)   
         for e in self.entries:
+            if e.errors():
+                continue #make this stable against errors in the cit
+            
             conditions = e.applicable_if.split(';')
             conditions_evaluated = list()
             for c in conditions:
