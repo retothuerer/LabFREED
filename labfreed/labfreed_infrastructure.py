@@ -194,9 +194,9 @@ class LabFREED_BaseModel(PDOC_Workaround_Base):
         formatted_msg = list()
         for m in self.validation_messages():
             if m.level == ValidationMsgLevel.ERROR:
-                color = 'red'
+                color = '#d70000'
             else:
-                color = 'orange'
+                color = '#d78700'
                 
             match target:
                 case 'markdown':

@@ -9,6 +9,12 @@ import jsonpath_ng.ext as jsonpath
 
 from labfreed.pac_id_resolver.services import Service, ServiceGroup
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel, ValidationMsgLevel, _quote_texts
+from labfreed.pac_id_resolver.cit_common import ( _add_msg_to_cit_entry_model, 
+                                                 _validate_service_name, 
+                                                 _validate_application_intent, 
+                                                 _validate_service_type,
+                                                 ServiceType)
+
 
 __all__ = [
     "CIT_v2",
@@ -16,9 +22,6 @@ __all__ = [
     "CITEntry_v2"
 ]
 
-class ServiceType(Enum):
-    USER_HANDOVER_GENERIC = 'userhandover-generic'
-    ATTRIBUTE_SERVICE_GENERIC = 'attributes-generic'
 
 
 class CITEntry_v2(LabFREED_BaseModel):
