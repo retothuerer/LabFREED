@@ -196,7 +196,7 @@ class LabFREED_BaseModel(PDOC_Workaround_Base):
             if m.level == ValidationMsgLevel.ERROR:
                 color = 'red'
             else:
-                color = 'yellow'
+                color = 'orange'
                 
             match target:
                 case 'markdown':
@@ -218,6 +218,7 @@ class LabFREED_BaseModel(PDOC_Workaround_Base):
                     br = '<br>'
                 
             serialized = str(self)
+            serialized = serialized.replace('\n', br)
             emphazised_highlight = self._emphasize_in(m, serialized, fmt=fmt)
             emphazised_highlight = emphazised_highlight.replace('👈👉','') # removes two consecutive markers, to make it cleaner
             
