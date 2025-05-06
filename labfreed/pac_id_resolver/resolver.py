@@ -1,4 +1,6 @@
+from functools import lru_cache
 import logging
+import traceback
 from typing import Self
 import yaml
 from requests import get
@@ -24,11 +26,11 @@ def load_cit(path):
     
 def cit_from_str(s:str, origin:str='') -> CIT_v1|CIT_v2:
     try:
-        cit_yml= yaml.safe_load(s)
-        cit2 = CIT_v2.from_yaml(cit_yml)
+        cit2 = CIT_v2.from_yaml(s)
         cit_version = 'v2'
     except Exception:
         cit2 = None
+        traceback.print_exc()
     try:
         cit1 = CIT_v1.from_csv(s, origin)
         cit_version = 'v1'
@@ -38,6 +40,7 @@ def cit_from_str(s:str, origin:str='') -> CIT_v1|CIT_v2:
     cit = cit2 or cit1 or None
     return cit
 
+@lru_cache
 def _get_issuer_cit(issuer:str):
     '''Gets the issuer's cit.'''
     url = 'HTTPS://PAC.' + issuer + '/coupling-information-table'
@@ -64,15 +67,16 @@ class PAC_ID_Resolver():
         self._cits = cits
             
         
-    def resolve(self, pac_url:PAC_ID|str, check_service_status=True) -> list[ServiceGroup]:
+    def resolve(self, pac_url:PAC_ID|str, check_service_status=True, use_issuer_cit=True) -> list[ServiceGroup]:
         '''Resolve a PAC-ID'''
         if isinstance(pac_url, str):
             pac_id = PAC_CAT.from_url(pac_url)
             pac_id_catless = PAC_ID.from_url(pac_url, try_pac_cat=False)
                 
         cits = self._cits.copy()
-        if issuer_cit := _get_issuer_cit(pac_id.issuer):
-            cits.append(issuer_cit)
+        if use_issuer_cit:
+            if issuer_cit := _get_issuer_cit(pac_id.issuer):
+                cits.append(issuer_cit)
          
         matches = []
         for cit in cits:
