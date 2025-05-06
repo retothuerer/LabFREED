@@ -130,7 +130,12 @@ class CIT_v2(LabFREED_BaseModel):
     
     @classmethod
     def from_yaml(cls, yml:str) -> Self:
-        return cls.model_validate(yml)
+        try:
+            d = yaml.safe_load(yml)
+        except yaml.YAMLError as e:
+            # not a valid yaml
+            raise ValueError("This is not a valid yaml") from e
+        return cls.model_validate(d)
     
     def __str__(self):
         yml = yaml.dump(self.model_dump()                        )
@@ -145,6 +150,8 @@ class CIT_v2(LabFREED_BaseModel):
                 continue
 
             for e in block.entries:
+                if e.errors():
+                    continue #make this stable against errors in the cit
                 url = self._eval_url_template(pac_id_json, e.template_url)
                 cit_evaluated.services.append(Service(  
                                                         service_name=e.service_name,
