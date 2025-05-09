@@ -91,7 +91,6 @@ class CIT_v1(LabFREED_BaseModel):
             
             cols = [c.strip() for c in line.split('\t')]
             if len(cols) < 5:
-                logging.error(f'invalid line {line}')
                 msg = ValidationMessage(
                     level=ValidationMsgLevel.ERROR,
                     source='CIT line',
@@ -102,7 +101,6 @@ class CIT_v1(LabFREED_BaseModel):
                 errors.append(msg)
                 continue
             if len(cols) > 5:
-                logging.error(f'invalid line {line}')
                 msg = ValidationMessage(
                     level=ValidationMsgLevel.ERROR,
                     source='CIT line',
@@ -123,7 +121,6 @@ class CIT_v1(LabFREED_BaseModel):
                                     )
                 entries.append(entry) 
             except ValueError:
-                logging.error(f'invalid line {line}')
                 msg = ValidationMessage(
                     level=ValidationMsgLevel.ERROR,
                     source='CIT line',

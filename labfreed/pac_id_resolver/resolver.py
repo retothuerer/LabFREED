@@ -30,7 +30,6 @@ def cit_from_str(s:str, origin:str='') -> CIT_v1|CIT_v2:
         cit_version = 'v2'
     except Exception:
         cit2 = None
-        traceback.print_exc()
     try:
         cit1 = CIT_v1.from_csv(s, origin)
         cit_version = 'v1'

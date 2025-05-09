@@ -1,6 +1,7 @@
 ## Change Log
 ### v0.2.6
 - PAC_ID.to_url() preserves the identifier as is by default but allows to force short or long notation.
+- PAC-ID Resolver does not try to resolve PAC-CAT with CIT v1.
   
 ### v0.2.5
 - resolvers checks service states by default
