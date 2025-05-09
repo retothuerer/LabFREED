@@ -18,7 +18,7 @@ This is a Python implementation of [LabFREED](https://labfreed.wega-it.com) buil
   - base36 <> str conversions
 - PAC-ID Resolver
   - support for CIT v1
-  - draft support for CIT v1 (improved version)
+  - draft support for CIT v2 (improved version)
   - combined use of multiple cit in any combination of version
 - Generation of QR codes (PAC-ID with extensions)
   
