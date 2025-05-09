@@ -1,4 +1,7 @@
 ## Change Log
+### v0.2.6
+- PAC_ID.to_url() preserves the identifier as is by default but allows to force short or long notation.
+  
 ### v0.2.5
 - resolvers checks service states by default
 - improvements and bugfixes in conversion from python types to TREX

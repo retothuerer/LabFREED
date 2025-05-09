@@ -45,7 +45,7 @@ class PAC_ID(LabFREED_BaseModel):
         from labfreed.pac_id.url_parser import PAC_Parser
         return PAC_Parser.from_url(url, try_pac_cat=try_pac_cat, suppress_validation_errors=suppress_validation_errors, extension_interpreters=extension_interpreters)
     
-    def to_url(self, use_short_notation=False, uppercase_only=False) -> str:
+    def to_url(self, use_short_notation:None|bool=None, uppercase_only=False) -> str:
         from labfreed.pac_id.url_serializer import PACID_Serializer
         return PACID_Serializer.to_url(self, use_short_notation=use_short_notation, uppercase_only=uppercase_only)
     

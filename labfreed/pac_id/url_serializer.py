@@ -9,20 +9,23 @@ class PACID_Serializer():
     '''Represents a PAC-ID including it's extensions'''
   
     @classmethod
-    def to_url(cls, pac:PAC_ID, use_short_notation=False, uppercase_only=False) -> str:
+    def to_url(cls, pac:PAC_ID, use_short_notation:bool|None=None, uppercase_only=False) -> str:
         """Serializes the PAC-ID including extensions.
 
         Args:
-            use_short_notation (bool, optional): Uses shortening conventions for extensions and categories..
+            use_short_notation (bool|None, optional): None (default): Preserves the identifier as is. Extensions use short form
+                                                      True: forces short notation for categories and extensions
+                                                      False: forces long notation for categories and extensions
             uppercase_only (bool, optional): Forces all uppercase letters (results in smaller QR)..
 
         Returns:
             str: Something like this HTTPS://PAC.METTORIUS.COM/-MD/BAL500/1234*N$N/ABC*SUM$TREX/A$T.A:ABC
 
         """
-        extensions_str = cls._serialize_extensions(pac.extensions, use_short_notation=use_short_notation)
-            
         identifier_str = cls._serialize_identifier(pac, use_short_notation=use_short_notation)
+        
+        use_short_notation_for_extensions = True if use_short_notation is None else use_short_notation 
+        extensions_str = cls._serialize_extensions(pac.extensions, use_short_notation=use_short_notation_for_extensions)
         out = f"HTTPS://PAC.{pac.issuer}{identifier_str}{extensions_str}"
         
         if uppercase_only:
@@ -30,9 +33,10 @@ class PACID_Serializer():
         return out
     
     @classmethod
-    def _serialize_identifier(cls, pac:PAC_ID|PAC_CAT, use_short_notation=True):
+    def _serialize_identifier(cls, pac:PAC_ID|PAC_CAT, use_short_notation:None|bool=None):
         ''' Serializes the PAC-ID'''
-        if isinstance(pac, PAC_CAT):
+        
+        if isinstance(pac, PAC_CAT) and use_short_notation is not None:
             for c in pac.categories:
                 segments = [IDSegment(value=c.key)]
                 if isinstance(c, PredefinedCategory):
