@@ -1,8 +1,6 @@
 # import built ins
 import os
 
-import requests_cache
-
 target = 'markdown'
 ''' 
 ### Parse a simple PAC-ID 
@@ -135,6 +133,8 @@ print(pac_str)
 ## PAC-ID Resolver
 '''
 from labfreed import PAC_ID_Resolver, load_cit  # noqa: E402
+import requests_cache
+
 # Get a CIT
 dir = os.path.join(os.getcwd(), 'examples')
 p = os.path.join(dir, 'cit_mine.yaml')       

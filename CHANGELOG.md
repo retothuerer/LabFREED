@@ -1,4 +1,7 @@
 ## Change Log
+### v0.2.8
+- option to pass cache to resolver for speedier check of service availability
+
 ### v0.2.7
 - Improved README. No functional changes
   

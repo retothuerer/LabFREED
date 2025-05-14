@@ -70,7 +70,7 @@ pac.print_validation_messages()
 >> Validation Results                                                                                                                   
 >> ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 >> │ **RECOMMENDATION** in id segment value bal500                                                                                     │
->> │ Characters 'a','l','b' should not be used., Characters SHOULD be limited to upper case letters (A-Z), numbers (0-9), '-' and '+'  │
+>> │ Characters 'b','l','a' should not be used., Characters SHOULD be limited to upper case letters (A-Z), numbers (0-9), '-' and '+'  │
 >> │                                                                                                                                   │
 >> │ HTTPS://PAC.METTORIUS.COM/-MD/👉bal👈500/@1234                                                                                    │
 >> ├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
@@ -80,7 +80,7 @@ pac.print_validation_messages()
 >> │ HTTPS://PAC.METTORIUS.COM/-MD/bal500/👉@👈1234                                                                                    │
 >> ├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 >> │ **RECOMMENDATION** in id segment value bal500                                                                                     │
->> │ Characters 'a','l','b' should not be used., Characters SHOULD be limited to upper case letters (A-Z), numbers (0-9), '-' and '+'  │
+>> │ Characters 'b','l','a' should not be used., Characters SHOULD be limited to upper case letters (A-Z), numbers (0-9), '-' and '+'  │
 >> │                                                                                                                                   │
 >> │ HTTPS://PAC.METTORIUS.COM/-MD/👉bal👈500/@1234                                                                                    │
 >> ├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
@@ -213,7 +213,7 @@ trex.print_validation_messages()
 >> Validation Results                                            
 >> ┌────────────────────────────────────────────────────────────┐
 >> │ **ERROR** in TREX table column Date                        │
->> │ Column header key contains invalid characters: 'a','t','e' │
+>> │ Column header key contains invalid characters: 't','e','a' │
 >> │                                                            │
 >> │ STOP$T.D:20240505T1306                                     │
 >> │ +TEMP$KEL:10.15                                            │
@@ -221,9 +221,9 @@ trex.print_validation_messages()
 >> │ +COMMENT$T.A:FOO                                           │
 >> │ +COMMENT2$T.T:12G3                                         │
 >> │ +TABLE$$DURATION$HUR:D👉ate👈$T.D:OK$T.B:COMMENT$T.A::     │
->> │  1:20250513T080159.146:T:FOO::                             │
->> │  1.1:20250513T080159.146:T:BAR::                           │
->> │  1.3:20250513T080159.146:F:BLUBB                           │
+>> │  1:20250514T102232.171:T:FOO::                             │
+>> │  1.1:20250514T102232.171:T:BAR::                           │
+>> │  1.3:20250514T102232.171:F:BLUBB                           │
 >> └────────────────────────────────────────────────────────────┘
 ```
 #### Combine PAC-ID and TREX and serialize
@@ -235,12 +235,14 @@ pac_str = pac.to_url()
 print(pac_str)
 ```
 ```text
->> HTTPS://PAC.METTORIUS.COM/21:1234*MYTREX$TREX/STOP$T.D:20240505T1306+TEMP$KEL:10.15+OK$T.B:F+COMMENT$T.A:FOO+COMMENT2$T.T:12G3+TABLE$$DURATION$HUR:Date$T.D:OK$T.B:COMMENT$T.A::1:20250513T080159.146:T:FOO::1.1:20250513T080159.146:T:BAR::1.3:20250513T080159.146:F:BLUBB
+>> HTTPS://PAC.METTORIUS.COM/21:1234*MYTREX$TREX/STOP$T.D:20240505T1306+TEMP$KEL:10.15+OK$T.B:F+COMMENT$T.A:FOO+COMMENT2$T.T:12G3+TABLE$$DURATION$HUR:Date$T.D:OK$T.B:COMMENT$T.A::1:20250514T102232.171:T:FOO::1.1:20250514T102232.171:T:BAR::1.3:20250514T102232.171:F:BLUBB
 ```
 ## PAC-ID Resolver
 
 ```python
 from labfreed import PAC_ID_Resolver, load_cit  
+import requests_cache
+
 # Get a CIT
 dir = os.path.join(os.getcwd(), 'examples')
 p = os.path.join(dir, 'cit_mine.yaml')       
@@ -259,8 +261,10 @@ cit2.origin = 'MY_COMPANY'
 ```python
 # resolve a pac id
 pac_str = 'HTTPS://PAC.METTORIUS.COM/-MS/X3511/CAS:7732-18-5'
-service_groups = PAC_ID_Resolver(cits=[cit, cit2]).resolve(pac_str)
+service_groups = PAC_ID_Resolver(cits=[cit, cit2]).resolve(pac_str, check_service_status=False)
+cached_session = requests_cache.CachedSession(backend='memory', expire_after=60)
 for sg in service_groups:
+    sg.update_states(cached_session)
     sg.print()
     
 ```
@@ -292,6 +296,9 @@ for sg in service_groups:
 
 <!-- BEGIN CHANGELOG -->
 ## Change Log
+### v0.2.8
+- option to pass cache to resolver for speedier check of service availability
+
 ### v0.2.7
 - Improved README. No functional changes
   

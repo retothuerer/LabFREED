@@ -16,7 +16,8 @@ dependencies = [
     "typer>=0.15.2",
     "PyYAML>=6.0.2",
     "jsonpath-ng>=1.7.0",
-    "requests>=2.32.3"
+    "requests>=2.32.3",
+    "requests_cache>=1.2.1"
 ]
 classifiers = [
     "License :: OSI Approved :: MIT License",

@@ -2,7 +2,9 @@
 kinda unsystematically covers a lot of things. mainly makes sure it runs without errors
 '''
 
-from datetime import datetime  # noqa: E402
+from datetime import datetime
+
+import requests_cache  # noqa: E402
 from labfreed.trex.python_convenience.pyTREX import pyTREX  # noqa: E402
 from labfreed.trex.python_convenience.data_table import DataTable  # noqa: E402
 from labfreed.trex.python_convenience.quantity import Quantity  # noqa: E402
@@ -148,8 +150,9 @@ def test_resolver():
     # resolve a pac id
     pac_str = 'HTTPS://PAC.METTORIUS.COM/-MS/X3511/CAS:7732-18-5'
     service_groups = PAC_ID_Resolver(cits=[cit, cit2]).resolve(pac_str)
+    cached_session = requests_cache.CachedSession(backend='memory', expire_after=60)
     for sg in service_groups:
-        sg.update_states()
+        sg.update_states(cached_session)
         sg.print()
     
     assert True
