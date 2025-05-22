@@ -1,4 +1,7 @@
 ## Change Log
+### v0.2.12
+- bugfix:no warning message if PAC-CAT has same segment key in two segments
+
 ### v0.2.11
 - bugfix:added missing well known segment key '250'
   

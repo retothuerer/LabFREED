@@ -125,6 +125,13 @@ class PAC_CAT(PAC_ID):
                     )
             return self
         
+        
+    @model_validator(mode='after')
+    def _check_identifier_segment_keys_are_unique(self) -> Self:
+        ''' override the validator of PAC-ID: in PAC-CAT segments can replicate in different categories'''
+        return self
+    
+        
     def print_categories(self):
         table = Table(title=f'Categories in {str(self)}', show_header=False)
         table.add_column('0')

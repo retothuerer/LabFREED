@@ -145,5 +145,9 @@ def test_keys_can_repeat_accross_categories():
     pac = from_url(valid_base + "-MX/KEY:VAL/-MY/KEY:VAL")
     assert pac.is_valid # made it here without exception > it's fine
     
+def test_keys_should_not_repeat_within_categories():
+    pac = from_url(valid_base + "-MS/21:A/21:B")
+    assert not pac.is_valid
+    
 
     
