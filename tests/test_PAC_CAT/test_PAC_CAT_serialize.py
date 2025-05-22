@@ -209,5 +209,16 @@ def test_empty_segments_not_written_short_notation():
     
 
     
+def test_category_concatenation():
+    pac = PAC_CAT.from_categories(issuer = 'METTORIUS.COM',
+                                     categories= [
+                                         Data_Result(id='X67678'),              
+                                        Material_Device(serial_number='123', model_number='aa')
+                                    ]
+          ) 
+    url = pac.to_url(use_short_notation=False)
+    assert url == 'HTTPS://PAC.METTORIUS.COM/-DR/21:X67678/-MD/240:aa/21:123'
     
+    url = pac.to_url(use_short_notation=True)
+    assert url == 'HTTPS://PAC.METTORIUS.COM/-DR/X67678/-MD/aa/123'
     

@@ -37,8 +37,9 @@ class PACID_Serializer():
         ''' Serializes the PAC-ID'''
         
         if isinstance(pac, PAC_CAT) and use_short_notation is not None:
+            segments = []
             for c in pac.categories:
-                segments = [IDSegment(value=c.key)]
+                segments.append(IDSegment(value=c.key))
                 if isinstance(c, PredefinedCategory):
                     segments += c._get_segments(use_short_notation=use_short_notation)
                 else:
