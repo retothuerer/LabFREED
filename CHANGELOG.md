@@ -1,4 +1,7 @@
 ## Change Log
+### v0.2.11
+- bugfix:added missing well known segment key '250'
+  
 ### v0.2.10
 - bugfix:added missing well known segment key '20'
   

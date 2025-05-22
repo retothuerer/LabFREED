@@ -7,6 +7,7 @@ class WellKnownKeys(Enum):
     CONTAINER_CODE = '20'
     SERIAL = '21'
     ADDITIONAL_IDENTIFIER = '240'
+    SECONDARY_SERIAL = '250'
     RUN_ID_ABSOLUTE = 'RNR'
     SAMPLE_ID = 'SMP'
     EXPERIMENT_ID = 'EXP'
