@@ -4,8 +4,9 @@ from enum import Enum
 class WellKnownKeys(Enum):
     GTIN = '01'
     BATCH = '10'
+    CONTAINER_CODE = '20'
     SERIAL = '21'
-    ADDITIONAL_IDINTIFIER = '240'
+    ADDITIONAL_IDENTIFIER = '240'
     RUN_ID_ABSOLUTE = 'RNR'
     SAMPLE_ID = 'SMP'
     EXPERIMENT_ID = 'EXP'

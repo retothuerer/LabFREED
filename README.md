@@ -296,6 +296,9 @@ for sg in service_groups:
 
 <!-- BEGIN CHANGELOG -->
 ## Change Log
+### v0.2.10
+- bugfix:added missing well known segment key '20'
+- 
 ### v0.2.9
 - bugfix in serialization of PAC-CAT with multiple categories
   
