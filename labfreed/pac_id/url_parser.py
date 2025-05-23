@@ -69,7 +69,7 @@ class PAC_Parser():
         extensions = cls._parse_extensions(ext_str)
         if extensions and extension_interpreters:
             for i, e in enumerate(extensions):
-                if interpreter := extension_interpreters.get(e.type):
+                if interpreter := extension_interpreters.get(e.type or ''):
                     extensions[i] = interpreter.from_extension(e)
         pac_id.extensions = extensions
             
@@ -146,8 +146,6 @@ class PAC_Parser():
                 if defaults:
                     name = defaults.get(i).get('name')
                     type = defaults.get(i).get('type')
-                else:
-                    raise ValueError('extension number {i}, must have name and type')
             
             #convert to subtype if they were given
             e = Extension.create(name=name, type=type, data=data)

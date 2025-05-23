@@ -75,8 +75,10 @@ class PACID_Serializer():
                     continue
                 else: 
                     short_notation = False
-                
-            out += f'*{e.name}${e.type}/{e.data}'
+            if e.name and e.type:
+                out += f'*{e.name}${e.type}/{e.data}'
+            else:
+                out += f'*{e.data}'
         return out
         
 

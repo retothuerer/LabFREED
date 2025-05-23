@@ -27,6 +27,24 @@ def test_valid_extensions():
     assert ext.data == 'data2'
     
     
+def test_parse_extensions_without_name_and_type():
+    '''
+    extensions without name and type are allowed, although not recommened.
+    in order not to conflict with short form of display name and summary the first extension must have a specific type to test the second
+    '''
+    url = 'HTTPS://PAC.METTORIUS.COM/-DR/999/-MD/240:1/21:2*E1$T1/D1*DATA-QWERTAUAZD'
+    pac = from_url(url)
+    extensions = pac.extensions
+    ext: Extension = extensions[0]
+    assert ext.name == 'E1'
+    assert ext.type == 'T1'
+    assert ext.data == 'D1'
+    ext: Extension = extensions[1]
+    assert ext.name is None
+    assert ext.type is None
+    assert ext.data == 'DATA-QWERTAUAZD'
+    
+    
 def test_known_extensions_are_interpreted():
     class ExtensionMockType(ExtensionBase):
         
@@ -75,16 +93,18 @@ def test_imply_display_name_and_summary_extension():
     extensions = pac.extensions
     ext: Extension = extensions[0]
     assert ext.name == 'N'
-    assert ext.type == 'N'
+    assert ext.type == 'TEXT'
     
     ext: Extension = extensions[1]
     assert ext.name == 'SUM'
     assert ext.type == 'TREX'
     
 def test_stop_imply_extensions_after_explicit():
-    with pytest.raises(Exception):
-        pac = from_url(valid_base + valid_standard_segments + "*N$T/data1*data2")
-        pac.extensions
+    pac = from_url(valid_base + valid_standard_segments + "*N$TEXT/data1*data2")
+    ext: Extension = pac.extensions[1]
+    assert ext.name is None
+    assert ext.type is None
+    assert ext.data == 'data2'
         
 
 def test_extension_parsing():
