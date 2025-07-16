@@ -14,7 +14,7 @@ class ValueSegment(TREX_Segment, Value, ABC):
     
     @model_validator(mode='after')
     def _validate_type(self):
-        valid_types = valid_types = unece_unit_codes() + ['T.D', 'T.B', 'T.A', 'T.T', 'T.X', 'E']
+        valid_types = unece_unit_codes() + ['T.D', 'T.B', 'T.A', 'T.T', 'T.X', 'E']
         if self.type not in valid_types:
             self._add_validation_message(
                     source=f"TREX value segment {self.key}",
