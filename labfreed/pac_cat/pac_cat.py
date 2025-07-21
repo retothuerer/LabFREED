@@ -52,7 +52,7 @@ class PAC_CAT(PAC_ID):
     
     
     @classmethod
-    def from_pac_id(cls, pac_id:PAC_ID) -> Self:
+    def from_pac_id(cls, pac_id:PAC_ID) -> PAC_CAT:
         '''Constructs a PAC-CAT from a PAC-ID'''
         return PAC_CAT(issuer=pac_id.issuer, identifier=pac_id.identifier)
     
