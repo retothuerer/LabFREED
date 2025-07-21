@@ -108,7 +108,7 @@ class LabFREED_BaseModel(PDOC_Workaround_Base):
             self._validation_messages.append(w)
 
     # Function to extract warnings from a model and its nested models
-    def _get_nested_validation_messages(self, parent_name: str = "", visited: Set[int] = None) -> List['ValidationMessage']:
+    def _get_nested_validation_messages(self, parent_name: str = "", visited: Set[int]|None = None) -> List['ValidationMessage']:
         """
         Recursively extract warnings from a Pydantic model and its nested fields, including computed fields.
 
@@ -140,7 +140,8 @@ class LabFREED_BaseModel(PDOC_Workaround_Base):
                         warnings_list.extend(item._get_nested_validation_messages(list_path, visited))
 
         # Traverse computed fields
-        computed_fields = getattr(self, '__pydantic_decorators__', {}).computed_fields or {}
+        mdl:BaseModel = getattr(self, '__pydantic_decorators__', {})
+        computed_fields = mdl.computed_fields or {}
         for field_name in computed_fields:
             full_path = f"{parent_name}.{field_name}" if parent_name else field_name
             try:
