@@ -26,7 +26,8 @@ def unece_unit(unit_code):
         return unit[0]
     
 def unit_symbol(unit:dict) ->str:
-    return unit.get('symbol')
+    symbol:str = unit.get('symbol')
+    return symbol
 
 def unit_name(unit:dict) ->str:
     return unit.get('name')
