@@ -66,11 +66,18 @@ class PAC_ID_Resolver():
         self._cits = cits
             
         
-    def resolve(self, pac_url:PAC_ID|str, check_service_status=True, use_issuer_cit=True) -> list[ServiceGroup]:
+    def resolve(self, pac_id:PAC_ID|str, check_service_status=True, use_issuer_cit=True) -> list[ServiceGroup]:
         '''Resolve a PAC-ID'''
-        if isinstance(pac_url, str):
-            pac_id = PAC_CAT.from_url(pac_url)
-            pac_id_catless = PAC_ID.from_url(pac_url, try_pac_cat=False)
+        if isinstance(pac_id, str):
+            pac_id = PAC_CAT.from_url(pac_id)
+            pac_id_catless = PAC_ID.from_url(pac_id, try_pac_cat=False)
+        
+        # it's likely to h
+        if isinstance(pac_id, PAC_ID):
+            pac_id_catless = PAC_ID.from_url(pac_id.to_url(), try_pac_cat=False)
+        else:
+            raise ValueError('pac_id is invalid. Should be a PAC-ID in url form or a PAC-ID object')
+    
                 
         cits = self._cits.copy()
         if use_issuer_cit:
