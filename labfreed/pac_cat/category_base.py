@@ -43,6 +43,25 @@ class Category(LabFREED_BaseModel):
     def __str__(self):
         s = '\n'.join( [f"{field_name} \t ({field_info.alias or ''}): \t {getattr(self, field_name)}" for  field_name, field_info in self.model_fields.items() if getattr(self, field_name)]) 
         return s 
+    
+    def segments_as_dict(self):
+        ''' returns the segments in a dict, with nice keys and values'''
+        out = dict()
+        for  field_name, field_info in self.model_fields.items():
+            if field_name =='additional_segments':
+                continue
+            if v := getattr(self, field_name):
+                if field_info.alias:
+                    k = f"{field_name} ({ field_info.alias})"
+                else:
+                    k = f"{field_name}"
+            out.update({k : v } ) 
+            
+        for s in getattr(self, 'additional_segments'):
+            out.update( {s.key or '' : s.value })
+        return out
+
+        
 
 
 
