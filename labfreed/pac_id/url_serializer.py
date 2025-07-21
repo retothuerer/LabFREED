@@ -9,7 +9,7 @@ class PACID_Serializer():
     '''Represents a PAC-ID including it's extensions'''
   
     @classmethod
-    def to_url(cls, pac:PAC_ID, use_short_notation:bool|None=None, uppercase_only=False) -> str:
+    def to_url(cls, pac:PAC_ID, use_short_notation:bool|None=None, uppercase_only=False, include_extensions:bool=True) -> str:
         """Serializes the PAC-ID including extensions.
 
         Args:
@@ -24,8 +24,12 @@ class PACID_Serializer():
         """
         identifier_str = cls._serialize_identifier(pac, use_short_notation=use_short_notation)
         
-        use_short_notation_for_extensions = True if use_short_notation is None else use_short_notation 
-        extensions_str = cls._serialize_extensions(pac.extensions, use_short_notation=use_short_notation_for_extensions)
+        if include_extensions:
+            use_short_notation_for_extensions = True if use_short_notation is None else use_short_notation 
+            extensions_str = cls._serialize_extensions(pac.extensions, use_short_notation=use_short_notation_for_extensions)
+        else: 
+            extensions_str = ""
+            
         out = f"HTTPS://PAC.{pac.issuer}{identifier_str}{extensions_str}"
         
         if uppercase_only:
