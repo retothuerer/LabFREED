@@ -3,7 +3,7 @@ from abc import ABC
 from datetime import  datetime, time
 import re
 from typing import Annotated, Any,  Literal, Union, get_args
-from ensure_utc_time import ensure_utc
+from labfreed.utilities.ensure_utc_time import ensure_utc
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel, LabFREED_ValidationError, ValidationMessage, ValidationMsgLevel, _quote_texts
 from pydantic import  Field,  RootModel, field_validator,  model_validator
 
@@ -157,7 +157,11 @@ class NumericValue(LabFREED_BaseModel):
 class NumericAttribute(AttributeBase):
     type: Literal["numeric"] 
     value: NumericValue
-       
+    
+class ObjectAttribute(AttributeBase):
+    type: Literal["object"] 
+    value: dict[str, Any]
+           
 
      
      
@@ -167,7 +171,8 @@ Attribute = Annotated[
         DateTimeAttribute,
         BoolAttribute,
         TextAttribute,
-        NumericAttribute
+        NumericAttribute,
+        ObjectAttribute
     ],
     Field(discriminator="type")
 ]
