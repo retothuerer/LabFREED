@@ -37,7 +37,7 @@ class AttributeFlaskApp(Flask):
     def __init__(self, import_name: str, request_handler: AttributeServerRequestHandler, **kwargs: Any):
         super().__init__(import_name, **kwargs)
         self.config['ATTRIBUTE_REQUEST_HANDLER'] = request_handler
-        self.add_url_rule('/', view_func=self.handle_attribute_request, methods=['GET'])
+        self.add_url_rule('/', view_func=self.handle_attribute_request, methods=['POST'])
 
     def handle_attribute_request(self):
         try:
