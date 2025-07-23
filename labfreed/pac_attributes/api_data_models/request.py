@@ -8,7 +8,7 @@ class AttributeRequestPayload(LabFREED_BaseModel):
     model_config = ConfigDict(frozen=True)
     
     pac_urls: list[str]
-    include_translations: bool = True
+    suppress_translations: bool = False
     
     def as_json(self):
         return self.model_dump_json()

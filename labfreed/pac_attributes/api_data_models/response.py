@@ -3,8 +3,9 @@ from abc import ABC
 from datetime import  datetime, time
 import re
 from typing import Annotated, Any,  Literal, Union, get_args
+from ensure_utc_time import ensure_utc
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel, LabFREED_ValidationError, ValidationMessage, ValidationMsgLevel, _quote_texts
-from pydantic import  Field,  RootModel,  model_validator
+from pydantic import  Field,  RootModel, field_validator,  model_validator
 
 from labfreed.well_known_keys.unece.unece_units import unece_unit_codes
 
@@ -73,6 +74,14 @@ class AttributeBase(LabFREED_BaseModel, ABC):
         discriminator_value = self._get_discriminator_value()
         data["type"] = discriminator_value
         super().__init__(**data)
+        
+    @field_validator('valid_until', mode='before')
+    def set_utc_valid_until_if_naive(cls, value):
+        return ensure_utc(value)
+    
+    @field_validator('observed_at', mode='before')
+    def set_utc_observed_at_if_naive(cls, value):
+        return ensure_utc(value)
 
     @classmethod
     def _get_discriminator_value(cls) -> str:
@@ -97,6 +106,10 @@ class DateTimeAttribute(AttributeBase):
     type: Literal["datetime"] 
     value: datetime
     
+    @field_validator('value', mode='before')
+    def set_utc__if_naive(cls, value):
+        return ensure_utc(value)
+    
 class BoolAttribute(AttributeBase):
     type: Literal["bool"] 
     value: bool
@@ -105,15 +118,14 @@ class TextAttribute(AttributeBase):
     type: Literal["text"] 
     value: str
     
-
-class NumericAttribute(AttributeBase):
-    type: Literal["numeric"] 
-    value: str
+    
+class NumericValue(LabFREED_BaseModel):
+    magnitude: str
     unit: str
-       
+    
     @model_validator(mode='after')
     def _validate_value(self):
-        value = self.value
+        value = self.magnitude
         if not_allowed_chars := set(re.sub(r'[0-9\.\-E]', '', value)):
             self._add_validation_message(
                 source=f"Numeric Attribute {self.key}",
@@ -141,6 +153,12 @@ class NumericAttribute(AttributeBase):
                     highlight_pattern = self.unit
             )
         return self
+
+class NumericAttribute(AttributeBase):
+    type: Literal["numeric"] 
+    value: NumericValue
+       
+
      
      
 Attribute = Annotated[
@@ -193,7 +211,7 @@ class Translations(LabFREED_BaseModel):
 
 class AttributeResponsePayload(LabFREED_BaseModel):
     schema_version: int = Field(default='1.0')
-    responses: list[AttributesOfPACID]
+    pac_attributes: list[AttributesOfPACID]
     translations: list[Translations]|None = None
       
     

@@ -65,7 +65,7 @@ class AttributeServerRequestHandler():
             attributes_for_pac_id.append(attributes_for_pac)
             
         # attach relevant display names (fro attribute groups and attributes)
-        if r.include_translations:
+        if not r.suppress_translations:
             translations = []
             attribute_group_keys = [ag.key for ag_for_pac in attributes_for_pac_id for ag in ag_for_pac.attribute_groups]
             attribute_keys = [a.key for ag_for_pac in attributes_for_pac_id for ag in ag_for_pac.attribute_groups for a in ag.attributes]
@@ -74,7 +74,7 @@ class AttributeServerRequestHandler():
                 if t:
                     translations.append(t)
             
-        response = AttributeResponsePayload(responses=attributes_for_pac_id, translations=translations).to_json()
+        response = AttributeResponsePayload(pac_attributes=attributes_for_pac_id, translations=translations).to_json()
         return response
     
 
