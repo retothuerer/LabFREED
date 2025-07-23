@@ -1,10 +1,11 @@
 
 from datetime import date, datetime, time
 from typing import   Literal
+import warnings
 from pydantic import  RootModel
 
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel
-from labfreed.pac_attributes.api_data_models.response import AttributeBase, BoolAttribute, DateTimeAttribute,  NumericAttribute, ReferenceAttribute, TextAttribute, _parse_date_time_str
+from labfreed.pac_attributes.api_data_models.response import AttributeBase, BoolAttribute, DateTimeAttribute,  NumericAttribute, NumericValue, ReferenceAttribute, TextAttribute, _parse_date_time_str
 from labfreed.pac_id.pac_id import PAC_ID
 from labfreed.trex.python_convenience.quantity import Quantity, unece_unit_code_from_quantity
 from labfreed.well_known_keys.unece.unece_units import unece_unit
@@ -42,6 +43,8 @@ class pyAttributes(RootModel[list[pyAttribute]]):
             return  BoolAttribute(value=value, **common_args)
             
         elif isinstance(value, datetime | date | time):
+            if not value.tzinfo:
+                warnings.warn(f'No timezone given for {value}. Assuming it is in UTC.')
             return DateTimeAttribute(value =value, **common_args)
             # return DateTimeAttribute(value =_date_value_from_python_type(value).value, **common_args)
             
@@ -49,8 +52,8 @@ class pyAttributes(RootModel[list[pyAttribute]]):
         elif isinstance(attribute.value, Quantity|int|float):
             if not isinstance(attribute.value, Quantity):
                 value = Quantity(attribute.value)
-            return NumericAttribute(value = value.value_as_str(), 
-                                     unit = unece_unit_code_from_quantity(value),
+            return NumericAttribute(value = NumericValue(magnitude=value.value_as_str(), 
+                                                         unit = unece_unit_code_from_quantity(value)),
                                      **common_args)
             
         elif isinstance(value, pyReference):
@@ -76,9 +79,9 @@ class pyAttributes(RootModel[list[pyAttribute]]):
                     value =  pyReference(a.value)
                     
                 case NumericAttribute():                                       
-                    u = unece_unit(a.unit)
+                    u = unece_unit(a.value.unit)
                     unit = u.get('symbol')
-                    value = Quantity.from_str_value(value=a.value, unit=unit)
+                    value = Quantity.from_str_value(value=a.value.magnitude, unit=unit)
 
                 case BoolAttribute():
                     value = a.value
