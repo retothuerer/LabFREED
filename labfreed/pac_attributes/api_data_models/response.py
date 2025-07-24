@@ -2,10 +2,11 @@
 from abc import ABC
 from datetime import  datetime, time
 import re
-from typing import Annotated, Any,  Literal, Union, get_args
+from typing import Annotated, Any, List,  Literal, Union, get_args
+from labfreed.utilities.translations import TranslationsForOntology
 from labfreed.utilities.ensure_utc_time import ensure_utc
-from labfreed.labfreed_infrastructure import LabFREED_BaseModel, LabFREED_ValidationError, ValidationMessage, ValidationMsgLevel, _quote_texts
-from pydantic import  Field,  RootModel, field_validator,  model_validator
+from labfreed.labfreed_infrastructure import  LabFREED_BaseModel, LabFREED_ValidationError, ValidationMessage, ValidationMsgLevel, _quote_texts
+from pydantic import   Field,  RootModel, field_validator,  model_validator
 
 from labfreed.well_known_keys.unece.unece_units import unece_unit_codes
 
@@ -77,11 +78,17 @@ class AttributeBase(LabFREED_BaseModel, ABC):
         
     @field_validator('valid_until', mode='before')
     def set_utc_valid_until_if_naive(cls, value):
-        return ensure_utc(value)
+        if isinstance(value, datetime):
+            return ensure_utc(value)
+        else:
+            return value
     
     @field_validator('observed_at', mode='before')
     def set_utc_observed_at_if_naive(cls, value):
-        return ensure_utc(value)
+        if isinstance(value, datetime):
+            return ensure_utc(value)
+        else:
+            return value
 
     @classmethod
     def _get_discriminator_value(cls) -> str:
@@ -108,7 +115,10 @@ class DateTimeAttribute(AttributeBase):
     
     @field_validator('value', mode='before')
     def set_utc__if_naive(cls, value):
-        return ensure_utc(value)
+        if isinstance(value, datetime):
+            return ensure_utc(value)
+        else:
+            return value
     
 class BoolAttribute(AttributeBase):
     type: Literal["bool"] 
@@ -177,9 +187,13 @@ Attribute = Annotated[
     Field(discriminator="type")
 ]
 
+DEFAULT_ONTOLOGY_KEY = 'default'
+
 class AttributeGroup(LabFREED_BaseModel):
     key: str
     attributes: list[Attribute]
+    ontology: str = DEFAULT_ONTOLOGY_KEY
+    #valid_until: datetime
 
 
 class AttributesOfPACID(LabFREED_BaseModel):
@@ -188,36 +202,13 @@ class AttributesOfPACID(LabFREED_BaseModel):
     attribute_groups: list[AttributeGroup]
     
     
-    
-    
-class Translations(LabFREED_BaseModel):
-    key: str
-    translations: dict[str, str]
-    
-    def __init__(self, key: str, translations: dict[str, str]):
-        '''allows for init with positional arguments'''
-        super().__init__(key=key, translations=translations)
-    
-    @model_validator(mode='after')
-    def validate_language_keys(self):
-        for k in self.translations.keys():
-            if not re.fullmatch(r'^[a-z]{2,3}(-[a-z]{2,3})?$', k.lower()):
-                self._add_validation_message(
-                    source= f"Language code {k}",
-                    level= ValidationMsgLevel.ERROR,
-                    msg=f"Language code {k} is invalid. Must be in the format 'de' or 'de-CH'",
-                    highlight_pattern = k
-            )
-        return self
-                
-    
 
 
 
 class AttributeResponsePayload(LabFREED_BaseModel):
     schema_version: int = Field(default='1.0')
     pac_attributes: list[AttributesOfPACID]
-    translations: list[Translations]|None = None
+    translations_by_ontology: List[TranslationsForOntology]|None = None
       
     
     def to_json(self):

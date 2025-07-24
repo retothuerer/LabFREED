@@ -5,7 +5,7 @@ import warnings
 from pydantic import  RootModel
 
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel
-from labfreed.pac_attributes.api_data_models.response import AttributeBase, BoolAttribute, DateTimeAttribute,  NumericAttribute, NumericValue, ReferenceAttribute, TextAttribute, _parse_date_time_str
+from labfreed.pac_attributes.api_data_models.response import AttributeBase, BoolAttribute, DateTimeAttribute,  NumericAttribute, NumericValue, ObjectAttribute, ReferenceAttribute, TextAttribute, _parse_date_time_str
 from labfreed.pac_id.pac_id import PAC_ID
 from labfreed.trex.python_convenience.quantity import Quantity, unece_unit_code_from_quantity
 from labfreed.well_known_keys.unece.unece_units import unece_unit
@@ -66,7 +66,7 @@ class pyAttributes(RootModel[list[pyAttribute]]):
             return TextAttribute(value = value, **common_args)
         
         else:
-            raise ValueError(f'Invalid Type: {type(value)} cannot be converted to attribute')
+            raise ValueError(f'Invalid Type: {type(value)} cannot be converted to attribute. You may want to use ObjectAttribute, but would have to implement the conversion from your python type yourself.')
         
         
     @staticmethod
@@ -91,6 +91,10 @@ class pyAttributes(RootModel[list[pyAttribute]]):
                     
                 case DateTimeAttribute():                    
                     value = a.value
+                
+                case ObjectAttribute():
+                    value = a.value
+
                        
             attr = pyAttribute(key=a.key, 
                                value=value,

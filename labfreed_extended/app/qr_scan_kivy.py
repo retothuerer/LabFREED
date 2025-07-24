@@ -1,16 +1,12 @@
-import webbrowser
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
-from kivy.uix.gridlayout import GridLayout
-from kivy.uix.button import Button
 from kivy_garden.zbarcam import ZBarCam
-from kivy.uix.scrollview import ScrollView
 
 from kivy.graphics import Color, Rectangle
 
+from labfreed_extended.app.app_infrastructure import Labfreed_App_Infrastructure
 
-from test_app import Demo_Labfreed_App_Infrastructure
 
 
 class ColoredBox(BoxLayout):
@@ -26,7 +22,8 @@ class ColoredBox(BoxLayout):
         self._rect.size = self.size
 
 class QRScannerUI(BoxLayout):
-    def __init__(self, **kwargs):
+    def __init__(self, pac_id_processor, demo_pac="", **kwargs):
+        self._pac_id_processor = pac_id_processor
         super().__init__(orientation='vertical', **kwargs)
 
         # Camera gets 20% of vertical space
@@ -56,10 +53,27 @@ class QRScannerUI(BoxLayout):
         
         self.add_widget(self.text_label)
         
+        self.display_info(demo_pac)
+
+    def on_symbols(self, instance, symbols):
+        if symbols:
+            data = symbols[0].data.decode()
+            self.display_info(data)
+
+    def display_info(self, data):
+        try:
+            info = self._pac_id_processor.process_pac(data)
+            txt = self._pac_id_processor.print_pac_info(info, markup='kivy')
+            self.text_label.text = txt
+        except Exception as e:
+            self.text_label.text = data
+
+
+class QRApp(App):
+    def build(self):
         
-    
-        self.pac_id_processor = Demo_Labfreed_App_Infrastructure()
-        demo_cit ='''
+        pac_id_processor = Labfreed_App_Infrastructure()
+        pac_id_processor.add_cit('''
 origin: PERSONAL
 
 cit:
@@ -70,28 +84,15 @@ cit:
     application_intents:
     - attributes
     template_url: http://127.0.0.1:5000
-'''   
-        self.pac_id_processor.add_cit(demo_cit)
+'''   )
         
         demo_pac = "HTTPS://PAC.METTORIUS.COM/-MD/BAL500/12345/DEMO*59K77LWDX8W"
-        self.display_info(demo_pac)
-
-    def on_symbols(self, instance, symbols):
-        if symbols:
-            data = symbols[0].data.decode()
-            self.display_info(data)
-
-    def display_info(self, data):
-        try:
-            info = self.pac_id_processor.process_pac(data, markup='kivy')
-            self.text_label.text = info.__str__('kivy')
-        except:
-            self.text_label.text = data
-
-
-class QRApp(App):
-    def build(self):
-        return QRScannerUI()
+        
+        return QRScannerUI(pac_id_processor=pac_id_processor, demo_pac= demo_pac)
 
 if __name__ == '__main__':
+    
+    
+    
+    
     QRApp().run()

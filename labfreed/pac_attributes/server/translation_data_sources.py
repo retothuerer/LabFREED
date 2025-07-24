@@ -1,20 +1,39 @@
+from abc import ABC, abstractmethod, abstractproperty
 import json
-from labfreed.pac_attributes.api_data_models.response import Translations
-from labfreed.pac_attributes.server.server import TranslationDataSource
 
-class DictTranslationDataSource(TranslationDataSource):
-    def __init__(self, data:dict) -> None:
+from pydantic import ValidationError
+from translations import TranslationsForOntology, Term
+
+class OnthologyTranslationDataSource(ABC):
+    @abstractproperty
+    def onthology(self):
+        pass
+    @abstractmethod
+    def get_translations_for(self, key:str) -> Term:
+        pass
+    
+
+class DictTranslationDataSource(OnthologyTranslationDataSource):
+    def __init__(self, onthology:str, data:TranslationsForOntology) -> None:
+        self._onthology = onthology
         self._data = data
         
-    def get(self, key:str):
-        t = self._data.get(key)
-        if t:
-            return Translations(key, t)
-        else:
-            return None
+    def get_translations_for(self, key:str) -> Term:
+        t = self._data.translations_for_term(key)
+        return t
+    
+    @property
+    def onthology(self):
+        return self._onthology
+   
+
     
 class JsonFileTranslationDataSource(DictTranslationDataSource):
     def __init__(self, path:str) -> None:
         with open(path) as f:
             data = json.load(f)
-        super().__init__(data=data)
+        try:
+            super().__init__(data=data)
+        except ValidationError as e:
+            e.add_note('Json must be convertible to OnthologyTranslationDataSource')
+            raise e

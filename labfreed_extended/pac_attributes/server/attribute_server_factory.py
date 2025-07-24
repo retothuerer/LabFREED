@@ -1,8 +1,7 @@
 from enum import Enum
 from typing import Any
-from flask import Flask, current_app, request
-from labfreed.pac_attributes.api_data_models.request import AttributeRequestPayload
-from labfreed.pac_attributes.server.server import AttributeGroupDataSource, AttributeServerRequestHandler, InvalidRequestError, TranslationDataSource
+from flask import Flask, request
+from labfreed.pac_attributes.server.server import AttributeGroupDataSource, AttributeServerRequestHandler, InvalidRequestError, OnthologyTranslationDataSource
 
 # from fastapi import FastAPI, Request
 
@@ -15,11 +14,11 @@ class Webframework(Enum):
 class AttributeServerFactory():
     @staticmethod
     def create_server_app( datasources:list[AttributeGroupDataSource], 
-                           translation_data_source:TranslationDataSource|None = None,
+                           translation_data_sources:OnthologyTranslationDataSource|None = None,
                            framework:Webframework=Webframework.FLASK
                            ):
             
-        request_handler = AttributeServerRequestHandler(data_sources=datasources, translation_data_source=translation_data_source)
+        request_handler = AttributeServerRequestHandler(data_sources=datasources, translation_data_sources= translation_data_sources)
             
         match(framework):
             case Webframework.FLASK:
@@ -48,6 +47,7 @@ class AttributeFlaskApp(Flask):
             print(e)
             return 'Invalid request', 400
         except Exception as e:
+            print(e)
             return 'The request was valid, but the server encountered an error', 500
         return response_body
     

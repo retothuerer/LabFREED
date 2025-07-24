@@ -1,9 +1,12 @@
 from datetime import datetime, timezone
-from labfreed.pac_attributes.python_convenience import pyAttribute, pyAttributes, pyReference
-from labfreed.pac_attributes.server.attribute_data_sources import Dict_DataSource, PACAnalyzerAttributeDataSource, RandomAttributeGroupDataSource
-from labfreed.pac_attributes.server.server_factory import AttributeServerFactory, Webframework
+from extended.attribute_server.attribute_server_factory import AttributeServerFactory, Webframework
+from extended.attribute_server.mock_attribute_data_sources import PACAnalyzerAttributeDataSource, RandomAttributeGroupDataSource
+from translations import Translation, TranslationsForOntology, Term
+from labfreed.pac_attributes.python_convenience.py_attributes import pyAttribute, pyAttributes, pyReference
+from labfreed.pac_attributes.server.attribute_data_sources import Dict_DataSource
 from labfreed.pac_attributes.server.translation_data_sources import DictTranslationDataSource
 from labfreed.trex.python_convenience.quantity import Quantity
+
 
 
 data_source0 = Dict_DataSource(attribute_group_key='MetaData', 
@@ -76,27 +79,49 @@ data_source3 = RandomAttributeGroupDataSource(attribute_group_key="Random", attr
 data_source4 = PACAnalyzerAttributeDataSource(attribute_group_key="PACAnalyzer")
 
 
-translation_data_source = DictTranslationDataSource(data=
-                                                    {
-                                                        "MfgDate": {
-                                                                        "en": "Manufactoring date",
-                                                                        "en-US": "Manufactoring date",
-                                                                        "fr": "Date de fabrication"
-                                                                    },
-                                                        "MaxWeight": {
-                                                                        "en": "Maximum weight",
-                                                                        "fr": "Poids maximal"
-                                                                    },
-                                                        "CalWeight": {
-                                                                        "en": "Calibration weight",
-                                                                        "fr": "Poids calibration"
-                                                                    }
-                                                        
-                                                    }
-                                                )
+data=TranslationsForOntology(
+        ontology="default",
+        terms=[
+            Term(
+                key="MfgDate",
+                translations=[
+                    Translation(language_code="en", text="Manufactoring date"),
+                    Translation(language_code="en-US", text="Manufactoring date"),
+                    Translation(language_code="fr", text="Date de fabrication"),
+                ]
+            ),
+            Term(
+                key="MaxWeight",
+                translations=[
+                    Translation(language_code="en", text="Maximum weight"),
+                    Translation(language_code="fr", text="Poids maximal"),
+                ]
+            ),
+            Term(
+                key="CalWeight",
+                translations=[
+                    Translation(language_code="en", text="Calibration weight"),
+                    Translation(language_code="fr", text="Poids calibration"),
+                ]
+            ),
+            Term(
+                key="DisplayName",
+                translations=[
+                    Translation(language_code="en", text="Display Name "),
+                    Translation(language_code="fr", text="Nom visuel"),
+                ]
+            ),
+        ]
+    )
+#print(data.model_dump_json(indent=2))
+default_translation_data_source = DictTranslationDataSource(
+    onthology="default",
+    data = data
+)
+
 
 app = AttributeServerFactory.create_server_app(datasources=[data_source0, data_source1, data_source2, data_source3, data_source4], 
-                                               translation_data_source=translation_data_source,
+                                               translation_data_sources=[default_translation_data_source],
                                                framework=Webframework.FLASK)
     
     
