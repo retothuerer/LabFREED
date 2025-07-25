@@ -1,11 +1,13 @@
 from abc import ABC, abstractmethod, abstractproperty
 from datetime import datetime, timezone
+import traceback
+
 
 from labfreed.pac_attributes.api_data_models.request import AttributeRequestPayload
 from labfreed.pac_attributes.api_data_models.response import  AttributeGroup, AttributeResponsePayload,  AttributesOfPACID, ReferenceAttribute
 from labfreed.pac_attributes.server.attribute_data_sources import AttributeGroupDataSource
 from labfreed.pac_attributes.server.translation_data_sources import OnthologyTranslationDataSource
-from translations import TranslationsForOntology, Term, Translation
+from labfreed.utilities.translations import TranslationsForOntology, Term, Translation
 from labfreed.pac_id.pac_id import PAC_ID
 
 
@@ -38,7 +40,7 @@ class AttributeServerRequestHandler():
             raise InvalidRequestError
         response_timestamp = datetime.now(tz=timezone.utc) # UTC !!
         attributes_for_pac_id = []
-        referenced_pac_ids = []
+        referenced_pac_ids = set()
         for pac_url in r.pac_urls:
             attributes_for_pac = self.get_attributes_for_pac_id(pac_url=pac_url, 
                                                                 response_timestamp=response_timestamp, 
@@ -46,7 +48,7 @@ class AttributeServerRequestHandler():
             attributes_for_pac_id.append(attributes_for_pac)
             ref = self.get_referenced_pac_ids(attributes_for_pac)
             if ref:
-                referenced_pac_ids.extend(ref)
+                referenced_pac_ids.update(ref)
             
         # also find attributes of referenced pac-ids 
         if not r.suppress_forward_lookup:
@@ -81,6 +83,7 @@ class AttributeServerRequestHandler():
                     attribute_groups.append(ag)
             except Exception as e:
                 e.add_note(f'Attribute Source {ds.attribute_group_key} encountered an error')
+                traceback.print_exc()
                 raise e
                         
         return AttributesOfPACID(pac_url=pac_url, # return the pac_url as given, i.e. with the extension if there was one
