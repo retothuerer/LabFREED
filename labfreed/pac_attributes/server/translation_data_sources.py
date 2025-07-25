@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod, abstractproperty
 import json
 
 from pydantic import ValidationError
-from translations import TranslationsForOntology, Term
+from labfreed.utilities.translations import TranslationsForOntology, Term
 
 class OnthologyTranslationDataSource(ABC):
     @abstractproperty

@@ -11,9 +11,9 @@ class RandomAttributeGroupDataSource(AttributeGroupDataSource):
     '''
     generates random attributes
     '''
-    def __init__(self, attribute_group_key:str, attribute_keys:list[str], ontology:str='default'):
+    def __init__(self, attribute_keys:list[str], *args, **kwargs):
         self._attribute_keys = attribute_keys
-        super().__init__(attribute_group_key=attribute_group_key, ontology=ontology)
+        super().__init__(*args, **kwargs)
 
         
     def is_static(self) -> bool:
@@ -33,8 +33,6 @@ class PACAnalyzerAttributeDataSource(AttributeGroupDataSource):
     '''
     Demonstrates how to analyze the PAC-ID and it's extensions to provide some data
     '''
-    def __init__(self, attribute_group_key:str):
-        self._attribute_group_key = attribute_group_key
         
     def is_static(self) -> bool:
         return False
