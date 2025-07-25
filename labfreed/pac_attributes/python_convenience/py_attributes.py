@@ -1,5 +1,6 @@
 
 from datetime import date, datetime, time
+import json
 from typing import   Literal
 import warnings
 from pydantic import  RootModel
@@ -20,7 +21,7 @@ class pyReference(RootModel[str]):
 
 class pyAttribute(LabFREED_BaseModel):
     key:str
-    value: str|bool|datetime|pyReference|Quantity|int|float
+    value: str|bool|datetime|pyReference|Quantity|int|float|dict|object
     valid_until: datetime | Literal["forever"] | None = None
     observed_at: datetime | None = None
     
@@ -51,7 +52,7 @@ class pyAttributes(RootModel[list[pyAttribute]]):
            
         elif isinstance(attribute.value, Quantity|int|float):
             if not isinstance(attribute.value, Quantity):
-                value = Quantity(attribute.value)
+                value = Quantity(value=attribute.value, unit='dimensionless')
             return NumericAttribute(value = NumericValue(magnitude=value.value_as_str(), 
                                                          unit = unece_unit_code_from_quantity(value)),
                                      **common_args)
@@ -65,8 +66,12 @@ class pyAttributes(RootModel[list[pyAttribute]]):
         elif isinstance(value, str):
             return TextAttribute(value = value, **common_args)
         
-        else:
-            raise ValueError(f'Invalid Type: {type(value)} cannot be converted to attribute. You may want to use ObjectAttribute, but would have to implement the conversion from your python type yourself.')
+        else: #this covers the last resort case of arbitrary objects. Must be json serializable.
+            try :
+                value = json.loads(json.dumps(value))
+                return ObjectAttribute(value=value, **common_args)
+            except TypeError as e:
+                raise ValueError(f'Invalid Type: {type(value)} cannot be converted to attribute. You may want to use ObjectAttribute, but would have to implement the conversion from your python type yourself.')
         
         
     @staticmethod
