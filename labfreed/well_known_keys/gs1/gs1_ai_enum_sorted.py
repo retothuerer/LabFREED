@@ -54,4 +54,8 @@ class GS1ApplicationIdentifier(Enum):
     NHRN_AIM = "714"
     NHRN_NDC = "715"
     NHRN_AIC = "716"
+    
+    def as_url(self) -> str:
+        # prefix the enum’s name to point to the description in the web
+        return f"ref.gs1.org/ai/{self.name}"
   

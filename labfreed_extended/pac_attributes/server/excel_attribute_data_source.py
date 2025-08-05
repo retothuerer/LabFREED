@@ -1,3 +1,4 @@
+from datetime import datetime
 from openpyxl import load_workbook
 import os
 import re
@@ -6,10 +7,8 @@ from cachetools import TTLCache, cached
 
 
 from labfreed.pac_attributes.api_data_models.response import AttributeGroup
-from labfreed.pac_attributes.python_convenience.py_attributes import pyAttribute, pyAttributes
+from labfreed_extended.pac_attributes.py_attributes import pyAttribute, pyAttributes
 from labfreed.pac_attributes.server.server import AttributeGroupDataSource
-from labfreed.pac_cat.pac_cat import PAC_CAT
-from labfreed.pac_id.pac_id import PAC_ID
 
 
 cache = TTLCache(maxsize=128, ttl=0)
@@ -19,8 +18,9 @@ class ExcelAttributeDataSource(AttributeGroupDataSource):
     '''
     Demonstrates how to analyze the PAC-ID and it's extensions to provide some data
     '''
-    def __init__(self, file_path:str, cache_duration_seconds:int=0, *args, **kwargs):
+    def __init__(self, file_path:str, cache_duration_seconds:int=0, base_url:str="", *args, **kwargs):
         self._file_path = file_path
+        self._base_url = base_url
 
         
         if is_sharepoint_url(file_path):
@@ -30,28 +30,39 @@ class ExcelAttributeDataSource(AttributeGroupDataSource):
             
         super().__init__(*args, **kwargs)
             
-        
-        
+         
     def is_static(self) -> bool:
         return False
+    
+    @property
+    def provides_attributes(self):
+        if self._file_location == "local":
+            rows, last_changed = read_excel_openpyxl(self._file_path)
+            headers = [self._base_url + r for r in rows[0][1:] ]
+        elif self._file_location == "sharepoint":
+            raise NotImplementedError('Sharepoint Access not implemented')
+        return headers
+    
     
     def attributes(self, pac_url: str) -> AttributeGroup:
         if not self._include_extensions:
             pac_url = pac_url.split('*')[0]
         
         if self._file_location == "local":
-            rows = read_excel_openpyxl(self._file_path)
+            rows, last_changed = read_excel_openpyxl(self._file_path)
         elif self._file_location == "sharepoint":
             raise NotImplementedError('Sharepoint Access not implemented')
         
-        d = get_row_by_first_cell(rows, pac_url)
+        d = get_row_by_first_cell(rows, pac_url, self._base_url)
         if not d:
             return None
         
         attributes = [pyAttribute(key=k, value=v) for k,v in d.items()]
         
             
-        return AttributeGroup(key=self._attribute_group_key, attributes=pyAttributes(attributes).to_payload_attributes())
+        return AttributeGroup(key=self._attribute_group_key, 
+                              attributes=pyAttributes(attributes).to_payload_attributes(),
+                              state_of=last_changed)
     
     
     
@@ -65,12 +76,14 @@ def read_excel_openpyxl(path: str, worksheet: str = None) -> list[tuple]:
     ws = wb[worksheet] if worksheet else wb.active
 
     rows = list(ws.iter_rows(values_only=True))
+    
+    last_changed: datetime | None = wb.properties.modified
     wb.close()  # immediately release the file
 
-    return rows  # list of tuples (header + data rows)
+    return rows, last_changed  # list of tuples (header + data rows)
 
 
-def get_row_by_first_cell(sheet_rows: list[tuple], match_value: str) -> dict | None:
+def get_row_by_first_cell(sheet_rows: list[tuple], match_value: str, base_url:str) -> dict | None:
     """
     Takes list of rows and returns the first row where the first cell == match_value,
     as a dict using headers from the first row.
@@ -85,7 +98,7 @@ def get_row_by_first_cell(sheet_rows: list[tuple], match_value: str) -> dict | N
         first = str(row[0]).strip() if row[0] is not None else ""
         if first == match_value:
             return {
-                str(headers[i]).strip(): row[i]
+                base_url + str(headers[i]).strip(): row[i]
                 for i in range(1, len(headers))
                 if headers[i] is not None
             }
@@ -110,7 +123,3 @@ def is_local_path(s: str) -> bool:
         return False
     # Treat anything that's not a URL and points to an existing file as a local path
     return os.path.exists(s)
-            
-            
-            
-            

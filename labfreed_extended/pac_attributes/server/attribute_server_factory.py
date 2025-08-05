@@ -1,44 +1,70 @@
 from enum import Enum
 from typing import Any
-from flask import Flask, request
-from labfreed.pac_attributes.server.server import AttributeGroupDataSource, AttributeServerRequestHandler, InvalidRequestError, OnthologyTranslationDataSource
+from flask import Flask, Response, request
+from labfreed.pac_attributes.server.server import AttributeGroupDataSource, AttributeServerRequestHandler, InvalidRequestError, TranslationDataSource
+from typing import Protocol
+
 
 # from fastapi import FastAPI, Request
 
-
+class Authenticator(Protocol):
+    def __call__(self, request) -> bool: ...
+    
+class NoAuthRequiredAuthenticator(Authenticator):
+    def __call__(self, request) -> bool:
+        return True
 
 class Webframework(Enum):
     FLASK = "flask"
     FASTAPI = 'fastapi'
+    
 
 class AttributeServerFactory():
     @staticmethod
     def create_server_app( datasources:list[AttributeGroupDataSource], 
-                           translation_data_sources:OnthologyTranslationDataSource|None = None,
+                           default_language:str,
+                           translation_data_sources:list[TranslationDataSource],
+                           authenticator: Authenticator|None,
                            framework:Webframework=Webframework.FLASK
                            ):
+        
+        if not authenticator:
+            raise ValueError("authenticator missing. Either define your own authenticator by implementing the 'Authenticator' Protocol, or - if you do not need authentication - explicitly pass a 'NoAuthRequiredAuthenticator' object")
             
-        request_handler = AttributeServerRequestHandler(data_sources=datasources, translation_data_sources= translation_data_sources)
+        request_handler = AttributeServerRequestHandler(data_sources=datasources, 
+                                                        translation_data_sources= translation_data_sources, 
+                                                        default_language=default_language
+                                                        )
             
         match(framework):
             case Webframework.FLASK:
-                app = AttributeFlaskApp(__name__, request_handler)
+                app = AttributeFlaskApp(request_handler,authenticator=authenticator)
                 return app
             case Webframework.FASTAPI:
                 raise NotImplementedError('FastAPI webapp not implemented')
 
             
 
-            
-            
+
             
 class AttributeFlaskApp(Flask):
-    def __init__(self, import_name: str, request_handler: AttributeServerRequestHandler, **kwargs: Any):
-        super().__init__(import_name, **kwargs)
+    def __init__(self, request_handler: AttributeServerRequestHandler, authenticator: Authenticator | None = None, **kwargs: Any):
+        super().__init__(__name__, **kwargs)
         self.config['ATTRIBUTE_REQUEST_HANDLER'] = request_handler
+        self.config['AUTHENTICATOR'] = authenticator
+
+        # add routes
         self.add_url_rule('/', view_func=self.handle_attribute_request, methods=['POST'])
+        self.add_url_rule('/capabilities', view_func=request_handler.capabilities, methods=['GET'])
 
     def handle_attribute_request(self):
+        authenticator = self.config['AUTHENTICATOR']
+        if not authenticator(request):
+            return Response(
+                'Unauthorized', 401,
+                {'WWW-Authenticate': 'Basic realm="Login required"'}
+            )
+        
         try:
             json_request_body = request.get_data(as_text=True)
             handler: AttributeServerRequestHandler = self.config['ATTRIBUTE_REQUEST_HANDLER']
@@ -52,25 +78,11 @@ class AttributeFlaskApp(Flask):
         return response_body
     
     
+
+
+
     
-            #     app = FastAPI()
 
-            #     # Inject your handler during startup
-            #     app.state.request_handler = request_handler
-
-            #     # --- Route handler ---
-            #     @app.get("/")
-            #     async def handle_attribute_request(request: Request):
-            #         try:
-            #             json_request_body = await request.json()
-            #         except Exception:
-            #             payload = AttributeRequestPayload(
-            #                 pac_urls_without_extensions=["HTTPS://PAC.METTORIUS.COM/-MD/BAL500/12340"]
-            #             )
-            #             json_request_body = payload.as_json()
-
-            #         request_handler: AttributeServerRequestHandler = request.app.state.request_handler
-            #         response_body = request_handler.handle_attribute_request(json_request_body)
-            #         return response_body
-                
-            #     return app
+    
+    
+    

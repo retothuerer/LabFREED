@@ -12,18 +12,19 @@ from labfreed.pac_id.pac_id import PAC_ID
 
 class CacheableAttributeGroup(AttributeGroup):
     origin:str
+    language:str
     valid_until: Literal['forever'] | datetime | None = None
     
-    @model_validator(mode='after')
-    def set_valid_until(self) -> 'CacheableAttributeGroup':
-        vals = [a.valid_until for a in self.attributes]
-        if all(e == 'forever' for e in vals):
-            self.valid_until = 'forever'
-        elif any(e is None for e in vals):
-            self.valid_until = None
-        else:
-            self.valid_until = min(v for v in vals if isinstance(v, datetime))
-        return self
+    # @model_validator(mode='after')
+    # def set_valid_until(self) -> 'CacheableAttributeGroup':
+    #     vals = [a.valid_until for a in self.attributes]
+    #     if all(e == 'forever' for e in vals):
+    #         self.valid_until = 'forever'
+    #     elif any(e is None for e in vals):
+    #         self.valid_until = None
+    #     else:
+    #         self.valid_until = min(v for v in vals if isinstance(v, datetime))
+    #     return self
     
     
     @property
@@ -41,6 +42,9 @@ class CacheableAttributeGroup(AttributeGroup):
 class AttributeCache(Protocol):
     def get_all(self, service_url:str, pac:PAC_ID) -> list[CacheableAttributeGroup]:
         pass
+    
+    def get_attribute_groups(self, service_url:str, pac:PAC_ID, attribute_groups:list[str]):
+        pass
         
     def update(self, service_url:str, pac:PAC_ID, attribute_groups:list[CacheableAttributeGroup]):
         pass
@@ -57,8 +61,13 @@ class MemoryAttributeCache(AttributeCache):
             pac = PAC_ID.from_url(pac)
         k = self._generate_dict_key(service_url=service_url, pac=pac)
         
-        ag = [CacheableAttributeGroup.model_validate(e) for e in self._store.get(k, [])]
-        return ag
+        ags = [CacheableAttributeGroup.model_validate(e) for e in self._store.get(k, [])]
+        return ags
+    
+    def get_attribute_groups(self, service_url:str, pac:PAC_ID, attribute_groups:list[str]):
+        all_ags = self.get_all(service_url=service_url, pac=pac)
+        selected_ags = [ag for ag in all_ags if ag.key in attribute_groups]
+        return selected_ags
         
     def update(self, service_url:str, pac:PAC_ID, attribute_groups: list[CacheableAttributeGroup] ):
         k = self._generate_dict_key(service_url=service_url, pac=pac)

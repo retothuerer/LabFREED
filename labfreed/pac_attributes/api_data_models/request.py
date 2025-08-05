@@ -8,8 +8,8 @@ class AttributeRequestPayload(LabFREED_BaseModel):
     model_config = ConfigDict(frozen=True)
     
     pac_urls: list[str]
+    language_preferences: list[str]
     restrict_to_attribute_groups: list[str]|None = None
-    suppress_translations: bool = False
     suppress_forward_lookup: bool = False
     
     def as_json(self):

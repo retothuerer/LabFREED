@@ -46,8 +46,7 @@ class Term(BaseModel):
                 return t.text
         return None
     
-class TranslationsForOntology(BaseModel):
-    ontology: str
+class Terms(BaseModel):
     terms: List[Term]
 
     def translations_for_term(self, term_key: str) -> Term | None:
@@ -55,5 +54,7 @@ class TranslationsForOntology(BaseModel):
             if t.key == term_key:
                 return t
         return None
+    
+
     
 

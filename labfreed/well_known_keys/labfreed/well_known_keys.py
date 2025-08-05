@@ -16,3 +16,13 @@ class WellKnownKeys(Enum):
     REPORT_ID = 'RPT'
     TIMESTAMP = 'TS'
     VERSION = 'V'
+    
+    MAXWEIGHT = "MAXWEIGHT"
+    LASTCALIBRATION = "LASTCAL"
+    NOMINALWEIGHT = "NOMINALWEIGHT"
+    
+    
+    def as_url(self) -> str:
+        # prefix the enum’s name to point to the description in the web
+        return f"labfreed.org/wkk/{self.name}"
+    

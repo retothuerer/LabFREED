@@ -20,6 +20,8 @@ class StringIOLineBreak(StringIO):
                     s = f'[bold][underline]{s}[/underline][/bold]'
                 elif self._markup == 'kivy':
                     s = f'[b][u]{s}[/u][/b]'
+                elif self._markup == 'html':
+                    s = f'<h1>{s}</h1>'
                 self.new_section()
                 self.write(s)  
                 
@@ -28,6 +30,8 @@ class StringIOLineBreak(StringIO):
                     s = f'[bold]{s}[/bold]'
                 elif self._markup == 'kivy':
                     s = f'[b]{s}[/b]'
+                elif self._markup == 'html':
+                    s = f'<h2>{s}</h2>'
                 self.new_paragraph()
                 self.write(s) 
                 
@@ -40,6 +44,8 @@ class StringIOLineBreak(StringIO):
                     s = f'[bold]{k}[/bold]:  {v}'
                 elif self._markup == 'kivy':
                     s = f'[b]{k}[/b]:  {v}'
+                elif self._markup == 'html':
+                    s = f'<b>{k}</b>:  {v}'
                 self.write_indented(s)
                 
             def link(self, s, link):
@@ -47,6 +53,8 @@ class StringIOLineBreak(StringIO):
                     s = f'[bold]{s}[/bold]:  [link={link}]{link}[/link] '
                 elif self._markup == 'kivy':
                     s = f'[b]{s}[/b]:  [ref={link}]{link}[/ref]'
+                elif self._markup == 'html':
+                    s = f'<b>{s}</b>: <a href={link}>{link}</a>' 
                 self.write_indented(s)
                 
             

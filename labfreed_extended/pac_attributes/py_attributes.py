@@ -6,10 +6,9 @@ import warnings
 from pydantic import  RootModel
 
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel
-from labfreed.pac_attributes.api_data_models.response import AttributeBase, BoolAttribute, DateTimeAttribute,  NumericAttribute, NumericValue, ObjectAttribute, ReferenceAttribute, TextAttribute, _parse_date_time_str
+from labfreed.pac_attributes.api_data_models.response import AttributeBase, BoolAttribute, DateTimeAttribute,  NumericAttribute, NumericValue, ObjectAttribute, ReferenceAttribute, TextAttribute
 from labfreed.pac_id.pac_id import PAC_ID
-from labfreed.trex.python_convenience.quantity import Quantity, unece_unit_code_from_quantity
-from labfreed.well_known_keys.unece.unece_units import unece_unit
+from labfreed.trex.python_convenience.quantity import Quantity
 
 
 class pyReference(RootModel[str]):
@@ -21,6 +20,7 @@ class pyReference(RootModel[str]):
 
 class pyAttribute(LabFREED_BaseModel):
     key:str
+    label:str = ""
     value: str|bool|datetime|pyReference|Quantity|int|float|dict|object
     valid_until: datetime | Literal["forever"] | None = None
     observed_at: datetime | None = None
@@ -35,7 +35,7 @@ class pyAttributes(RootModel[list[pyAttribute]]):
     def _attribute_to_attribute_payload_type(attribute:pyAttribute) -> AttributeBase:
         common_args = {
             "key": attribute.key,
-            "valid_until": attribute.valid_until,
+            "label": attribute.label,
             "observed_at": attribute.observed_at
         }
         value = attribute.value
@@ -53,9 +53,20 @@ class pyAttributes(RootModel[list[pyAttribute]]):
         elif isinstance(attribute.value, Quantity|int|float):
             if not isinstance(attribute.value, Quantity):
                 value = Quantity(value=attribute.value, unit='dimensionless')
-            return NumericAttribute(value = NumericValue(magnitude=value.value_as_str(), 
-                                                         unit = unece_unit_code_from_quantity(value)),
-                                     **common_args)
+            num_attribute = NumericAttribute(value = NumericValue(magnitude=value.value_as_str(), 
+                                             unit = value.unit),
+                                              **common_args)
+            num_attribute.print_validation_messages()
+            return num_attribute
+        
+        elif isinstance(value, str):
+            # capture quantities in the form of "100.0e5 g/L"
+            if q := Quantity.from_str_with_unit(value):
+                return NumericAttribute(value = NumericValue(magnitude=q.value_as_str(), 
+                                             unit = q.unit),
+                                              **common_args)
+            else:
+                return TextAttribute(value = value, **common_args)
             
         elif isinstance(value, pyReference):
             return ReferenceAttribute(value = value.root, **common_args)
@@ -63,8 +74,7 @@ class pyAttributes(RootModel[list[pyAttribute]]):
         elif isinstance(value, PAC_ID):
             return ReferenceAttribute(value = value.to_url(include_extensions=False), **common_args)
         
-        elif isinstance(value, str):
-            return TextAttribute(value = value, **common_args)
+        
         
         else: #this covers the last resort case of arbitrary objects. Must be json serializable.
             try :
@@ -84,9 +94,7 @@ class pyAttributes(RootModel[list[pyAttribute]]):
                     value =  pyReference(a.value)
                     
                 case NumericAttribute():                                       
-                    u = unece_unit(a.value.unit)
-                    unit = u.get('symbol')
-                    value = Quantity.from_str_value(value=a.value.magnitude, unit=unit)
+                    value = Quantity.from_str_value(value=a.value.magnitude, unit=a.value.unit)
 
                 case BoolAttribute():
                     value = a.value
@@ -102,8 +110,8 @@ class pyAttributes(RootModel[list[pyAttribute]]):
 
                        
             attr = pyAttribute(key=a.key, 
+                               label=a.label,
                                value=value,
-                               valid_until=a.valid_until,
                                observed_at=a.observed_at
                             #    valid_until=datetime(**_parse_date_time_str(a.valid_until)),
                             #    observed_at=datetime(**_parse_date_time_str(a.value))
