@@ -1,14 +1,17 @@
 from datetime import datetime
-from openpyxl import load_workbook
+
 import os
-import re
 from urllib.parse import urlparse
 from cachetools import TTLCache, cached
-
 
 from labfreed.pac_attributes.api_data_models.response import AttributeGroup
 from labfreed_extended.pac_attributes.py_attributes import pyAttribute, pyAttributes
 from labfreed.pac_attributes.server.server import AttributeGroupDataSource
+
+try:
+    from openpyxl import load_workbook
+except ImportError:
+    raise ImportError("Please install labfreed with the [extended] extra: pip install labfreed[extended]")
 
 
 cache = TTLCache(maxsize=128, ttl=0)

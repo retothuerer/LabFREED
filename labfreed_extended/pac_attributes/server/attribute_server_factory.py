@@ -1,8 +1,11 @@
 from enum import Enum
-from typing import Any
-from flask import Flask, Response, request
+from typing import Any, Protocol
 from labfreed.pac_attributes.server.server import AttributeGroupDataSource, AttributeServerRequestHandler, InvalidRequestError, TranslationDataSource
-from typing import Protocol
+
+try:
+    from flask import Flask, Response, request
+except ImportError:
+    raise ImportError("Please install labfreed with the [extended] extra: pip install labfreed[extended]")
 
 
 # from fastapi import FastAPI, Request

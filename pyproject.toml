@@ -39,6 +39,11 @@ dev = [
     "flit>=3.12.0",
     "ruff>=0.11.5"
 ]
+extended = [
+    "Flask>=3.1.1"
+    "openpyxl>=3.1.5"
+]
+
 
 [project.urls]
 Homepage = "https://github.com/retothuerer/LabFREED"
@@ -46,8 +51,8 @@ Documentation = "https://github.com/retothuerer/LabFREED?tab=readme-ov-file#read
 Source = "https://github.com/retothuerer/LabFREED"
 Tracker = "https://github.com/retothuerer/LabFREED/issues"
 
-[tool.flit.module]
-name = "labfreed"
+[tool.flit.packages]
+include = ["labfreed", "labfreed_extended"]
 
 [tool.flit.sdist]
 exclude = [

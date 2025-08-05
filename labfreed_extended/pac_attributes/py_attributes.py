@@ -1,9 +1,9 @@
 
 from datetime import date, datetime, time
 import json
-from typing import   Literal
+from typing import  Literal
 import warnings
-from pydantic import  RootModel
+from pydantic import RootModel
 
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel
 from labfreed.pac_attributes.api_data_models.response import AttributeBase, BoolAttribute, DateTimeAttribute,  NumericAttribute, NumericValue, ObjectAttribute, ReferenceAttribute, TextAttribute
@@ -80,7 +80,7 @@ class pyAttributes(RootModel[list[pyAttribute]]):
             try :
                 value = json.loads(json.dumps(value))
                 return ObjectAttribute(value=value, **common_args)
-            except TypeError as e:
+            except TypeError as e:  # noqa: F841
                 raise ValueError(f'Invalid Type: {type(value)} cannot be converted to attribute. You may want to use ObjectAttribute, but would have to implement the conversion from your python type yourself.')
         
         

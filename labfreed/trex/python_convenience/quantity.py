@@ -22,9 +22,15 @@ class Quantity(BaseModel):
             d['log_least_significant_digit'] = - decimals
         
         #dimensionless_unit
-        unit= d.get('unit')
+        unit:str= d.get('unit')
         if unit and unit in ['1', '', 'dimensionless']:
             d['unit'] = None
+        
+        #try to coerce to ucum. catch the two most likely mistakes to use blanks for multiplication and ^ for exponents.
+        if unit:
+            unit = unit.replace('/ ', '/').replace(' /', '/').replace(' ', '.').replace('^', '')
+            d['unit'] = unit
+            
         return d
     
         
@@ -57,6 +63,18 @@ class Quantity(BaseModel):
         
         q = Quantity(value = num_val, unit=unit, log_least_significant_digit=log_least_significant_digit)
         return q
+    
+    @classmethod
+    def from_str_with_unit(cls, value:str):
+        ''' assumes value and unit are separated by " " '''
+        try:
+            parts = value.strip().split(' ', 1)
+            if len(parts) == 2:
+                str_value = parts[0]
+                unit = parts[1]
+                return cls.from_str_value(str_value, unit)
+        except Exception:
+            return None
 
     @staticmethod
     def _find_log_significant_digits(value:str):
@@ -72,7 +90,7 @@ class Quantity(BaseModel):
             m = re.match(r'-?\d+?(?P<trailing_zeros>0*)(\.\d+)?$', int_part)
             if m:
                 trailing_zeros = m.group('trailing_zeros')
-                possible_non_significant_digits = len(trailing_zeros) # there is no way to know if they are really insignificant.
+                possible_non_significant_digits = len(trailing_zeros) # there is no way to know if they are really insignificant.  # noqa: F841
                 log_least_significant_digit =  exponent
             
         else:

@@ -1,6 +1,6 @@
 from enum import Enum
 import re
-from labfreed.labfreed_infrastructure import LabFREED_BaseModel, ValidationMsgLevel, _quote_texts
+from labfreed.labfreed_infrastructure import ValidationMsgLevel, _quote_texts
 
 
 

@@ -1,4 +1,3 @@
-from enum import Enum
 import json
 import re
 from typing import Self
@@ -9,11 +8,7 @@ import jsonpath_ng.ext as jsonpath
 
 from labfreed.pac_id_resolver.services import Service, ServiceGroup
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel, ValidationMsgLevel, _quote_texts
-from labfreed.pac_id_resolver.cit_common import ( _add_msg_to_cit_entry_model, 
-                                                 _validate_service_name, 
-                                                 _validate_application_intent, 
-                                                 _validate_service_type,
-                                                 ServiceType)
+from labfreed.pac_id_resolver.cit_common import ( ServiceType)
 
 
 __all__ = [

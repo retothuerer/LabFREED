@@ -1,5 +1,5 @@
 from pydantic import BaseModel, model_validator
-from typing import Any, List, Optional
+from typing import List, Optional
 import re
 
 

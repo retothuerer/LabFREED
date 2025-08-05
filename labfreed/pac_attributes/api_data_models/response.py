@@ -78,7 +78,7 @@ class NumericValue(LabFREED_BaseModel):
         value = self.magnitude
         if not_allowed_chars := set(re.sub(r'[0-9\.\-\+Ee]', '', value)):
             self._add_validation_message(
-                source=f"Numeric Attribute",
+                source="Numeric Attribute",
                 level=ValidationMsgLevel.ERROR,  # noqa: F821
                 msg=f"Characters {_quote_texts(not_allowed_chars)} are not allowed in quantity segment. Must be a number.",
                 highlight_pattern = f'{value}',
@@ -86,7 +86,7 @@ class NumericValue(LabFREED_BaseModel):
             )
         if not re.fullmatch(r'-?\d+(\.\d+)?([Ee][\+-]?\d+)?', value):
             self._add_validation_message(
-                source=f"Numeric Attribute",
+                source="Numeric Attribute",
                 level=ValidationMsgLevel.ERROR,
                 msg=f"{value} cannot be converted to number",
                 highlight_pattern = f'{value}'               
@@ -101,14 +101,14 @@ class NumericValue(LabFREED_BaseModel):
         '''
         if ' ' in self.unit or '^' in self.unit:
             self._add_validation_message(
-                    source=f"Numeric Attribute",
+                    source="Numeric Attribute",
                     level= ValidationMsgLevel.ERROR,
                     msg=f"Unit {self.unit} is invalid. Must not contain blankspace  or '^'.",
                     highlight_pattern = self.unit
             )
         elif not re.fullmatch(r"^(((?P<unit>[\w\[\]]+?)(?P<exponent>\-?\d+)?|(?P<annotation>)\{\w+?\})(?P<operator>[\./]?)?)+", self.unit):
             self._add_validation_message(
-                    source=f"Numeric Attribute",
+                    source="Numeric Attribute",
                     level= ValidationMsgLevel.WARNING,
                     msg=f"Unit {self.unit} is probably invalid. Ensure it complies with UCUM specifications.",
                     highlight_pattern = self.unit

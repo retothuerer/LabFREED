@@ -56,7 +56,7 @@ class AttributeServerRequestHandler():
     def handle_attribute_request(self, json_request_body:str) -> str:
         try:
             r = AttributeRequestPayload.model_validate_json(json_request_body)
-        except Exception as e:
+        except Exception:
             raise InvalidRequestError
         attributes_for_pac_id = []
         referenced_pac_ids = set()
@@ -116,7 +116,7 @@ class AttributeServerRequestHandler():
                     try:
                         PAC_ID.from_url(a.value)
                         referenced_pacs.append(a.value)
-                    except:
+                    except Exception:
                         pass
         return referenced_pacs
             
@@ -198,13 +198,13 @@ class AttributeServerRequestHandler():
         if not requested_languages:
             return self._default_language
         
-        for l in requested_languages:
-            if l in self._supported_languages:
-                return l
+        for language in requested_languages:
+            if language in self._supported_languages:
+                return language
             
         # remove the country codes and try the again
-        for l_fallback in [l.split('-')[0] for l in requested_languages]:
-            if l in self._supported_languages:
+        for l_fallback in [lang.split('-')[0] for lang in requested_languages]:
+            if language in self._supported_languages:
                 return l_fallback
 
         return self._default_language

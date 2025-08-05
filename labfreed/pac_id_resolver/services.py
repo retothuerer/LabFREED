@@ -6,7 +6,6 @@ import requests
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-import requests
 from rich import print
 from rich.table import Table
 

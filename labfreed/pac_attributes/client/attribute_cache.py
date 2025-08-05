@@ -3,7 +3,6 @@
 from datetime import datetime
 from typing import Literal, Protocol
 
-from pydantic import model_validator
 
 from labfreed.pac_attributes.api_data_models.response import AttributeGroup
 from labfreed.pac_id.pac_id import PAC_ID

@@ -1,8 +1,6 @@
 from functools import lru_cache
 import logging
-import traceback
 from typing import Self
-import yaml
 from requests import get
 
 
@@ -32,7 +30,7 @@ def cit_from_str(s:str, origin:str='') -> CIT_v1|CIT_v2:
         cit2 = None
     try:
         cit1 = CIT_v1.from_csv(s, origin)
-        cit_version = 'v1'
+        cit_version = 'v1'  # noqa: F841
     except Exception:
         cit1 = None
     
