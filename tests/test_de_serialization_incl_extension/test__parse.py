@@ -81,7 +81,7 @@ def test_known_extensions_are_interpreted():
 
   
 def test_display_name_and_summary_are_known_extension_types():
-    pac = from_url(valid_base + valid_standard_segments + "*N$N/ABC*SUM$TREX/A$T.A:A")
+    pac = from_url(valid_base + valid_standard_segments + "*N$TEXT/ABC*SUM$TREX/A$T.A:A")
     extensions= pac.extensions
     assert isinstance(extensions[0], DisplayNameExtension)
     assert isinstance(extensions[1], TREX_Extension)
