@@ -3,7 +3,7 @@ import rich
 
 from labfreed.labfreed_infrastructure import LabFREED_ValidationError
 from labfreed.pac_attributes.client.client import AuthenticationError
-from labfreed_extended.app.app_infrastructure import Labfreed_App_Infrastructure
+from labfreed.labfreed_extended.app.app_infrastructure import Labfreed_App_Infrastructure
 from labfreed.pac_id.pac_id import PAC_ID
 
  

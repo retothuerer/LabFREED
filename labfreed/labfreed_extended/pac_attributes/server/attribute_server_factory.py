@@ -1,5 +1,7 @@
 from enum import Enum
-from typing import Any, Protocol
+from typing import Any, Callable, Protocol
+
+from flask import Blueprint
 from labfreed.pac_attributes.server.server import AttributeGroupDataSource, AttributeServerRequestHandler, InvalidRequestError, TranslationDataSource
 
 try:
@@ -55,30 +57,40 @@ class AttributeFlaskApp(Flask):
         super().__init__(__name__, **kwargs)
         self.config['ATTRIBUTE_REQUEST_HANDLER'] = request_handler
         self.config['AUTHENTICATOR'] = authenticator
-
-        # add routes
-        self.add_url_rule('/', view_func=self.handle_attribute_request, methods=['POST'])
-        self.add_url_rule('/capabilities', view_func=request_handler.capabilities, methods=['GET'])
-
-    def handle_attribute_request(self):
-        authenticator = self.config['AUTHENTICATOR']
-        if not authenticator(request):
-            return Response(
-                'Unauthorized', 401,
-                {'WWW-Authenticate': 'Basic realm="Login required"'}
-            )
         
-        try:
-            json_request_body = request.get_data(as_text=True)
-            handler: AttributeServerRequestHandler = self.config['ATTRIBUTE_REQUEST_HANDLER']
-            response_body = handler.handle_attribute_request(json_request_body)
-        except InvalidRequestError as e:
-            print(e)
-            return 'Invalid request', 400
-        except Exception as e:
-            print(e)
-            return 'The request was valid, but the server encountered an error', 500
-        return response_body
+        bp = self.create_attribute_blueprint(request_handler, authenticator)
+        self.register_blueprint(bp)
+
+    @staticmethod
+    def create_attribute_blueprint(
+        request_handler: AttributeServerRequestHandler,
+        authenticator: Authenticator | None = None
+    ) -> Blueprint:
+        bp = Blueprint("attribute", __name__)
+
+        @bp.route("/", methods=["POST"])
+        def handle_attribute_request():
+            if authenticator and not authenticator(request):
+                return Response(
+                    "Unauthorized", 401,
+                    {"WWW-Authenticate": 'Basic realm="Login required"'}
+                )
+            try:
+                json_request_body = request.get_data(as_text=True)
+                response_body = request_handler.handle_attribute_request(json_request_body)
+            except InvalidRequestError as e:
+                print(e)
+                return "Invalid request", 400
+            except Exception as e:
+                print(e)
+                return "The request was valid, but the server encountered an error", 500
+            return response_body
+
+        @bp.route("/capabilities", methods=["GET"])
+        def capabilities():
+            return request_handler.capabilities()
+
+        return bp
     
     
 
