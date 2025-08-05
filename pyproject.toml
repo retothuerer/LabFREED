@@ -40,7 +40,7 @@ dev = [
     "ruff>=0.11.5"
 ]
 extended = [
-    "Flask>=3.1.1"
+    "Flask>=3.1.1",
     "openpyxl>=3.1.5"
 ]
 
@@ -51,8 +51,8 @@ Documentation = "https://github.com/retothuerer/LabFREED?tab=readme-ov-file#read
 Source = "https://github.com/retothuerer/LabFREED"
 Tracker = "https://github.com/retothuerer/LabFREED/issues"
 
-[tool.flit.packages]
-include = ["labfreed", "labfreed_extended"]
+[tool.flit.module]
+name = "labfreed"
 
 [tool.flit.sdist]
 exclude = [

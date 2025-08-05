@@ -2,6 +2,10 @@
 
 [![PyPI](https://img.shields.io/pypi/v/labfreed.svg)](https://pypi.org/project/labfreed/) ![Python Version](https://img.shields.io/pypi/pyversions/labfreed) [![Test Labfreed](https://github.com/retothuerer/LabFREED/actions/workflows/run-tests.yml/badge.svg)](https://github.com/retothuerer/LabFREED/actions/workflows/run-tests.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) 
 
+<!--
+[![Ruff](https://img.shields.io/badge/style-Ruff-black?logo=ruff&labelColor=gray)](https://github.com/astral-sh/ruff)
+-->
+
 
 This is a Python implementation of [LabFREED](https://labfreed.org/) building blocks.
 
