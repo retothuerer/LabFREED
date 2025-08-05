@@ -83,6 +83,8 @@ class PAC_Parser():
     def _parse_pac_id(cls,id_str:str) -> "PAC_ID":
         # m = re.match('(HTTPS://)?(PAC.)?(?P<issuer>.+?\..+?)/(?P<identifier>.*)', id_str)
         m = re.match('(HTTPS://)?(PAC.)?(?P<issuer>.+?)/(?P<identifier>.*)', id_str)
+        if not m:
+            raise LabFREED_ValidationError(f'{id_str} does not match the pattern expected for PAC-ID')
         d = m.groupdict()
         
         id_segments = list()
@@ -127,7 +129,7 @@ class PAC_Parser():
         
         defaults =  MappingProxyType(
                                 {
-                                    0: { 'name': 'N', 'type': 'N'},
+                                    0: { 'name': 'N', 'type': 'TEXT'},
                                     1: { 'name': 'SUM', 'type': 'TREX'}
                                 }
         )
