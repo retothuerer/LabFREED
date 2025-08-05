@@ -5,8 +5,9 @@ from urllib.parse import urlparse
 from cachetools import TTLCache, cached
 
 from labfreed.pac_attributes.api_data_models.response import AttributeGroup
-from labfreed_extended.pac_attributes.py_attributes import pyAttribute, pyAttributes
 from labfreed.pac_attributes.server.server import AttributeGroupDataSource
+from labfreed.labfreed_extended.pac_attributes.py_attributes import pyAttribute, pyAttributes
+
 
 try:
     from openpyxl import load_workbook

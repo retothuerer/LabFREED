@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Callable, Protocol
+from typing import Any, Protocol
 
 from flask import Blueprint
 from labfreed.pac_attributes.server.server import AttributeGroupDataSource, AttributeServerRequestHandler, InvalidRequestError, TranslationDataSource
@@ -64,7 +64,7 @@ class AttributeFlaskApp(Flask):
     @staticmethod
     def create_attribute_blueprint(
         request_handler: AttributeServerRequestHandler,
-        authenticator: Authenticator | None = None
+        authenticator: Authenticator | None = None,
     ) -> Blueprint:
         bp = Blueprint("attribute", __name__)
 
