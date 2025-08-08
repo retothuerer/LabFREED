@@ -1,19 +1,20 @@
 
 
 from pydantic import BaseModel, Field
-from labfreed.pac_attributes.pythonic.py_attributes import pyAttribute, pyAttributes
+from labfreed.pac_attributes.pythonic.py_attributes import pyAttribute, pyAttributeGroup, pyAttributes
+from labfreed.pac_attributes.well_knonw_attribute_keys import MetaAttributeKeys
 from labfreed.pac_cat.pac_cat import PAC_CAT
 from labfreed.pac_id.pac_id import PAC_ID
 from labfreed.pac_id_resolver.services import ServiceGroup
 from labfreed.labfreed_extended.app.formatted_print import StringIOLineBreak
+from labfreed.well_known_extensions.display_name_extension import DisplayNameExtension
 
 
 class PacInfo(BaseModel):
     """A convenient collection of information about a PAC-ID"""
     pac_id:PAC_ID
-    display_name:str|None = None
     user_handovers: list[ServiceGroup] = Field(default_factory=list)
-    attributes:pyAttributes = Field(default_factory=list)
+    attributes:dict[str, pyAttributeGroup] = Field(default_factory=dict)
     
     @property
     def pac_url(self):
@@ -33,6 +34,29 @@ class PacInfo(BaseModel):
     @property
     def summary(self):
         return self.pac_id.get_extension('SUM')
+    
+    @property
+    def image_url(self) -> str:
+        if meta := self.attributes.get(MetaAttributeKeys.GROUPKEY.value):
+            image_attr = meta.attributes.get(MetaAttributeKeys.IMAGE.value)
+            return image_attr.value
+        
+        
+    @property
+    def display_name(self) -> str|None:
+        display_name = None
+        pac = self.pac_id
+        if dn := pac.get_extension('N'):
+            dn = DisplayNameExtension.from_extension(dn)
+            display_name = dn.display_name or ""
+        # there can be a display name in attributes, too
+        if meta := self.attributes.get(MetaAttributeKeys.GROUPKEY.value):
+            dn_attr = meta.attributes.get(MetaAttributeKeys.DISPLAYNAME.value)
+            if dn_attr: 
+                dn = dn_attr.value
+                display_name += f'  ( aka {dn} )'
+        return display_name
+        
     
     
     
@@ -62,10 +86,9 @@ class PacInfo(BaseModel):
         
         
         printout.title1("Attributes")
-        for ag in self.attributes:  
+        for ag in self.attributes.values():  
             printout.title2(f'{ag.label} (from {ag.origin})')
-            attributes = pyAttributes.from_payload_attributes(ag.attributes)
-            for k, v in attributes.items():
+            for v in ag.attributes.values():
                 v:pyAttribute
                 #print(f'{k}: ({v.label})           :: {v.value}  ')
                 printout.key_value(v.label, v.value)

@@ -49,7 +49,7 @@ def attribute_request_default_callback_factory(session: requests.Session = None)
 
     def callback(url: str, attribute_request_body: str) -> tuple[int, str]:
         try:
-            resp = session.post(url, data=attribute_request_body, headers={'Content-Type': 'application/json'})
+            resp = session.post(url, data=attribute_request_body, headers={'Content-Type': 'application/json'}, timeout=10)
             return resp.status_code, resp.text
         except requests.exceptions.RequestException as e:
             return 500, str(e)
@@ -140,7 +140,9 @@ class AttributeClient():
             
             if pac_id == pac:
                 attribute_groups_out = ags
-        return attribute_groups_out
+                return attribute_groups_out
+            else:
+                return []
             
                 
     

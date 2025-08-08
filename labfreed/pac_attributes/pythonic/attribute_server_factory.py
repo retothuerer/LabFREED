@@ -68,7 +68,7 @@ class AttributeFlaskApp(Flask):
     ) -> Blueprint:
         bp = Blueprint("attribute", __name__)
 
-        @bp.route("/", methods=["POST"])
+        @bp.route("/", methods=["POST"], strict_slashes=False)
         def handle_attribute_request():
             if authenticator and not authenticator(request):
                 return Response(
@@ -86,7 +86,7 @@ class AttributeFlaskApp(Flask):
                 return "The request was valid, but the server encountered an error", 500
             return response_body
 
-        @bp.route("/capabilities", methods=["GET"])
+        @bp.route("/capabilities", methods=["GET"], strict_slashes=False)
         def capabilities():
             return request_handler.capabilities()
 

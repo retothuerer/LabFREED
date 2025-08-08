@@ -6,6 +6,7 @@ import requests
 from labfreed.labfreed_extended.app.pac_info import PacInfo
 from labfreed.pac_attributes.client.attribute_cache import MemoryAttributeCache
 from labfreed.pac_attributes.client.client import AttributeClient, attribute_request_default_callback_factory
+from labfreed.pac_attributes.pythonic.py_attributes import pyAttributeGroup
 from labfreed.pac_attributes.well_knonw_attribute_keys import MetaAttributeKeys
 from labfreed.well_known_extensions.display_name_extension import DisplayNameExtension
 
@@ -63,25 +64,15 @@ class Labfreed_App_Infrastructure():
         pac_info.user_handovers = sg_user_handovers
         
         # Attributes
-        attribute_groups = []
+        attribute_groups = {}
         for sg in service_groups:  
             attributes_urls = [s.url  for s in sg.services if s.service_type == 'attributes-generic']
             for url in attributes_urls:
-                ags = self._attribute_client.get_attributes(url, pac_id=pac.to_url(include_extensions=False), language_preferences=self._language_preferences)
+                ags = {ag.key: pyAttributeGroup.from_attribute_group(ag) for ag in self._attribute_client.get_attributes(url, pac_id=pac.to_url(include_extensions=False), language_preferences=self._language_preferences)}
                 if ags:
-                    attribute_groups.extend(ags)
+                    attribute_groups.update(ags)
         pac_info.attributes = attribute_groups
-        
-        if dn := pac.get_extension('N'):
-            dn = DisplayNameExtension.from_extension(dn)
-            pac_info.display_name = dn.display_name or ""
-        # there can be a display name in attributes, too
-        if meta := [ag for ag in pac_info.attributes if ag.key == MetaAttributeKeys.GROUPKEY.value]:
-            dn_attr = [a for a in meta[0].attributes if a.key == MetaAttributeKeys.DISPLAYNAME.value]
-            if dn_attr: 
-                dn = dn_attr[0].value
-                pac_info.display_name += f'  ( aka {dn} )'
-              
+       
         return pac_info
     
     

@@ -6,7 +6,8 @@ import warnings
 from pydantic import RootModel
 
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel
-from labfreed.pac_attributes.api_data_models.response import AttributeBase, BoolAttribute, DateTimeAttribute,  NumericAttribute, NumericValue, ObjectAttribute, ReferenceAttribute, TextAttribute
+from labfreed.pac_attributes.api_data_models.response import AttributeBase, AttributeGroup, BoolAttribute, DateTimeAttribute,  NumericAttribute, NumericValue, ObjectAttribute, ReferenceAttribute, TextAttribute
+from labfreed.pac_attributes.client.attribute_cache import CacheableAttributeGroup
 from labfreed.pac_id.pac_id import PAC_ID
 from labfreed.trex.pythonic.quantity import Quantity
 
@@ -87,7 +88,7 @@ class pyAttributes(RootModel[list[pyAttribute]]):
         
     @staticmethod
     def from_payload_attributes(attributes:list[AttributeBase]) -> 'pyAttributes':
-        out = dict()
+        out = list()
         for a in attributes:
             match a:
                 
@@ -117,8 +118,16 @@ class pyAttributes(RootModel[list[pyAttribute]]):
                             #    valid_until=datetime(**_parse_date_time_str(a.valid_until)),
                             #    observed_at=datetime(**_parse_date_time_str(a.value))
             )
-            out.update( { a.key: attr } )
+            out.append(attr )
         return out
             
             
         
+class pyAttributeGroup(CacheableAttributeGroup):
+    attributes:dict[str,pyAttribute]
+    
+    @staticmethod
+    def from_attribute_group(attribute_group:AttributeGroup):
+        data = vars(attribute_group).copy()
+        data["attributes"] = {a.key: a for a in pyAttributes.from_payload_attributes(attribute_group.attributes)}
+        return pyAttributeGroup(**data)
