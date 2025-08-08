@@ -5,7 +5,7 @@ from typing import Union
 from pydantic import BaseModel, Field, PrivateAttr, model_validator
 
 from labfreed.utilities.base36 import base36
-from labfreed.trex.python_convenience.quantity import Quantity
+from labfreed.trex.pythonic.quantity import Quantity
 
 
 class DataTable(BaseModel):

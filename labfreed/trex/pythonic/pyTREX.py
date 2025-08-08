@@ -6,10 +6,10 @@ from typing import Self
 
 from pydantic import RootModel
 from labfreed.well_known_keys.unece.unece_units import unece_unit
-from labfreed.trex.python_convenience.data_table import DataTable
+from labfreed.trex.pythonic.data_table import DataTable
 from labfreed.utilities.base36 import from_base36, base36, to_base36
 
-from labfreed.trex.python_convenience.quantity import Quantity, unece_unit_code_from_quantity
+from labfreed.trex.pythonic.quantity import Quantity, unece_unit_code_from_quantity
 from labfreed.trex.table_segment import ColumnHeader, TableSegment
 from labfreed.trex.trex import TREX
 from labfreed.trex.trex_base_models import AlphanumericValue, BinaryValue, BoolValue, DateValue, ErrorValue, NumericValue, TextValue

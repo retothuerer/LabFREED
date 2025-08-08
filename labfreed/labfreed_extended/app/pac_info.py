@@ -1,11 +1,11 @@
 
 
 from pydantic import BaseModel, Field
-from labfreed_extended.pac_attributes.py_attributes import pyAttribute, pyAttributes
+from labfreed.pac_attributes.pythonic.py_attributes import pyAttribute, pyAttributes
 from labfreed.pac_cat.pac_cat import PAC_CAT
 from labfreed.pac_id.pac_id import PAC_ID
 from labfreed.pac_id_resolver.services import ServiceGroup
-from labfreed_extended.utilities.formatted_print import StringIOLineBreak
+from labfreed.labfreed_extended.app.formatted_print import StringIOLineBreak
 
 
 class PacInfo(BaseModel):

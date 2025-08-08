@@ -89,9 +89,9 @@ TREX can conveniently be created from a python dictionary.
 Note that utility types for Quantity (number with unit) and table are needed
 '''
 from datetime import datetime  # noqa: E402
-from labfreed.trex.python_convenience import pyTREX  # noqa: E402
-from labfreed.trex.python_convenience import DataTable  # noqa: E402
-from labfreed.trex.python_convenience import Quantity  # noqa: E402
+from labfreed.trex.pythonic import pyTREX  # noqa: E402
+from labfreed.trex.pythonic import DataTable  # noqa: E402
+from labfreed.trex.pythonic import Quantity  # noqa: E402
 
 # Value segments of different type
 segments = {

@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod, abstractproperty
 from datetime import datetime, timezone
-from labfreed.pac_attributes.api_data_models.response import VALID_FOREVER, AttributeGroup
-from labfreed_extended.pac_attributes.py_attributes import pyAttributes
+from labfreed.pac_attributes.api_data_models.response import VALID_FOREVER, AttributeBase, AttributeGroup
 
 
 class AttributeGroupDataSource(ABC):
@@ -30,10 +29,11 @@ class AttributeGroupDataSource(ABC):
     
 
 class Dict_DataSource(AttributeGroupDataSource):
-    def __init__(self, data:dict[str, pyAttributes], *args, **kwargs):
-        if not all([isinstance(e, pyAttributes) for e in data.values()]):
+    def __init__(self, data:dict[str, list[AttributeBase]], *args, **kwargs):
+        if not all([isinstance(e, list) for e in data.values()]):
             raise ValueError('Invalid data')
-        self._data:pyAttributes = data
+        
+        self._data = data
         self._state_of = datetime.now(tz=timezone.utc)
         
         super().__init__(*args, **kwargs)       
@@ -41,17 +41,16 @@ class Dict_DataSource(AttributeGroupDataSource):
     
     @property
     def provides_attributes(self):
-        return [a.key for attributes in self._data.values() for a in attributes.root]
+        return [a.key for attributes in self._data.values() for a in attributes]
     
            
     def attributes(self, pac_url: str) -> AttributeGroup:
         if not self._include_extensions:
             pac_url = pac_url.split('*')[0]
         
-        attributes:pyAttributes = self._data.get(pac_url)
+        attributes = self._data.get(pac_url)
         if not attributes:
-            return None
-        attributes = attributes.to_payload_attributes()
+            return None     
         
         
         valid_until = VALID_FOREVER if self._is_static else None

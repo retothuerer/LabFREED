@@ -8,7 +8,7 @@ from pydantic import RootModel
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel
 from labfreed.pac_attributes.api_data_models.response import AttributeBase, BoolAttribute, DateTimeAttribute,  NumericAttribute, NumericValue, ObjectAttribute, ReferenceAttribute, TextAttribute
 from labfreed.pac_id.pac_id import PAC_ID
-from labfreed.trex.python_convenience.quantity import Quantity
+from labfreed.trex.pythonic.quantity import Quantity
 
 
 class pyReference(RootModel[str]):
@@ -30,6 +30,7 @@ class pyAttribute(LabFREED_BaseModel):
 class pyAttributes(RootModel[list[pyAttribute]]):
     def to_payload_attributes(self) -> list[AttributeBase]:
         return [self._attribute_to_attribute_payload_type(e) for e in self.root]
+    
             
     @staticmethod        
     def _attribute_to_attribute_payload_type(attribute:pyAttribute) -> AttributeBase:

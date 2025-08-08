@@ -4,7 +4,7 @@ import warnings
 import rich
 
 from labfreed.pac_attributes.api_data_models.request import AttributeRequestPayload
-from labfreed.pac_attributes.api_data_models.response import AttributeResponsePayload,  AttributesOfPACID, ReferenceAttribute
+from labfreed.pac_attributes.api_data_models.response import AttributeResponsePayload, AttributesOfPACID, ReferenceAttribute
 from labfreed.pac_attributes.api_data_models.server_capabilities_response import ServerCapabilities
 from labfreed.pac_attributes.server.attribute_data_sources import AttributeGroupDataSource
 from labfreed.pac_attributes.server.translation_data_sources import TranslationDataSource

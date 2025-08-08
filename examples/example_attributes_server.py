@@ -4,19 +4,21 @@ import os
 import random
 
 from flask import Request
+from labfreed.pac_attributes.pythonic.py_attributes import pyAttribute, pyAttributes, pyReference
+from labfreed.pac_attributes.pythonic.py_dict_data_source import pyDict_DataSource
 from labfreed.pac_cat.pac_cat import PAC_CAT
 from labfreed.pac_cat.predefined_categories import Material_Device
 from labfreed.utilities.translations import Terms, Term
 from labfreed.pac_attributes.api_data_models.response import AttributeGroup
 from labfreed.pac_attributes.well_knonw_attribute_keys import MetaAttributeKeys
 
-from labfreed.pac_attributes.server.attribute_data_sources import AttributeGroupDataSource, Dict_DataSource
+from labfreed.pac_attributes.server.attribute_data_sources import AttributeGroupDataSource
 from labfreed.pac_attributes.server.translation_data_sources import DictTranslationDataSource
-from labfreed.trex.python_convenience.quantity import Quantity
 
-from labfreed.labfreed_extended.pac_attributes.py_attributes import pyAttribute, pyAttributes, pyReference
-from labfreed.labfreed_extended.pac_attributes.server.attribute_server_factory import AttributeServerFactory, Webframework
-from labfreed.labfreed_extended.pac_attributes.server.excel_attribute_data_source import ExcelAttributeDataSource
+from labfreed.trex.pythonic.quantity import Quantity
+
+from labfreed.pac_attributes.pythonic.attribute_server_factory import AttributeServerFactory, Webframework
+from labfreed.pac_attributes.pythonic.excel_attribute_data_source import LocalExcelAttributeDataSource
 data_sources = []
 transation_data_sources = []
 
@@ -37,7 +39,7 @@ Create a datasource. For this demo let's use a Dict_DataSource, and configure it
 NOTE: Such a metadata source is good practice to include
 '''
 data_sources.append(
-    Dict_DataSource( 
+    pyDict_DataSource( 
         attribute_group_key=MetaAttributeKeys.GROUPKEY.value,
         include_extensions=False,
         data = {
@@ -79,7 +81,7 @@ Use an Excel file as data source.
 '''
 fp = os.path.join(os.path.dirname(__file__), 'excel_attribute_data.xlsx')
 data_sources.append(
-    ExcelAttributeDataSource(
+    LocalExcelAttributeDataSource(
         attribute_group_key="https://mettorius.com/terms/attribute_group_excel", 
         file_path=fp, 
         include_extensions=False, base_url="https://labfreed.org/terms/example/")
@@ -100,6 +102,7 @@ transation_data_sources.append(
         )
     )
 )
+
 
 
 ''' 

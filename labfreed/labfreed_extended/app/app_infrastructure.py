@@ -3,11 +3,13 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import requests
 
+from labfreed.labfreed_extended.app.pac_info import PacInfo
 from labfreed.pac_attributes.client.attribute_cache import MemoryAttributeCache
 from labfreed.pac_attributes.client.client import AttributeClient, attribute_request_default_callback_factory
 from labfreed.pac_attributes.well_knonw_attribute_keys import MetaAttributeKeys
 from labfreed.well_known_extensions.display_name_extension import DisplayNameExtension
-from labfreed_extended.app.pac_info import PacInfo
+
+
 from labfreed.pac_id.pac_id import PAC_ID
 from labfreed.pac_id_resolver.resolver import PAC_ID_Resolver, cit_from_str
 from labfreed.pac_id_resolver.services import ServiceGroup
