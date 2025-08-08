@@ -51,7 +51,7 @@ if isinstance(pac, PAC_CAT):
 ### Parse a PAC-ID with extensions
 PAC-ID can have extensions. Here we parse a PAC-ID with attached display names and summary.
 '''
-pac_str = 'HTTPS://PAC.METTORIUS.COM/-MD/BAL500/1234*N$N/WM633OV3E5DGJW2BEG0PDM1EA7*SUM$TREX/WEIGHT$GRM:67.89'
+pac_str = 'HTTPS://PAC.METTORIUS.COM/-MD/BAL500/1234*N$TEXT/WM633OV3E5DGJW2BEG0PDM1EA7*SUM$TREX/WEIGHT$GRM:67.89'
 pac = PAC_ID.from_url(pac_str)
 
 ''' #### Display Name
