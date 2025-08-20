@@ -1,3 +1,4 @@
+from pathlib import Path
 import requests
 import rich
 
@@ -51,6 +52,9 @@ if __name__ == "__main__":
             try:      
                 pac_info = app.process_pac(pac_url, markup='rich')
                 rich.print(pac_info.format_for_print('rich'))
+                p = Path(__file__).parent / 'pac_info.html'
+                with open(p, 'w+', encoding="utf-8") as f:
+                    f.write(pac_info.render_html())
             except AuthenticationError as e:
                 state = 'request-credentials-input'
                 

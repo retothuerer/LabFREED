@@ -1,13 +1,17 @@
 
 
 from functools import cached_property
+from pathlib import Path
+from urllib.parse import urlparse
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pydantic import BaseModel, Field
-from labfreed.pac_attributes.pythonic.py_attributes import pyAttribute, pyAttributeGroup, pyAttributes
+from labfreed.pac_attributes.pythonic.py_attributes import pyAttribute, pyAttributeGroup, pyAttributes, pyReference
 from labfreed.pac_attributes.well_knonw_attribute_keys import MetaAttributeKeys
 from labfreed.pac_cat.pac_cat import PAC_CAT
 from labfreed.pac_id.pac_id import PAC_ID
 from labfreed.pac_id_resolver.services import ServiceGroup
 from labfreed.labfreed_extended.app.formatted_print import StringIOLineBreak
+from labfreed.trex.pythonic.data_table import DataTable
 from labfreed.trex.pythonic.pyTREX import pyTREX
 from labfreed.well_known_extensions.display_name_extension import DisplayNameExtension
 
@@ -112,6 +116,39 @@ class PacInfo(BaseModel):
 
         return out
     
+    
+    
+    def render_html(self, hide_attribute_groups:list[str]=[]) -> str:        
+        return PACInfo_HTMLRenderer.render_template('pac_info_main.jinja.html', 
+                               pac_info = self, 
+                               hide_attribute_groups=hide_attribute_groups
+                               )
         
+    def render_html_card(self) -> str:
+        return PACInfo_HTMLRenderer.render_template('pac_info_card.jinja.html', 
+                               pac_info = self
+                               )
+    
         
+class PACInfo_HTMLRenderer():
+    TEMPLATES_DIR = Path(__file__).parent / "html_renderer"
+    jinja_env = Environment(
+        loader=FileSystemLoader(str(TEMPLATES_DIR), encoding="utf-8"),
+        autoescape=select_autoescape(enabled_extensions=("html", "jinja", "jinja2", "jinja.html")),
+    )
+    
+    @classmethod
+    def render_template(cls, template_name:str, pac_info:PacInfo, hide_attribute_groups):
+        # --- Jinja env pointing at /html_renderer ---
+        template = cls.jinja_env.get_template("pac_info.jinja.html")
+        html = template.render(
+            pac=pac_info.pac_id,
+            pac_info=pac_info,  # your object
+            hide_attribute_groups=hide_attribute_groups,
+            is_data_table = lambda value: isinstance(value, DataTable),
+            is_url = lambda s: isinstance(s, str) and urlparse(s).scheme in ('http', 'https') and bool(urlparse(s).netloc),
+            is_image = lambda s: isinstance(s, str) and s.lower().startswith('http') and s.lower().endswith(('.jpg','.jpeg','.png','.gif','.bmp','.webp','.svg','.tif','.tiff')),
+            is_reference = lambda s: isinstance(s, pyReference) ,
+        )
+        return html
         

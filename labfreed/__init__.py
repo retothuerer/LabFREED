@@ -2,7 +2,7 @@
 Python implementation of LabFREED building blocks
 '''
 
-__version__ = "1.0.0a1"
+__version__ = "1.0.0a3"
 
 from labfreed.pac_id import *  # noqa: F403
 from labfreed.pac_cat import * # noqa: F403

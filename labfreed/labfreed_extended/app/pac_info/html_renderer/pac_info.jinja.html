@@ -1,0 +1,46 @@
+{% import "macros.jinja.html" as pac with context %}
+
+<style>
+    {% include "pac-info-style.css" %}
+</style>
+
+
+{% if pac_info %}
+    <section class="lf-results">
+        {# ----- Info Card ---- #}
+        {{ pac.info_card(pac_info) }}
+        
+        {# ---- Services ---- #}
+        {% if pac_info.user_handovers %}
+            <section>
+            <!--<h4>Services</h4>-->
+            {% for sg in pac_info.user_handovers %}
+            {{ pac.services_table(sg) }}
+            {% endfor %}
+            </section>
+        {% endif %}
+
+        {# ---- Attributes ---- #}
+        {% if pac_info.attributes %}
+            <section>
+            <!--<h4>Attributes</h4>-->
+            {% for ag in pac_info.attributes.values() %}
+            {% if ag.key not in hide_attribute_groups %}
+                {{ pac.attribute_group_block(ag) }}
+            {% endif %}
+            {% endfor %}
+            </section>
+
+        {% endif %}
+
+        {# ---- Attached Data ---- #}
+        {% if pac_info.attached_data %}
+            <section>
+                <!--<h4 class="lf-section__title">Attached Data</h4>-->
+                {{ pac.attached_data_block(pac_info.attached_data) }}
+            </section>
+        {% endif %}
+
+    </section>
+
+{% endif %}
