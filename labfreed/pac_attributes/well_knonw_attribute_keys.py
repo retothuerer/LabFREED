@@ -6,6 +6,6 @@ class MetaAttributeKeys(Enum):
     IMAGE = "https://schema.org/image"
     ALIAS = "https://schema.org/alternateName"
     DESCRIPTION = "https://schema.org/description"
-    GROUPKEY = "https://labfreed.org/attribute_metadata_group"
+    GROUPKEY = "https://labfreed.org/terms/attribute_group_metadata"
     
     

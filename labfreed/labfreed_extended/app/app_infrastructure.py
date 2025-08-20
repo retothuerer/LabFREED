@@ -5,7 +5,7 @@ import requests
 
 from labfreed.labfreed_extended.app.pac_info import PacInfo
 from labfreed.pac_attributes.client.attribute_cache import MemoryAttributeCache
-from labfreed.pac_attributes.client.client import AttributeClient, attribute_request_default_callback_factory
+from labfreed.pac_attributes.client.client import AttributeClient, http_attribute_request_default_callback_factory
 from labfreed.pac_attributes.pythonic.py_attributes import pyAttributeGroup
 from labfreed.pac_attributes.well_knonw_attribute_keys import MetaAttributeKeys
 from labfreed.well_known_extensions.display_name_extension import DisplayNameExtension
@@ -30,7 +30,7 @@ class Labfreed_App_Infrastructure():
         if not http_client:
             http_client = requests.Session()
         self._http_client= http_client
-        callback = attribute_request_default_callback_factory(http_client)
+        callback = http_attribute_request_default_callback_factory(http_client)
             
         self._attribute_client = AttributeClient(http_post_callback=callback, cache_store=MemoryAttributeCache())
 

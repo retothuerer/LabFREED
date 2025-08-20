@@ -7,7 +7,7 @@ from labfreed.pac_id.pac_id import PAC_ID
 class AttributeRequestPayload(LabFREED_BaseModel):
     model_config = ConfigDict(frozen=True)
     
-    pac_urls: list[str]
+    pac_ids: list[str]
     language_preferences: list[str]
     restrict_to_attribute_groups: list[str]|None = None
     suppress_forward_lookup: bool = False
@@ -29,14 +29,14 @@ class AttributeRequestPayload(LabFREED_BaseModel):
     
     @model_validator(mode="after")
     def _validate_pacs(self) -> Self:
-        if len(self.pac_urls) > 100:
+        if len(self.pac_ids) > 100:
             self._add_validation_message(
                         source="pacs",
                         level = ValidationMsgLevel.ERROR,
                         msg='The number of pac-ids must be limited to 100'
                     )
             
-        for pac_url in self.pac_urls:
+        for pac_url in self.pac_ids:
             try:
                 PAC_ID.from_url(pac_url)
             except LabFREED_ValidationError:

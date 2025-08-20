@@ -55,7 +55,7 @@ class pyAttributes(RootModel[list[pyAttribute]]):
         elif isinstance(attribute.value, Quantity|int|float):
             if not isinstance(attribute.value, Quantity):
                 value = Quantity(value=attribute.value, unit='dimensionless')
-            num_attribute = NumericAttribute(value = NumericValue(magnitude=value.value_as_str(), 
+            num_attribute = NumericAttribute(value = NumericValue(numerical_value=value.value_as_str(), 
                                              unit = value.unit),
                                               **common_args)
             num_attribute.print_validation_messages()
@@ -64,7 +64,7 @@ class pyAttributes(RootModel[list[pyAttribute]]):
         elif isinstance(value, str):
             # capture quantities in the form of "100.0e5 g/L"
             if q := Quantity.from_str_with_unit(value):
-                return NumericAttribute(value = NumericValue(magnitude=q.value_as_str(), 
+                return NumericAttribute(value = NumericValue(numerical_value=q.value_as_str(), 
                                              unit = q.unit),
                                               **common_args)
             else:
@@ -96,7 +96,7 @@ class pyAttributes(RootModel[list[pyAttribute]]):
                     value =  pyReference(a.value)
                     
                 case NumericAttribute():                                       
-                    value = Quantity.from_str_value(value=a.value.magnitude, unit=a.value.unit)
+                    value = Quantity.from_str_value(value=a.value.numerical_value, unit=a.value.unit)
 
                 case BoolAttribute():
                     value = a.value

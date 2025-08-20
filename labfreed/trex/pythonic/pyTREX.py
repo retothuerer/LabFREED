@@ -215,7 +215,7 @@ def _trex_value_to_python_type(v):
         
     elif isinstance(v,DateValue):
         d = v._date_time_dict
-        if d.get('year') and d.get('hour'): # input is only a time
+        if d.get('year') and d.get('hour') is not None: # input is only a time
             return datetime(**d)
         elif d.get('year'):
             return date(**d)

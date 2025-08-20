@@ -60,7 +60,7 @@ class AttributeServerRequestHandler():
             raise InvalidRequestError
         attributes_for_pac_id = []
         referenced_pac_ids = set()
-        for pac_url in r.pac_urls:
+        for pac_url in r.pac_ids:
             attributes_for_pac = self._get_attributes_for_pac_id(pac_url=pac_url, 
                                                                 restrict_to_attribute_groups = r.restrict_to_attribute_groups)
             attributes_for_pac_id.append(attributes_for_pac)
@@ -103,7 +103,7 @@ class AttributeServerRequestHandler():
                 traceback.print_exc()
                 raise e
                         
-        return AttributesOfPACID(pac_url=pac_url, # return the pac_url as given, i.e. with the extension if there was one
+        return AttributesOfPACID(pac_id=pac_url, # return the pac_url as given, i.e. with the extension if there was one
                                  attribute_groups=attribute_groups)
         
     
@@ -120,44 +120,6 @@ class AttributeServerRequestHandler():
                         pass
         return referenced_pacs
             
-    # def get_translations(self, attributes_for_pac_id): 
-    #     ontology_map = {}  # ontology name → list of TermTranslations
-
-    #     for ag_for_pac in attributes_for_pac_id:
-    #         for ag in ag_for_pac.attribute_groups:
-    #             ag: AttributeGroup
-    #             ontology_name = ag.ontology
-    #             translation_data_source: TranslationDataSource = self._translation_data_sources.get(ontology_name, {})
-
-    #             attribute_keys = [a.key for a in ag.attributes]
-    #             all_keys = set([ag.key] + attribute_keys)
-
-    #             for k in all_keys:
-    #                 t = translation_data_source.get_translations_for(k)
-    #                 if t:
-    #                     ontology_map.setdefault(ontology_name, []).append(t)
-
-    #     translations_by_ontology = [ TranslationsForOntology(ontology=name, terms=terms) for name, terms in ontology_map.items()
-    #                                 ]
-    #     return translations_by_ontology
-    
-    
-    # def _get_display_name_for_key(self, key, requested_languages:str): 
-    #     for tds in self._translation_data_sources:
-    #         if term := tds.get_translations_for(key):
-    #             # try the languages requested by the user
-    #             for l in requested_languages:
-    #                 if dn := term.in_language(l):
-    #                     return dn
-    #             # remove the country codes and try the again
-    #             for l_fallback in [l.split('-')[0] for l in requested_languages]:
-    #                 if dn := term.in_language(l_fallback):
-    #                     return dn
-    #             # use the server fallback language
-    #             if dn := term.in_language(self._default_language):
-    #                 return 
-    #     warnings.warn(f'No translation for {key}')
-    #     return None
     
     def _add_display_names(self, attributes_of_pac:AttributesOfPACID, language:str) -> str:
         ''' 
@@ -181,9 +143,6 @@ class AttributeServerRequestHandler():
                     
             
         
-            
-            
-    
     def _get_display_name_for_key(self, key, language:str): 
         '''call this only with a language you know there is a translation for'''
         for tds in self._translation_data_sources:
@@ -211,10 +170,10 @@ class AttributeServerRequestHandler():
                 
                 
         
-    def capabilities(self):
+    def capabilities(self) -> ServerCapabilities:
         return ServerCapabilities(supported_languages=self._supported_languages,
                                   default_language=self._default_language,
-                                  available_attribute_groups= [ds.attribute_group_key for ds in self._attribute_group_data_sources]).model_dump_json()
+                                  available_attribute_groups= [ds.attribute_group_key for ds in self._attribute_group_data_sources])
     
 
             

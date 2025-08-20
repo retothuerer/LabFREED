@@ -105,6 +105,7 @@ class CITBlock_v2(LabFREED_BaseModel):
 
 
 class CIT_v2(LabFREED_BaseModel):
+    schema_version: str = Field(default='2.0')
     '''Coupling Information Table (CIT)'''
     origin: str = ''
     model_config = {

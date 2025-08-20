@@ -1,5 +1,6 @@
 
 
+from functools import cached_property
 from pydantic import BaseModel, Field
 from labfreed.pac_attributes.pythonic.py_attributes import pyAttribute, pyAttributeGroup, pyAttributes
 from labfreed.pac_attributes.well_knonw_attribute_keys import MetaAttributeKeys
@@ -7,6 +8,7 @@ from labfreed.pac_cat.pac_cat import PAC_CAT
 from labfreed.pac_id.pac_id import PAC_ID
 from labfreed.pac_id_resolver.services import ServiceGroup
 from labfreed.labfreed_extended.app.formatted_print import StringIOLineBreak
+from labfreed.trex.pythonic.pyTREX import pyTREX
 from labfreed.well_known_extensions.display_name_extension import DisplayNameExtension
 
 
@@ -29,7 +31,8 @@ class PacInfo(BaseModel):
         
     @property
     def attached_data(self):
-        return self.pac_id.get_extension_of_type('TREX')
+        return { trex_ext.name: pyTREX.from_trex(trex=trex_ext.trex) for trex_ext in self.pac_id.get_extension_of_type('TREX')}
+
     
     @property
     def summary(self):
@@ -50,13 +53,25 @@ class PacInfo(BaseModel):
             dn = DisplayNameExtension.from_extension(dn)
             display_name = dn.display_name or ""
         # there can be a display name in attributes, too
-        if meta := self.attributes.get(MetaAttributeKeys.GROUPKEY.value):
-            dn_attr = meta.attributes.get(MetaAttributeKeys.DISPLAYNAME.value)
-            if dn_attr: 
-                dn = dn_attr.value
-                display_name += f'  ( aka {dn} )'
+
+        if dn_attr := self._all_attributes.get(MetaAttributeKeys.DISPLAYNAME.value): 
+            dn = dn_attr.value
+            display_name = dn + f' ( aka {display_name} )' if display_name else dn
         return display_name
+    
+    
+    @property
+    def safety_pictograms(self) -> dict[str, pyAttribute]:
+        pictogram_attributes = {k: a for k, a in self._all_attributes.items() if "https://labfreed.org/ghs/pictogram/" in a.key}
+        return pictogram_attributes    
         
+        
+    @cached_property
+    def _all_attributes(self) -> dict[str, pyAttribute]:
+        out = {}
+        for ag in self.attributes.values():
+            out.update(ag.attributes)   
+        return out
     
     
     

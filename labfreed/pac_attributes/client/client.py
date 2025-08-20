@@ -10,6 +10,7 @@ from pydantic import ValidationError
 from labfreed.pac_attributes.api_data_models.request import AttributeRequestPayload
 from labfreed.pac_attributes.api_data_models.response import AttributeResponsePayload
 from labfreed.pac_attributes.client.attribute_cache import AttributeCache, CacheableAttributeGroup
+from labfreed.pac_attributes.server.server import AttributeServerRequestHandler
 from labfreed.pac_id.pac_id import PAC_ID
 
 
@@ -35,7 +36,7 @@ class AttributeRequestCallback(Protocol):
         ...
 
 
-def attribute_request_default_callback_factory(session: requests.Session = None) -> AttributeRequestCallback:
+def http_attribute_request_default_callback_factory(session: requests.Session = None) -> AttributeRequestCallback:
     """ Returns a default implementation of AttributeRequestCallback using `requests` package.
 
     Args:
@@ -51,6 +52,25 @@ def attribute_request_default_callback_factory(session: requests.Session = None)
         try:
             resp = session.post(url, data=attribute_request_body, headers={'Content-Type': 'application/json'}, timeout=10)
             return resp.status_code, resp.text
+        except requests.exceptions.RequestException as e:
+            return 500, str(e)
+    return callback
+
+
+def local_attribute_request_callback_factory(request_handler:AttributeServerRequestHandler) -> AttributeRequestCallback:
+    """ Returns a default implementation of AttributeRequestCallback using `requests` package.
+
+    Args:
+        request_handler: The request handler
+
+    Returns:
+        AttributeRequestCallback: a callback following the AttributeRequestCallback protocol.
+    """
+
+    def callback(url: str, attribute_request_body: str) -> tuple[int, str]:
+        try:
+            resp = request_handler.handle_attribute_request(attribute_request_body)
+            return 200, resp
         except requests.exceptions.RequestException as e:
             return 500, str(e)
     return callback
@@ -104,7 +124,7 @@ class AttributeClient():
                 return attribute_groups
         
         # no valid data found in cache > request to server
-        attribute_request_body = AttributeRequestPayload(pac_urls=[pac_id.to_url()], 
+        attribute_request_body = AttributeRequestPayload(pac_ids=[pac_id.to_url()], 
                                                             restrict_to_attribute_groups=restrict_to_attribute_groups,
                                                             language_preferences=language_preferences
                                 )
@@ -125,7 +145,7 @@ class AttributeClient():
         
         # update cache
         for ag_for_pac in r.pac_attributes:
-            pac = PAC_ID.from_url(ag_for_pac.pac_url)
+            pac = PAC_ID.from_url(ag_for_pac.pac_id)
             ags = [
                 CacheableAttributeGroup(
                     key= ag.key, 

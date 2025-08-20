@@ -1,7 +1,8 @@
 from enum import Enum
 from typing import Any, Protocol
 
-from flask import Blueprint
+from flask import Blueprint, current_app
+from labfreed.pac_attributes.api_data_models.request import AttributeRequestPayload
 from labfreed.pac_attributes.server.server import AttributeGroupDataSource, AttributeServerRequestHandler, InvalidRequestError, TranslationDataSource
 
 try:
@@ -30,7 +31,8 @@ class AttributeServerFactory():
                            default_language:str,
                            translation_data_sources:list[TranslationDataSource],
                            authenticator: Authenticator|None,
-                           framework:Webframework=Webframework.FLASK
+                           framework:Webframework=Webframework.FLASK,
+                           doc_text:str=""
                            ):
         
         if not authenticator:
@@ -43,7 +45,7 @@ class AttributeServerFactory():
             
         match(framework):
             case Webframework.FLASK:
-                app = AttributeFlaskApp(request_handler,authenticator=authenticator)
+                app = AttributeFlaskApp(request_handler,authenticator=authenticator, doc_text=doc_text)
                 return app
             case Webframework.FASTAPI:
                 raise NotImplementedError('FastAPI webapp not implemented')
@@ -53,10 +55,11 @@ class AttributeServerFactory():
 
             
 class AttributeFlaskApp(Flask):
-    def __init__(self, request_handler: AttributeServerRequestHandler, authenticator: Authenticator | None = None, **kwargs: Any):
+    def __init__(self, request_handler: AttributeServerRequestHandler, authenticator: Authenticator | None = None, doc_text:str="", **kwargs: Any):
         super().__init__(__name__, **kwargs)
         self.config['ATTRIBUTE_REQUEST_HANDLER'] = request_handler
         self.config['AUTHENTICATOR'] = authenticator
+        self.config['DOC_TEXT'] = doc_text
         
         bp = self.create_attribute_blueprint(request_handler, authenticator)
         self.register_blueprint(bp)
@@ -86,9 +89,40 @@ class AttributeFlaskApp(Flask):
                 return "The request was valid, but the server encountered an error", 500
             return response_body
 
-        @bp.route("/capabilities", methods=["GET"], strict_slashes=False)
+        @bp.route("/", methods=["GET"], strict_slashes=False)
         def capabilities():
-            return request_handler.capabilities()
+            doc_text = current_app.config.get('DOC_TEXT', "") 
+            capabilities = request_handler.capabilities()
+            authentication_required = bool(current_app.config['AUTHENTICATOR'])
+            example_request = AttributeRequestPayload(pac_ids=['HTTPS://PAC.METTORIUS.COM/EXAMPLE'], language_preferences=['fr', 'de']).model_dump_json(indent=2, exclude_none=True, exclude_unset=True)
+            server_address = request.url.rstrip('/')
+            response = f'''
+                <body>
+                This is a <h1>LabFREED attribute server </h1>
+                <h2>Capabilities</h2>
+                Available Attribute Groups: {', '.join([f'<a href="{ag}"> {ag} </a>' for ag in capabilities.available_attribute_groups])} <br>
+                
+                Supported Languages: {', '.join([f'<b> {l} </b>' for l in capabilities.supported_languages])}  <br>
+                Default Language: <b>{capabilities.default_language}</b> <br>
+                
+
+                <h2>How to use</h2>
+                Make a <b>POST</b> request to <a href="{server_address}">{server_address}</a> with the following body:
+                <pre>{example_request}</pre>
+                Consult {'<a href="https://github.com/ApiniLabs/PAC-Attributes"> the specification </a>' if doc_text else ""} for details. <br>
+
+                
+                {'This server <b> requires authentication </b> ' if authentication_required else ''}  
+                <br>
+                
+                {"<h2>Further Information</h2>"if doc_text else ""} 
+                {doc_text or ""} 
+                
+
+                </body>
+            '''
+        
+            return response
 
         return bp
     

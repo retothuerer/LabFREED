@@ -24,11 +24,12 @@ class Quantity(BaseModel):
         #dimensionless_unit
         unit:str= d.get('unit')
         if unit and unit in ['1', '', 'dimensionless']:
-            d['unit'] = None
+            unit = None
+            d['unit'] = unit
         
         #try to coerce to ucum. catch the two most likely mistakes to use blanks for multiplication and ^ for exponents.
         if unit:
-            unit = unit.replace('/ ', '/').replace(' /', '/').replace(' ', '.').replace('^', '')
+            unit = unit.replace('/ ', '/').replace(' /', '/').replace(' ', '.').replace('^', '').replace('·','.')
             d['unit'] = unit
             
         return d
@@ -122,8 +123,9 @@ class Quantity(BaseModel):
     
     def __str__(self):
         unit_symbol = self.unit
-        if self.unit == "dimensionless" or not self.unit:
+        if self.unit in [ "1", "dimensionless"] or not self.unit:
             unit_symbol = ""
+        unit_symbol = unit_symbol.replace('.', '·')
         val = self.value_as_str()
         return f"{val} {unit_symbol}"
       

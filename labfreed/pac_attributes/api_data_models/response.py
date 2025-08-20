@@ -70,12 +70,12 @@ class TextAttribute(AttributeBase):
     
         
 class NumericValue(LabFREED_BaseModel):
-    magnitude: str
+    numerical_value: str
     unit: str
     
     @model_validator(mode='after')
     def _validate_value(self):
-        value = self.magnitude
+        value = self.numerical_value
         if not_allowed_chars := set(re.sub(r'[0-9\.\-\+Ee]', '', value)):
             self._add_validation_message(
                 source="Numeric Attribute",
@@ -160,7 +160,7 @@ class AttributeGroup(LabFREED_BaseModel):
 
 
 class AttributesOfPACID(LabFREED_BaseModel):
-    pac_url: str
+    pac_id: str
     attribute_groups: list[AttributeGroup]
     
     
