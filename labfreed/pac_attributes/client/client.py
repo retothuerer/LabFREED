@@ -144,8 +144,9 @@ class AttributeClient():
 
         
         # update cache
+        attribute_groups_out = []
         for ag_for_pac in r.pac_attributes:
-            pac = PAC_ID.from_url(ag_for_pac.pac_id)
+            pac_from_response = PAC_ID.from_url(ag_for_pac.pac_id)
             ags = [
                 CacheableAttributeGroup(
                     key= ag.key, 
@@ -156,13 +157,15 @@ class AttributeClient():
                     state_of=ag.state_of) 
                 for ag in ag_for_pac.attribute_groups
                 ]
-            self.cache_store.update(server_url, pac, ags)
+            self.cache_store.update(server_url, pac_from_response, ags)
             
-            if pac_id == pac:
+            # compare pac_id from response with pac_id we need attributes for.
+            # if identical this is the part of the response we care about. other PAC-ID are just for the cache
+            if pac_id.to_url() == pac_from_response.to_url():
                 attribute_groups_out = ags
-                return attribute_groups_out
-            else:
-                return []
+        
+        return attribute_groups_out
+
             
                 
     

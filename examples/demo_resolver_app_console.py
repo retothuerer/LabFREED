@@ -38,7 +38,7 @@ if __name__ == "__main__":
                 break
             
             if not user_input or user_input == 'demo':
-                pac_url = 'HTTPS://PAC.METTORIUS.COM/-MD/BAL500/000001*59K77LWDX8W'
+                pac_url = 'HTTPS://PAC.METTORIUS.COM/-MD/240:BAL500/21:000001/K:V*59K77LWDX8W'
 
             else:
                 try:

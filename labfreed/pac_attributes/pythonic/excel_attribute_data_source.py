@@ -10,6 +10,7 @@ from cachetools import TTLCache, cached
 from labfreed.pac_attributes.api_data_models.response import AttributeGroup
 from labfreed.pac_attributes.pythonic.py_attributes import pyAttribute, pyAttributes
 from labfreed.pac_attributes.server.server import AttributeGroupDataSource
+from labfreed.pac_cat.pac_cat import PAC_CAT
 
 try:
     from openpyxl import load_workbook
@@ -74,8 +75,9 @@ class _BaseExcelAttributeDataSource(AttributeGroupDataSource):
     Subclasses implement `_read_rows_and_last_changed()`.
     """
 
-    def __init__(self, *, base_url: str = "", cache_duration_seconds: int = 0, **kwargs):
+    def __init__(self, *, base_url: str = "", cache_duration_seconds: int = 0, uses_pac_cat_short_form:bool=True, **kwargs):
         self._base_url = base_url
+        self._uses_pac_cat_short_form = uses_pac_cat_short_form
         # allow instance-level TTL override
         try:
             _cache.ttl = int(cache_duration_seconds)
@@ -96,9 +98,14 @@ class _BaseExcelAttributeDataSource(AttributeGroupDataSource):
             return []
         return [self._base_url + r for r in rows[0][1:]]
 
-    def attributes(self, pac_url: str) -> Optional[AttributeGroup]:
-        if not self._include_extensions:
-            pac_url = pac_url.split('*')[0]
+    def attributes(self, pac_url:str) -> Optional[AttributeGroup]:
+        try:
+            p = PAC_CAT.from_url(pac_url)
+            pac_url = p.to_url(use_short_notation=self._uses_pac_cat_short_form, include_extensions=self._include_extensions)
+            print(f'Lookup in Excel of {pac_url}')
+        except:
+            ... # might as well try to match the original input
+            
         rows, last_changed = self._read_rows_and_last_changed()
         d = _get_row_by_first_cell(rows, pac_url, self._base_url)
         if not d:

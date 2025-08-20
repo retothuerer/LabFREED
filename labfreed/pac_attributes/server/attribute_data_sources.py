@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod, abstractproperty
 from datetime import datetime, timezone
 from labfreed.pac_attributes.api_data_models.response import VALID_FOREVER, AttributeBase, AttributeGroup
+from labfreed.pac_cat.pac_cat import PAC_CAT
+from labfreed.pac_id.pac_id import PAC_ID
 
 
 class AttributeGroupDataSource(ABC):
@@ -29,12 +31,13 @@ class AttributeGroupDataSource(ABC):
     
 
 class Dict_DataSource(AttributeGroupDataSource):
-    def __init__(self, data:dict[str, list[AttributeBase]], *args, **kwargs):
+    def __init__(self, data:dict[str, list[AttributeBase]], uses_pac_cat_short_form=True, *args, **kwargs):
         if not all([isinstance(e, list) for e in data.values()]):
             raise ValueError('Invalid data')
         
         self._data = data
         self._state_of = datetime.now(tz=timezone.utc)
+        self.uses_pac_cat_short_form = uses_pac_cat_short_form
         
         super().__init__(*args, **kwargs)       
         
@@ -45,9 +48,12 @@ class Dict_DataSource(AttributeGroupDataSource):
     
            
     def attributes(self, pac_url: str) -> AttributeGroup:
-        if not self._include_extensions:
-            pac_url = pac_url.split('*')[0]
-        
+        try:
+            p = PAC_CAT.from_url(pac_url)
+            pac_url = p.to_url(use_short_notation=self.uses_pac_cat_short_form, include_extensions=self._include_extensions)
+        except:
+            ... # might as well try to match the original input
+            
         attributes = self._data.get(pac_url)
         if not attributes:
             return None     

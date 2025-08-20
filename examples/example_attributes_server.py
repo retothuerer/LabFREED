@@ -44,7 +44,7 @@ data_sources.append(
         include_extensions=False,
         data = {
             # first entry of a balance
-            "HTTPS://PAC.METTORIUS.COM/-MD/BAL500/000001": pyAttributes([
+            "HTTPS://PAC.METTORIUS.COM/-MD/BAL500/000001/K:V": pyAttributes([
                 pyAttribute(key=MetaAttributeKeys.DISPLAYNAME.value, value="My Balance"),
                 pyAttribute(key=MetaAttributeKeys.IMAGE, value="https://picsum.photos/id/82/200"),
             ]),
@@ -64,7 +64,7 @@ transation_data_sources.append(
         supported_languages={'en', 'fr'},
         data=Terms(
                 terms=[
-                    Term.create(MetaAttributeKeys.GROUPKEY, [('en', 'MetaData'), ('fr', 'Métadonnées')]),
+                    Term.create(MetaAttributeKeys.GROUPKEY, [('en', 'Meta Data'), ('fr', 'Métadonnées')]),
                     Term.create(MetaAttributeKeys.DISPLAYNAME.value, [('en', 'Display Name'), ('fr', 'Nom visuel')]),
                     Term.create(MetaAttributeKeys.IMAGE.value, [('en', 'Image'), ('fr', 'Image')]),
                 ]
@@ -151,7 +151,7 @@ class DynamicDemoAttributeGroup(AttributeGroupDataSource):
 
 
 data_sources.append(
-    DynamicDemoAttributeGroup(attribute_group_key='https://mettorius.com/terms/attribute_group_demo')
+    DynamicDemoAttributeGroup(attribute_group_key='https://mettorius.com/terms/attribute_group_example')
     )
 
 transation_data_sources.append(
@@ -209,7 +209,8 @@ app = AttributeServerFactory.create_server_app(
         datasources=data_sources, 
         default_language='en',
         translation_data_sources=transation_data_sources,
-        authenticator=DemoAuthenticator()
+        authenticator=DemoAuthenticator(),
+        doc_text='Contact: <a href="mailto:attribute.help@mettorius.com"> attribute.help@mettorius.com </a>'
     )
     
     
