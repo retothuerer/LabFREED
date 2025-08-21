@@ -116,9 +116,9 @@ class Material_Consumable(PredefinedCategory):
         return self
     
 class Material_Misc(Material_Consumable):
-    '''Represents the -MC category'''
+    '''Represents the -MX category'''
     # same fields as Consumable
-    key: str = Field(default='-MM', frozen=True)
+    key: str = Field(default='-MX', frozen=True)
     product_number:str|None =   Field(              alias='240')
     batch_number:str|None =     Field(default=None, alias='10')
     packaging_size:str|None =     Field(default=None, alias='20')
@@ -187,15 +187,64 @@ class Data_Static(Data_Abstract):
     additional_segments: list[IDSegment] = Field(default_factory=list, exclude=True)
     ''' Category segments, which are not defined in the specification'''
     
+class Data_Misc(Data_Abstract):
+    '''Represents the -DX category'''
+    key: str = Field(default='-DX', frozen=True)
+    id:str|None =                    Field(              alias='21')
+    additional_segments: list[IDSegment] = Field(default_factory=list, exclude=True)
+    ''' Category segments, which are not defined in the specification'''
+    
+
+
+
+class Processor_Abstract(PredefinedCategory, ABC):
+    '''@private'''
+    key: str
+    processor_instance:str|None =                    Field(              alias='21')
+    processor_code:str|None =                        Field(              alias='240')
+
+    additional_segments: list[IDSegment] = Field(default_factory=list, exclude=True)
+    ''' Category segments, which are not defined in the specification'''
+    
+    @model_validator(mode='after')
+    def _validate_mandatory_fields(self):
+        if not self.id:
+            self._add_validation_message(
+                    source=f"Category {self.key}",
+                    level = ValidationMsgLevel.ERROR,
+                    msg=f"Category key {self.key} is missing mandatory field 'processor instance'",
+                    highlight_pattern = f"{self.key}"
+            )
+        return self
+
+class Processor_Software(Processor_Abstract):
+    '''Represents the -PS category'''
+    key: str = Field(default='-PS', frozen=True)
+    processor_instance:str|None =                    Field(              alias='21')
+    processor_code:str|None =                        Field(              alias='240')
+    additional_segments: list[IDSegment] = Field(default_factory=list, exclude=True)
+    ''' Category segments, which are not defined in the specification'''
+
+class Processor_Misc(Processor_Abstract):
+    '''Represents the -PX category'''
+    key: str = Field(default='-PX', frozen=True)
+    processor_instance:str|None =                    Field(              alias='21')
+    processor_code:str|None =                        Field(              alias='240')
+    additional_segments: list[IDSegment] = Field(default_factory=list, exclude=True)
+    ''' Category segments, which are not defined in the specification'''
+    
     
 category_key_to_class_map  = {
         '-MD': Material_Device,
         '-MS': Material_Substance,
         '-MC': Material_Consumable,
-        '-MM': Material_Misc,
+        '-MX': Material_Misc,
         '-DM': Data_Method,
         '-DR': Data_Result,
         '-DC': Data_Calibration,
         '-DP': Data_Progress,
-        '-DS': Data_Static 
+        '-DS': Data_Static,
+        '-DX': Data_Misc,
+        '-PS': Processor_Software,
+        '-PX': Processor_Misc
 }
