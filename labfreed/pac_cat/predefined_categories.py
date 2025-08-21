@@ -202,7 +202,6 @@ class Processor_Abstract(PredefinedCategory, ABC):
     key: str
     processor_instance:str|None =                    Field(              alias='21')
     processor_code:str|None =                        Field(              alias='240')
-
     additional_segments: list[IDSegment] = Field(default_factory=list, exclude=True)
     ''' Category segments, which are not defined in the specification'''
     
