@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod, abstractproperty
 from datetime import datetime, timezone
-from labfreed.pac_attributes.api_data_models.response import VALID_FOREVER, AttributeBase, AttributeGroup
+from labfreed.pac_attributes.api_data_models.response import AttributeBase, AttributeGroup
 from labfreed.pac_cat.pac_cat import PAC_CAT
 from labfreed.pac_id.pac_id import PAC_ID
 
@@ -36,7 +36,6 @@ class Dict_DataSource(AttributeGroupDataSource):
             raise ValueError('Invalid data')
         
         self._data = data
-        self._state_of = datetime.now(tz=timezone.utc)
         self.uses_pac_cat_short_form = uses_pac_cat_short_form
         
         super().__init__(*args, **kwargs)       
@@ -58,14 +57,8 @@ class Dict_DataSource(AttributeGroupDataSource):
         if not attributes:
             return None     
         
-        
-        valid_until = VALID_FOREVER if self._is_static else None
-        
-
         return AttributeGroup(key=self._attribute_group_key, 
-                              attributes=attributes, 
-                              state_of=self._state_of, 
-                              valid_until=valid_until)
+                              attributes=attributes)
         
         
         

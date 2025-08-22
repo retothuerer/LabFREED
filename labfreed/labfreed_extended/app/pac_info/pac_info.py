@@ -20,7 +20,7 @@ class PacInfo(BaseModel):
     """A convenient collection of information about a PAC-ID"""
     pac_id:PAC_ID
     user_handovers: list[ServiceGroup] = Field(default_factory=list)
-    attributes:dict[str, pyAttributeGroup] = Field(default_factory=dict)
+    attributes_groups:dict[str, pyAttributeGroup] = Field(default_factory=dict)
     
     @property
     def pac_url(self):
@@ -44,7 +44,7 @@ class PacInfo(BaseModel):
     
     @property
     def image_url(self) -> str:
-        if meta := self.attributes.get(MetaAttributeKeys.GROUPKEY.value):
+        if meta := self.attributes_groups.get(MetaAttributeKeys.GROUPKEY.value):
             image_attr = meta.attributes.get(MetaAttributeKeys.IMAGE.value)
             return image_attr.value
         
@@ -73,7 +73,7 @@ class PacInfo(BaseModel):
     @cached_property
     def _all_attributes(self) -> dict[str, pyAttribute]:
         out = {}
-        for ag in self.attributes.values():
+        for ag in self.attributes_groups.values():
             out.update(ag.attributes)   
         return out
     
@@ -105,12 +105,12 @@ class PacInfo(BaseModel):
         
         
         printout.title1("Attributes")
-        for ag in self.attributes.values():  
+        for ag in self.attributes_groups.values():  
             printout.title2(f'{ag.label} (from {ag.origin})')
             for v in ag.attributes.values():
                 v:pyAttribute
                 #print(f'{k}: ({v.label})           :: {v.value}  ')
-                printout.key_value(v.label, v.value)
+                printout.key_value(v.label, ', '.join([str(e) for e in v.value_list]))
       
         out =  printout.getvalue()
 

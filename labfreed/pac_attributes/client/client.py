@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Protocol, runtime_checkable
 
 import requests
@@ -85,6 +86,7 @@ class AttributeClient():
 
     http_post_callback:AttributeRequestCallback
     cache_store:AttributeCache
+    always_use_cached_value_for_minutes:int
                 
     def get_attributes(self, 
                        server_url:str, 
@@ -120,7 +122,7 @@ class AttributeClient():
             else:
                 attribute_groups = self.cache_store.get_all(server_url, pac_id)
                 
-            if attribute_groups and all([ag.still_valid for ag in attribute_groups]): 
+            if attribute_groups and all([ag.still_valid(accept_cache_for_minutes=self.always_use_cached_value_for_minutes) for ag in attribute_groups]): 
                 return attribute_groups
         
         # no valid data found in cache > request to server
@@ -154,7 +156,7 @@ class AttributeClient():
                     origin=server_url, 
                     language=r.language, 
                     label=ag.label,
-                    state_of=ag.state_of) 
+                    value_from=datetime.now(tz=datetime.UTC)) 
                 for ag in ag_for_pac.attribute_groups
                 ]
             self.cache_store.update(server_url, pac_from_response, ags)

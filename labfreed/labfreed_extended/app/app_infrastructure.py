@@ -32,7 +32,7 @@ class Labfreed_App_Infrastructure():
         self._http_client= http_client
         callback = http_attribute_request_default_callback_factory(http_client)
             
-        self._attribute_client = AttributeClient(http_post_callback=callback, cache_store=MemoryAttributeCache())
+        self._attribute_client = AttributeClient(http_post_callback=callback, cache_store=MemoryAttributeCache(), always_use_cached_value_for_minutes=1)
 
 
     def add_cit(self, cit:str):
@@ -71,7 +71,7 @@ class Labfreed_App_Infrastructure():
                 ags = {ag.key: pyAttributeGroup.from_attribute_group(ag) for ag in self._attribute_client.get_attributes(url, pac_id=pac.to_url(include_extensions=False), language_preferences=self._language_preferences)}
                 if ags:
                     attribute_groups.update(ags)
-        pac_info.attributes = attribute_groups
+        pac_info.attributes_groups = attribute_groups
        
         return pac_info
     

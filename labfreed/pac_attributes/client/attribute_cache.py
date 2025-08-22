@@ -1,6 +1,6 @@
 
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Literal, Protocol
 
 
@@ -12,28 +12,15 @@ from labfreed.pac_id.pac_id import PAC_ID
 class CacheableAttributeGroup(AttributeGroup):
     origin:str
     language:str
-    valid_until: Literal['forever'] | datetime | None = None
+    value_from: datetime | None = None  
     
-    # @model_validator(mode='after')
-    # def set_valid_until(self) -> 'CacheableAttributeGroup':
-    #     vals = [a.valid_until for a in self.attributes]
-    #     if all(e == 'forever' for e in vals):
-    #         self.valid_until = 'forever'
-    #     elif any(e is None for e in vals):
-    #         self.valid_until = None
-    #     else:
-    #         self.valid_until = min(v for v in vals if isinstance(v, datetime))
-    #     return self
-    
-    
-    @property
-    def still_valid(self):
-        if self.valid_until is None:
+    def still_valid(self, accept_cache_for_minutes):
+        if self.value_from is None:
             return False
-        if self.valid_until == 'forever':
-            return True
-        
-        return self.valid_until > datetime.now()
+        else:
+            return ( datetime.now() - timedelta(min=accept_cache_for_minutes)) > self.value_from 
+
+
 
 
 

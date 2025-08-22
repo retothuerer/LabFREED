@@ -1,3 +1,5 @@
+import re
+import string
 import traceback
 import warnings
 
@@ -132,7 +134,12 @@ class AttributeServerRequestHandler():
             if dn := self._get_display_name_for_key(ag.key, language):
                 ag.label = dn
             else:
-                ag.label = ag.key.split('/')[-1]
+                ag.label = string.capwords(
+                    re.sub(r'([a-z])([A-Z])', r'\1 \2',  
+                           re.sub('-_', '',
+                                  ag.key.split('/')[-1])
+                           )
+                    )
                 rich.print(f"[yellow]WARNING:[/yellow] No translation for '{ag.key}' in '{language}'. Falling back to '{ag.label}'")
             for a in ag.attributes:
                 if dn := self._get_display_name_for_key(a.key, language):

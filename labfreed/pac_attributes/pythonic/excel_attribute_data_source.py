@@ -113,8 +113,7 @@ class _BaseExcelAttributeDataSource(AttributeGroupDataSource):
         attributes = [pyAttribute(key=k, value=v) for k, v in d.items()]
         return AttributeGroup(
             key=self._attribute_group_key,
-            attributes=pyAttributes(attributes).to_payload_attributes(),
-            state_of=last_changed,
+            attributes=pyAttributes(attributes).to_payload_attributes()
         )
 
 

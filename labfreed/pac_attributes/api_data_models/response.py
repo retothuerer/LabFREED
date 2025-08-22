@@ -3,6 +3,8 @@ from abc import ABC
 from datetime import  datetime
 import re
 from typing import Annotated, Any,  Literal, Union, get_args
+from urllib.parse import urlparse
+
 from labfreed.utilities.ensure_utc_time import ensure_utc
 from labfreed.labfreed_infrastructure import  LabFREED_BaseModel, ValidationMsgLevel, _quote_texts
 from pydantic import   Field, field_validator, model_validator
@@ -12,22 +14,13 @@ class AttributeBase(LabFREED_BaseModel, ABC):
     key: str
     value: Any
     label: str = ""
-    
-    observed_at: datetime | None = None
-    
+        
     def __init__(self, **data):
         # Automatically inject the Literal value for `type`
         discriminator_value = self._get_discriminator_value()
         data["type"] = discriminator_value
         super().__init__(**data)       
     
-    @field_validator('observed_at', mode='before')
-    def set_utc_observed_at_if_naive(cls, value):
-        if isinstance(value, datetime):
-            return ensure_utc(value)
-        else:
-            return value
-
     @classmethod
     def _get_discriminator_value(cls) -> str:
         """Extract the Literal value from the 'type' annotation."""
@@ -40,16 +33,10 @@ class AttributeBase(LabFREED_BaseModel, ABC):
                 f"{cls.__name__} must define `type: Literal[<value>]` annotation"
             ) from e
         
-
-        
-    
-class ReferenceAttribute(AttributeBase):
-    type: Literal["reference"]
-    value: str
     
 class DateTimeAttribute(AttributeBase):
     type: Literal["datetime"] 
-    value: datetime
+    value: datetime | list[datetime]
     
     @field_validator('value', mode='before')
     def set_utc__if_naive(cls, value):
@@ -60,14 +47,58 @@ class DateTimeAttribute(AttributeBase):
     
 class BoolAttribute(AttributeBase):
     type: Literal["bool"] 
-    value: bool
+    value: bool | list[bool]
     
 class TextAttribute(AttributeBase):
     type: Literal["text"] 
-    value: str
+    value: str | list[str]
     
+    @model_validator(mode='after')
+    def _validate_value(self):
+        l = [self.value] if isinstance(self.value, str) else self.value
+        for v in l:
+            if len(v) > 5000: 
+                self._add_validation_message(
+                    source="Text Attribute",
+                    level=ValidationMsgLevel.WARNING,  # noqa: F821
+                    msg=f"Text attribute {v} exceeds 5000 characters. It is recommended to stay below",
+                    highlight_pattern = f'{v}'
+                )
+        return self
+            
+
+class ReferenceAttribute(AttributeBase):
+    type: Literal["reference"]
+    value: str | list[str]
     
+
+class ResourceAttribute(AttributeBase):
+    type: Literal["resource"]
+    value: str | list[str]
     
+    @model_validator(mode='after')
+    def _validate_value(self):
+        value_list = self.value if isinstance(self.value, list) else [self.value]
+        for v in value_list:
+            r = urlparse(v)
+            if not all([r.scheme, r.netloc]):
+                self._add_validation_message(
+                    source="Resource Attribute",
+                    level=ValidationMsgLevel.ERROR,  # noqa: F821
+                    msg=f"Must be a valid url",
+                    highlight_pattern = f'{v}'
+                )
+            pattern = re.compile(r"\.\w{1,3}$", re.IGNORECASE)
+            if not bool(pattern.search(v)):
+                self._add_validation_message(
+                    source="Resource Attribute",
+                    level=ValidationMsgLevel.WARNING,  # noqa: F821
+                    msg=f"It is RECOMMENDED resource links end with a file extension",
+                    highlight_pattern = f'{v}'
+                )
+        return self
+    
+        
         
 class NumericValue(LabFREED_BaseModel):
     numerical_value: str
@@ -120,11 +151,11 @@ class NumericValue(LabFREED_BaseModel):
 
 class NumericAttribute(AttributeBase):
     type: Literal["numeric"] 
-    value: NumericValue
+    value: NumericValue | list[NumericValue]
     
 class ObjectAttribute(AttributeBase):
     type: Literal["object"] 
-    value: dict[str, Any]
+    value: dict[str, Any] |list[dict[str, Any]]
            
 
      
@@ -136,27 +167,18 @@ Attribute = Annotated[
         BoolAttribute,
         TextAttribute,
         NumericAttribute,
+        ResourceAttribute,
         ObjectAttribute
     ],
     Field(discriminator="type")
 ]
 
-VALID_FOREVER = "forever"
 
 class AttributeGroup(LabFREED_BaseModel):
     key: str
     label: str = ""
     attributes: list[Attribute]
-    
-    state_of: datetime
-    valid_until: datetime | Literal["forever"] | None = None
-    
-    @field_validator('valid_until', mode='before')
-    def set_utc_valid_until_if_naive(cls, value):
-        if isinstance(value, datetime):
-            return ensure_utc(value)
-        else:
-            return value
+       
 
 
 class AttributesOfPACID(LabFREED_BaseModel):
