@@ -1,6 +1,6 @@
 
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Literal, Protocol
 
 
@@ -18,7 +18,7 @@ class CacheableAttributeGroup(AttributeGroup):
         if self.value_from is None:
             return False
         else:
-            return ( datetime.now() - timedelta(min=accept_cache_for_minutes)) > self.value_from 
+            return ( datetime.now(tz=UTC) - timedelta(minutes=accept_cache_for_minutes)) > self.value_from 
 
 
 

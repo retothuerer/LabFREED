@@ -31,12 +31,13 @@ class AttributeGroupDataSource(ABC):
     
 
 class Dict_DataSource(AttributeGroupDataSource):
-    def __init__(self, data:dict[str, list[AttributeBase]], uses_pac_cat_short_form=True, *args, **kwargs):
+    def __init__(self, data:dict[str, list[AttributeBase]], uses_pac_cat_short_form=True, pac_to_key: callable = None, *args, **kwargs):
         if not all([isinstance(e, list) for e in data.values()]):
             raise ValueError('Invalid data')
         
         self._data = data
         self.uses_pac_cat_short_form = uses_pac_cat_short_form
+        self._pac_to_key = pac_to_key
         
         super().__init__(*args, **kwargs)       
         
@@ -53,7 +54,9 @@ class Dict_DataSource(AttributeGroupDataSource):
         except:
             ... # might as well try to match the original input
             
-        attributes = self._data.get(pac_url)
+        
+        lookup_key = self._pac_to_key(pac_url) if self._pac_to_key else pac_url
+        attributes = self._data.get(lookup_key)
         if not attributes:
             return None     
         

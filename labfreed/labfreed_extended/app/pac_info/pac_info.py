@@ -5,7 +5,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pydantic import BaseModel, Field
-from labfreed.pac_attributes.pythonic.py_attributes import pyAttribute, pyAttributeGroup, pyAttributes, pyReference
+from labfreed.pac_attributes.pythonic.py_attributes import pyAttribute, pyAttributeGroup, pyAttributes, pyReference, pyResource
 from labfreed.pac_attributes.well_knonw_attribute_keys import MetaAttributeKeys
 from labfreed.pac_cat.pac_cat import PAC_CAT
 from labfreed.pac_id.pac_id import PAC_ID
@@ -20,7 +20,7 @@ class PacInfo(BaseModel):
     """A convenient collection of information about a PAC-ID"""
     pac_id:PAC_ID
     user_handovers: list[ServiceGroup] = Field(default_factory=list)
-    attributes_groups:dict[str, pyAttributeGroup] = Field(default_factory=dict)
+    attribute_groups:dict[str, pyAttributeGroup] = Field(default_factory=dict)
     
     @property
     def pac_url(self):
@@ -44,8 +44,10 @@ class PacInfo(BaseModel):
     
     @property
     def image_url(self) -> str:
-        if meta := self.attributes_groups.get(MetaAttributeKeys.GROUPKEY.value):
-            image_attr = meta.attributes.get(MetaAttributeKeys.IMAGE.value)
+        image_attr = self._all_attributes.get(MetaAttributeKeys.IMAGE.value)
+        if isinstance(image_attr.value, pyResource):
+            return image_attr.value.root
+        if isinstance(image_attr.value, str):
             return image_attr.value
         
         
@@ -68,12 +70,18 @@ class PacInfo(BaseModel):
     def safety_pictograms(self) -> dict[str, pyAttribute]:
         pictogram_attributes = {k: a for k, a in self._all_attributes.items() if "https://labfreed.org/ghs/pictogram/" in a.key}
         return pictogram_attributes    
+    
+    
+    @property
+    def qualification_state(self) -> pyAttribute:
+        if state := self._all_attributes.get("https://labfreed.org/qualification/status"): 
+            return state
         
         
     @cached_property
     def _all_attributes(self) -> dict[str, pyAttribute]:
         out = {}
-        for ag in self.attributes_groups.values():
+        for ag in self.attribute_groups.values():
             out.update(ag.attributes)   
         return out
     
@@ -105,7 +113,7 @@ class PacInfo(BaseModel):
         
         
         printout.title1("Attributes")
-        for ag in self.attributes_groups.values():  
+        for ag in self.attribute_groups.values():  
             printout.title2(f'{ag.label} (from {ag.origin})')
             for v in ag.attributes.values():
                 v:pyAttribute

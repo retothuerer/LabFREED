@@ -134,20 +134,22 @@ class AttributeServerRequestHandler():
             if dn := self._get_display_name_for_key(ag.key, language):
                 ag.label = dn
             else:
-                ag.label = string.capwords(
-                    re.sub(r'([a-z])([A-Z])', r'\1 \2',  
-                           re.sub('-_', '',
-                                  ag.key.split('/')[-1])
-                           )
-                    )
+                ag.label = self.fallback_label(ag.key)
                 rich.print(f"[yellow]WARNING:[/yellow] No translation for '{ag.key}' in '{language}'. Falling back to '{ag.label}'")
             for a in ag.attributes:
                 if dn := self._get_display_name_for_key(a.key, language):
                     a.label = dn
                 else:
-                    a.label = a.key.split('/')[-1]
+                    a.label = self.fallback_label(a.key)
                     rich.print(f"[yellow]WARNING:[/yellow] No translation for '{a.key}' in '{language}'. Falling back to '{a.label}' ")
                     
+        
+    def fallback_label(self, key:str):
+        l = key.split('/')[-1]
+        l = re.sub(r'([a-z])([A-Z])', r'\1 \2', l)
+        l = re.sub(r'[-_]', ' ', l)
+        l = string.capwords(l)
+        return l                 
             
         
     def _get_display_name_for_key(self, key, language:str): 

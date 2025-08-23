@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Protocol, runtime_checkable
 
 import requests
@@ -156,7 +156,7 @@ class AttributeClient():
                     origin=server_url, 
                     language=r.language, 
                     label=ag.label,
-                    value_from=datetime.now(tz=datetime.UTC)) 
+                    value_from=datetime.now(tz=UTC)) 
                 for ag in ag_for_pac.attribute_groups
                 ]
             self.cache_store.update(server_url, pac_from_response, ags)
