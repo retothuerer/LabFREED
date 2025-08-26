@@ -106,9 +106,9 @@ class AttributeFlaskApp(Flask):
                     <body>
                         This is a <h1>LabFREED attribute server </h1>
                         <h2>Capabilities</h2>
-                        Available Attribute Groups: {', '.join([f'<a href="{ag}"> {ag} </a>' for ag in capabilities.available_attribute_groups])} <br>
+                        Available Attribute Groups <br> {''.join([f'<a href="{ag}"> {ag} </a><br>' for ag in capabilities.available_attribute_groups])} <br>
                         
-                        Supported Languages: {', '.join([f'<b> {l} </b>' for l in capabilities.supported_languages])}  <br>
+                        Supported Languages: {', '.join([f'<b> {l} </b>' for l in capabilities.supported_languages])} <br><br>
                         Default Language: <b>{capabilities.default_language}</b> <br>
                         
 
