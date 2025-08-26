@@ -93,7 +93,7 @@ class AttributeFlaskApp(Flask):
         def capabilities():
             doc_text = current_app.config.get('DOC_TEXT', "") 
             capabilities = request_handler.capabilities()
-            authentication_required = bool(current_app.config['AUTHENTICATOR'])
+            authentication_required = bool(current_app.config.get('AUTHENTICATOR'))
             example_request = AttributeRequestPayload(pac_ids=['HTTPS://PAC.METTORIUS.COM/EXAMPLE'], language_preferences=['fr', 'de']).model_dump_json(indent=2, exclude_none=True, exclude_unset=True)
             server_address = request.url.rstrip('/')
             response = f'''
@@ -109,7 +109,7 @@ class AttributeFlaskApp(Flask):
                 <h2>How to use</h2>
                 Make a <b>POST</b> request to <a href="{server_address}">{server_address}</a> with the following body:
                 <pre>{example_request}</pre>
-                Consult {'<a href="https://github.com/ApiniLabs/PAC-Attributes"> the specification </a>' if doc_text else ""} for details. <br>
+                Consult <a href="https://github.com/ApiniLabs/PAC-Attributes"> the specification </a> for details. <br>
 
                 
                 {'This server <b> requires authentication </b> ' if authentication_required else ''}  
