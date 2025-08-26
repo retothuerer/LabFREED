@@ -142,7 +142,7 @@ class AttributeClient():
             r = AttributeResponsePayload.model_validate_json(response_body_str)
         except ValidationError as e:
             print(e)
-            raise AttributeServerError("The server accepted the request, and sent a reponse. However, the response is adhering to the PAC Attributes specifications. Contact the server admin.")
+            raise AttributeServerError("The server accepted the request, and sent a reponse. However, the response is not adhering to the PAC Attributes specifications. Contact the server admin.")
 
         
         # update cache
