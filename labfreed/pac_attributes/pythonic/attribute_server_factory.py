@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Any, Protocol
 
-from flask import Blueprint, current_app
+from flask import Blueprint, current_app, url_for
 from labfreed.pac_attributes.api_data_models.request import AttributeRequestPayload
 from labfreed.pac_attributes.server.server import AttributeGroupDataSource, AttributeServerRequestHandler, InvalidRequestError, TranslationDataSource
 
@@ -87,7 +87,7 @@ class AttributeFlaskApp(Flask):
             except Exception as e:
                 print(e)
                 return "The request was valid, but the server encountered an error", 500
-            return response_body
+            return (response_body, 200, {"Content-Type": "application/json"})
 
         @bp.route("/", methods=["GET"], strict_slashes=False)
         def capabilities():
@@ -96,31 +96,38 @@ class AttributeFlaskApp(Flask):
             authentication_required = bool(current_app.config.get('AUTHENTICATOR'))
             example_request = AttributeRequestPayload(pac_ids=['HTTPS://PAC.METTORIUS.COM/EXAMPLE'], language_preferences=['fr', 'de']).model_dump_json(indent=2, exclude_none=True, exclude_unset=True)
             server_address = request.url.rstrip('/')
+            css_url = url_for("static", filename="style.css")
             response = f'''
-                <body>
-                This is a <h1>LabFREED attribute server </h1>
-                <h2>Capabilities</h2>
-                Available Attribute Groups: {', '.join([f'<a href="{ag}"> {ag} </a>' for ag in capabilities.available_attribute_groups])} <br>
-                
-                Supported Languages: {', '.join([f'<b> {l} </b>' for l in capabilities.supported_languages])}  <br>
-                Default Language: <b>{capabilities.default_language}</b> <br>
-                
+                <html>
+                    <head>
+                        <link rel="stylesheet" type="text/css" href="{css_url}">
+                    </head>
 
-                <h2>How to use</h2>
-                Make a <b>POST</b> request to <a href="{server_address}">{server_address}</a> with the following body:
-                <pre>{example_request}</pre>
-                Consult <a href="https://github.com/ApiniLabs/PAC-Attributes"> the specification </a> for details. <br>
+                    <body>
+                        This is a <h1>LabFREED attribute server </h1>
+                        <h2>Capabilities</h2>
+                        Available Attribute Groups: {', '.join([f'<a href="{ag}"> {ag} </a>' for ag in capabilities.available_attribute_groups])} <br>
+                        
+                        Supported Languages: {', '.join([f'<b> {l} </b>' for l in capabilities.supported_languages])}  <br>
+                        Default Language: <b>{capabilities.default_language}</b> <br>
+                        
 
-                
-                {'This server <b> requires authentication </b> ' if authentication_required else ''}  
-                <br>
-                
-                {"<h2>Further Information</h2>"if doc_text else ""} 
-                {doc_text or ""} 
-                
+                        <h2>How to use</h2>
+                        Make a <b>POST</b> request to <a href="{server_address}">{server_address}</a> with the following body:
+                        <pre>{example_request}</pre>
+                        Consult <a href="https://github.com/ApiniLabs/PAC-Attributes"> the specification </a> for details. <br>
 
-                </body>
-            '''
+                        
+                        {'This server <b> requires authentication </b> ' if authentication_required else ''}  
+                        <br>
+                        
+                        {"<h2>Further Information</h2>"if doc_text else ""} 
+                        {doc_text or ""} 
+                        
+
+                    </body>
+                </html>
+    '''
         
             return response
 
