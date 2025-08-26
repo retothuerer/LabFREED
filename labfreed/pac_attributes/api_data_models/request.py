@@ -8,7 +8,7 @@ class AttributeRequestPayload(LabFREED_BaseModel):
     model_config = ConfigDict(frozen=True)
     
     pac_ids: list[str]
-    language_preferences: list[str]
+    language_preferences: list[str]|None = None
     restrict_to_attribute_groups: list[str]|None = None
     suppress_forward_lookup: bool = False
     
