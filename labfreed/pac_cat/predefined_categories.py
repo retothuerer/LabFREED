@@ -207,7 +207,7 @@ class Processor_Abstract(PredefinedCategory, ABC):
     
     @model_validator(mode='after')
     def _validate_mandatory_fields(self):
-        if not self.id:
+        if not self.processor_instance:
             self._add_validation_message(
                     source=f"Category {self.key}",
                     level = ValidationMsgLevel.ERROR,
