@@ -187,6 +187,16 @@ class CIT_v1(LabFREED_BaseModel):
         for e in self.entries:
             s += '\t'.join([e.service_name, e.application_intent, e.service_type.value, e.applicable_if, e.template_url]) + '\n'
         return s
+    
+    # hash and equal are only used to avoid adding the same cit multiple times. 
+    # we can live with some instances, where it does not work 
+    def __hash__(self):
+        return self.model_dump_json().__hash__()
+    
+    def __eq__(self, other):
+        if not isinstance(other, CIT_v1):
+            return False
+        return self.model_dump() == other.model_dump()
 
 
 

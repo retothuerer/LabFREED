@@ -39,7 +39,7 @@ class Labfreed_App_Infrastructure():
         cit = cit_from_str(cit)
         if not cit:
             raise ValueError('the cit could not be parsed. Neither as v1 or v2')
-        self._resolver._cits.append(cit)
+        self._resolver._cits.add(cit)
         
         
     def process_pac(self, pac_url, markup=None):

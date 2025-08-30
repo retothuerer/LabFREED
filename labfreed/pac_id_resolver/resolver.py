@@ -61,7 +61,7 @@ class PAC_ID_Resolver():
         '''Initialize the resolver with coupling information tables'''
         if not cits:
             cits = []
-        self._cits = cits
+        self._cits = set(cits)
             
         
     def resolve(self, pac_id:PAC_ID|str, check_service_status=True, use_issuer_cit=True) -> list[ServiceGroup]:
@@ -80,7 +80,7 @@ class PAC_ID_Resolver():
         cits = self._cits.copy()
         if use_issuer_cit:
             if issuer_cit := _get_issuer_cit(pac_id.issuer):
-                cits.append(issuer_cit)
+                cits.add(issuer_cit)
          
         matches = []
         for cit in cits:

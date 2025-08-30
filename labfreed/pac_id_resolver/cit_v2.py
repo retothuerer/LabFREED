@@ -136,6 +136,17 @@ class CIT_v2(LabFREED_BaseModel):
     def __str__(self):
         yml = yaml.dump(self.model_dump()                        )
         return yml
+     
+    # hash and equal are only used to avoid adding the same cit multiple times. 
+    # we can live with some instances, where it does not work 
+    def __hash__(self):
+        return self.model_dump_json().__hash__()
+    
+    def __eq__(self, other):
+        if not isinstance(other, CIT_v2):
+            return False
+        return self.model_dump() == other.model_dump()
+    
     
     def evaluate_pac_id(self, pac):
         pac_id_json = pac.to_dict()
