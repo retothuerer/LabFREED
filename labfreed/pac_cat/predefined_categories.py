@@ -233,6 +233,26 @@ class Processor_Misc(Processor_Abstract):
     ''' Category segments, which are not defined in the specification'''
     
     
+    
+class Misc(Category, ABC):
+    '''@private'''
+    key: str = Field(default='-X', frozen=True)
+    id:str|None =                    Field(              alias='21')
+    additional_segments: list[IDSegment] = Field(default_factory=list, exclude=True)
+    ''' Category segments, which are not defined in the specification'''
+    
+    @model_validator(mode='after')
+    def _validate_mandatory_fields(self):
+        if not self.id:
+            self._add_validation_message(
+                    source=f"Category {self.key}",
+                    level = ValidationMsgLevel.ERROR,
+                    msg=f"Category key {self.key} is missing mandatory field 'ID'",
+                    highlight_pattern = f"{self.key}"
+            )
+        return self
+    
+    
 category_key_to_class_map  = {
         '-MD': Material_Device,
         '-MS': Material_Substance,
@@ -245,5 +265,6 @@ category_key_to_class_map  = {
         '-DS': Data_Static,
         '-DX': Data_Misc,
         '-PS': Processor_Software,
-        '-PX': Processor_Misc
+        '-PX': Processor_Misc,
+        '-X':Misc
 }
