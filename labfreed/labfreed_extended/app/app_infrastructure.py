@@ -41,6 +41,10 @@ class Labfreed_App_Infrastructure():
             raise ValueError('the cit could not be parsed. Neither as v1 or v2')
         self._resolver._cits.add(cit)
         
+    def remove_cit(self, cit:str):
+        cit = cit_from_str(cit)
+        self._resolver._cits.discard(cit)
+        
         
     def process_pac(self, pac_url, markup=None):
         if not isinstance(pac_url, PAC_ID):
