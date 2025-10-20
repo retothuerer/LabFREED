@@ -11,7 +11,6 @@ except ImportError:
     raise ImportError("Please install labfreed with the [extended] extra: pip install labfreed[extended]")
 
 
-# from fastapi import FastAPI, Request
 
 class Authenticator(Protocol):
     def __call__(self, request) -> bool: ...
