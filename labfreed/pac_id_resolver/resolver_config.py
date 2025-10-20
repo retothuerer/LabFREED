@@ -8,18 +8,18 @@ import jsonpath_ng.ext as jsonpath
 
 from labfreed.pac_id_resolver.services import Service, ServiceGroup
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel, ValidationMsgLevel, _quote_texts
-from labfreed.pac_id_resolver.cit_common import ( ServiceType)
+from labfreed.pac_id_resolver.resolver_config_common import ( ServiceType)
 
 
 __all__ = [
-    "CIT_v2",
-    "CITBlock_v2",
-    "CITEntry_v2"
+    "ResolverConfig",
+    "ResolverConfigBlock",
+    "ResolverConfigEntry"
 ]
 
 
 
-class CITEntry_v2(LabFREED_BaseModel):
+class ResolverConfigEntry(LabFREED_BaseModel):
     service_name: str
     application_intents:list[str]
     service_type:ServiceType |str
@@ -92,9 +92,9 @@ class CITEntry_v2(LabFREED_BaseModel):
     
     
 
-class CITBlock_v2(LabFREED_BaseModel):
+class ResolverConfigBlock(LabFREED_BaseModel):
     applicable_if: str  = Field(default='True', alias='if')
-    entries: list[CITEntry_v2]
+    entries: list[ResolverConfigEntry]
     
     @field_validator('applicable_if', mode='before')
     @classmethod
@@ -104,21 +104,21 @@ class CITBlock_v2(LabFREED_BaseModel):
     
 
 
-class CIT_v2(LabFREED_BaseModel):
+class ResolverConfig(LabFREED_BaseModel):
     schema_version: str = Field(default='2.0')
-    '''Coupling Information Table (CIT)'''
+    '''Resolver Configuration'''
     origin: str = ''
     model_config = {
         "extra": "allow"
     }
     '''@private'''
-    cit: list[CITBlock_v2] = Field(default_factory=list)
+    config: list[ResolverConfigBlock] = Field(default_factory=list)
     
     @model_validator(mode='after')
     def _validate_origin(self):
         if len(self.origin) == 0:
             self._add_validation_message(level=ValidationMsgLevel.WARNING,
-                                        source='CIT origin',
+                                        source='ResolverConfig origin',
                                         msg='Origin should not be empty'
                                         )
         return self
@@ -137,37 +137,37 @@ class CIT_v2(LabFREED_BaseModel):
         yml = yaml.dump(self.model_dump()                        )
         return yml
      
-    # hash and equal are only used to avoid adding the same cit multiple times. 
+    # hash and equal are only used to avoid adding the same resolver config multiple times. 
     # we can live with some instances, where it does not work 
     def __hash__(self):
         return self.model_dump_json().__hash__()
     
     def __eq__(self, other):
-        if not isinstance(other, CIT_v2):
+        if not isinstance(other, ResolverConfig):
             return False
         return self.model_dump() == other.model_dump()
     
     
     def evaluate_pac_id(self, pac):
         pac_id_json = pac.to_dict()
-        cit_evaluated = ServiceGroup(origin=self.origin)   
-        for block in self.cit:
+        resolver_config_evaluated = ServiceGroup(origin=self.origin)   
+        for block in self.config:
             _, is_applicable = self._evaluate_applicable_if(pac_id_json, block.applicable_if)
             if not is_applicable:
                 continue
 
             for e in block.entries:
                 if e.errors():
-                    continue #make this stable against errors in the cit
+                    continue #make this stable against errors in the resolver config
                 url = self._eval_url_template(pac_id_json, e.template_url)
-                cit_evaluated.services.append(Service(  
+                resolver_config_evaluated.services.append(Service(  
                                                         service_name=e.service_name,
                                                         application_intents=e.application_intents,
                                                         service_type=e.service_type,
                                                         url = url
                                     )
                               )            
-        return cit_evaluated
+        return resolver_config_evaluated
     
     
     def _evaluate_applicable_if(self, pac_id_json:str, expression) -> tuple[str, bool]:

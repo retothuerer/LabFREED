@@ -1,25 +1,27 @@
 
 import re
 
+from deprecated import deprecated
+
 from pydantic import Field, model_validator
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel, ValidationMessage, ValidationMsgLevel
 from labfreed.pac_id.pac_id import PAC_ID
 from labfreed.pac_id_resolver.services import Service, ServiceGroup
-from labfreed.pac_id_resolver.cit_common import ( _add_msg_to_cit_entry_model, 
+from labfreed.pac_id_resolver.resolver_config_common import ( _add_msg_to_cit_entry_model, 
                                                  _validate_service_name, 
                                                  _validate_application_intent, 
                                                  _validate_service_type,
                                                  ServiceType)
 
 
-
+@deprecated("Use ResolverConfig")
 class CITEntry_v1(LabFREED_BaseModel):
     applicable_if: str = Field(..., min_length=1)
     service_name: str = Field(..., min_length=1)
     application_intent:str = Field(..., min_length=1)
     service_type:ServiceType|str
     template_url:str = Field(..., min_length=1)
-    
+        
     
     @model_validator(mode='after')
     def _validate_model(self):
@@ -67,7 +69,7 @@ class CITEntry_v1(LabFREED_BaseModel):
     
     
 
-
+@deprecated("Use ResolverConfig")
 class CIT_v1(LabFREED_BaseModel):
     origin:str = ''
     entries:list[CITEntry_v1]
