@@ -1,7 +1,7 @@
 
 from abc import ABC, abstractproperty
 
-from pydantic import model_validator
+from pydantic import computed_field, model_validator
 
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel, ValidationMsgLevel
 
@@ -29,6 +29,7 @@ class Extension(LabFREED_BaseModel,ExtensionBase):
     type:str|None
     data_:str
     
+    @computed_field
     @property
     def data(self) -> str:
         return self.data_
