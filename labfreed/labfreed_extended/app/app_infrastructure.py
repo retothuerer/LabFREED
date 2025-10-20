@@ -17,10 +17,11 @@ from labfreed.pac_id_resolver.services import ServiceGroup
 
 
 class Labfreed_App_Infrastructure():
-    def __init__(self, markup = 'rich', language_preferences:list[str]|str='en', http_client:requests.Session|None=None):
+    def __init__(self, markup = 'rich', language_preferences:list[str]|str='en', http_client:requests.Session|None=None, use_issuer_resolver_config=True):
         if isinstance(language_preferences, str):
             language_preferences = [language_preferences]
         self._language_preferences = language_preferences
+        self._use_issuer_resolver_config = use_issuer_resolver_config
         
         self._resolver = PAC_ID_Resolver()
         
@@ -48,7 +49,7 @@ class Labfreed_App_Infrastructure():
             pac = PAC_ID.from_url(pac_url)
         else:
             pac = pac_url
-        service_groups = self._resolver.resolve(pac, check_service_status=False)
+        service_groups = self._resolver.resolve(pac, check_service_status=False, use_issuer_resolver_config=self._use_issuer_resolver_config)
         
         pac_info = PacInfo(pac_id=pac)
                        

@@ -121,6 +121,7 @@ class ResourceAttribute(AttributeBase):
     @model_validator(mode='after')
     def _validate_value(self):
         _validate_resource(self, self.value)
+        return self
 
 class ResourceListAttribute(AttributeBase):
     type: Literal["resource-list"]

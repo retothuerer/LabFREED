@@ -101,11 +101,14 @@ class PAC_ID_Resolver():
          
         matches = []
         for cit in resolver_configs:
-            if isinstance(cit, CIT_v1):
-                # cit v1 has no concept of categories and implied keys. It would treat these segments as value segment
-                matches.append(cit.evaluate_pac_id(pac_id_catless))
-            else:
-                matches.append(cit.evaluate_pac_id(pac_id))
+            try:
+                if isinstance(cit, CIT_v1):
+                    # cit v1 has no concept of categories and implied keys. It would treat these segments as value segment
+                    matches.append(cit.evaluate_pac_id(pac_id_catless))
+                else:
+                    matches.append(cit.evaluate_pac_id(pac_id))
+            except Exception as e:
+                logging.error(f'Failed to resolve pac {pac_id.to_url()} with cit {cit.origin}')
         
         if check_service_status:
             for m in matches:
