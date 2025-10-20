@@ -55,7 +55,7 @@ class Category(LabFREED_BaseModel):
                     k = f"{field_name} ({ field_info.alias})"
                 else:
                     k = f"{field_name}"
-            out.update({k : v } ) 
+                out.update({k : v } ) 
             
         for s in getattr(self, 'additional_segments', []):
             out.update( {s.key or '' : s.value })
