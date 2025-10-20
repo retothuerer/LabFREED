@@ -93,15 +93,15 @@ mm = Material_Misc(product_number='X67678',
                         additional_segments=additional_segments
                         )
 
-def test_MM_segments():
+def test_MX_segments():
     pac = PAC_CAT.from_categories(issuer='Q.COM', categories=[mm])
     url = pac.to_url(use_short_notation=False)
-    assert url == 'HTTPS://PAC.Q.COM/-MM/240:X67678/10:9999/20:1000/21:34/250:2/K1:V1/V2'
+    assert url == 'HTTPS://PAC.Q.COM/-MX/240:X67678/10:9999/20:1000/21:34/250:2/K1:V1/V2'
     
-def test_MM_segments_short_notation():
+def test_MX_segments_short_notation():
     pac = PAC_CAT.from_categories(issuer='Q.COM', categories=[mm])
     url = pac.to_url(use_short_notation=True)
-    assert url == 'HTTPS://PAC.Q.COM/-MM/X67678/9999/1000/34/2/K1:V1/V2'
+    assert url == 'HTTPS://PAC.Q.COM/-MX/X67678/9999/1000/34/2/K1:V1/V2'
     
     
 
