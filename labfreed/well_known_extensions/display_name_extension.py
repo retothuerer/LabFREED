@@ -1,7 +1,8 @@
 import logging
-from typing import Literal
+from typing import Literal, Self
 from pydantic import  model_validator
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel
+from labfreed.pac_id.extension import ExtensionBase
 from labfreed.well_known_extensions.text_base36_extension import TextBase36Extension
 
 from labfreed.utilities.base36 import from_base36
@@ -18,6 +19,12 @@ class DisplayNameExtension(TextBase36Extension, LabFREED_BaseModel):
         if isinstance(data, dict) and 'display_name' in data:
             data['text'] = data.pop('display_name')
         return data
+    
+    @staticmethod
+    def from_extension(ext:ExtensionBase) -> Self:
+        return DisplayNameExtension.create(name=ext.name,
+                                  type=ext.type,
+                                  data=ext.data)
 
     @property
     def display_name(self) -> str:
