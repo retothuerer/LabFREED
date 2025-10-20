@@ -2,6 +2,7 @@ import pytest
 from labfreed.pac_id import PAC_ID
 from labfreed.pac_id.extension import ExtensionBase, Extension
 from labfreed.well_known_extensions.display_name_extension import DisplayNameExtension
+from labfreed.well_known_extensions.text_base36_extension import TextBase36Extension
 from labfreed.well_known_extensions.trex_extension import TREX_Extension
 
 
@@ -83,7 +84,7 @@ def test_known_extensions_are_interpreted():
 def test_display_name_and_summary_are_known_extension_types():
     pac = from_url(valid_base + valid_standard_segments + "*N$TEXT/ABC*SUM$TREX/A$T.A:A")
     extensions= pac.extensions
-    assert isinstance(extensions[0], DisplayNameExtension)
+    assert isinstance(extensions[0], TextBase36Extension)
     assert isinstance(extensions[1], TREX_Extension)
     
    
