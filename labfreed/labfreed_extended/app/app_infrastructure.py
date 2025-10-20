@@ -7,9 +7,6 @@ from labfreed.labfreed_extended.app.pac_info.pac_info import PacInfo
 from labfreed.pac_attributes.client.attribute_cache import MemoryAttributeCache
 from labfreed.pac_attributes.client.client import AttributeClient, http_attribute_request_default_callback_factory
 from labfreed.pac_attributes.pythonic.py_attributes import pyAttributeGroup
-from labfreed.pac_attributes.well_knonw_attribute_keys import MetaAttributeKeys
-from labfreed.well_known_extensions.display_name_extension import DisplayNameExtension
-
 
 from labfreed.pac_id.pac_id import PAC_ID
 from labfreed.pac_id_resolver.resolver import PAC_ID_Resolver, cit_from_str
@@ -35,15 +32,15 @@ class Labfreed_App_Infrastructure():
         self._attribute_client = AttributeClient(http_post_callback=callback, cache_store=MemoryAttributeCache(), always_use_cached_value_for_minutes=1)
 
 
-    def add_cit(self, cit:str):
+    def add_resolver_config(self, cit:str):
         cit = cit_from_str(cit)
         if not cit:
             raise ValueError('the cit could not be parsed. Neither as v1 or v2')
-        self._resolver._cits.add(cit)
+        self._resolver._resolver_configs.add(cit)
         
-    def remove_cit(self, cit:str):
-        cit = cit_from_str(cit)
-        self._resolver._cits.discard(cit)
+    def remove_resolver_config(self, resolver_config:str):
+        resolver_config = cit_from_str(resolver_config)
+        self._resolver._resolver_configs.discard(resolver_config)
         
         
     def process_pac(self, pac_url, markup=None):
@@ -66,6 +63,15 @@ class Labfreed_App_Infrastructure():
             if user_handovers:
                 sg_user_handovers.append(ServiceGroup(origin=sg.origin, services=user_handovers))
         pac_info.user_handovers = sg_user_handovers
+        
+        # Actions
+        sg_actions = []
+        for sg in service_groups:
+            actions = [s  for s in sg.services if s.service_type == 'action-generic']
+            
+            if actions:
+                sg_actions.append(ServiceGroup(origin=sg.origin, services=actions))
+        pac_info.actions = sg_actions
         
         # Attributes
         attribute_groups = {}
