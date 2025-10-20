@@ -105,8 +105,8 @@ def test_implied_segments_of_MC_category():
     assert cat.segments[3].key == '21'
     assert cat.segments[4].key == '250'
     
-def test_implied_segments_of_MM_category():
-    pac = from_url(valid_base + "-MM/0/1/2/3/4")
+def test_implied_segments_of_MX_category():
+    pac = from_url(valid_base + "-MX/0/1/2/3/4")
     cat: Category = pac.categories[0]
     assert cat.segments[0].key == '240'
     assert cat.segments[1].key == '10'
@@ -142,7 +142,7 @@ def test_mandatory_fields_of_MD_category():
     
     
 def test_keys_can_repeat_accross_categories():
-    pac = from_url(valid_base + "-MX/KEY:VAL/-MY/KEY:VAL")
+    pac = from_url(valid_base + "-MZ/KEY:VAL/-MY/KEY:VAL")
     assert pac.is_valid # made it here without exception > it's fine
     
 def test_keys_should_not_repeat_within_categories():
