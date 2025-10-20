@@ -1,4 +1,4 @@
-from labfreed.trex.python_convenience.quantity import Quantity
+from labfreed.trex.pythonic.quantity import Quantity
 
 
 def test_print_significant_digits():
