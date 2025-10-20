@@ -25,11 +25,11 @@ class Test_pac_cat:
         assert cats[0].segments[0].value == 'VAL'
 
     def test_category_with_multiple_segments(self):
-        pac = from_url('HTTPS://PAC.METTORIUS.COM/-MX/KEY0:VAL0/VAL1/KEY2:VAL2')
+        pac = from_url('HTTPS://PAC.METTORIUS.COM/-MZ/KEY0:VAL0/VAL1/KEY2:VAL2')
         assert pac.is_valid
         cats = pac.categories
         assert len(cats) == 1
-        assert cats[0].key == '-MX'
+        assert cats[0].key == '-MZ'
         assert len(cats[0].segments) == 3
         assert cats[0].segments[0].key == 'KEY0'
         assert cats[0].segments[0].value == 'VAL0'
@@ -39,29 +39,29 @@ class Test_pac_cat:
         assert cats[0].segments[2].value == 'VAL2'
 
     def test_two_categories(self):
-        pac = from_url('HTTPS://PAC.METTORIUS.COM/-DX/KEY:VAL/-MX/KEY:VAL')
+        pac = from_url('HTTPS://PAC.METTORIUS.COM/-DZ/KEY:VAL/-MZ/KEY:VAL')
         assert pac.is_valid
         cats = pac.categories
         assert len(cats) == 2
-        assert cats[0].key == '-DX'
+        assert cats[0].key == '-DZ'
         assert len(cats[0].segments) == 1
         assert cats[0].segments[0].key == 'KEY'
         assert cats[0].segments[0].value == 'VAL'
-        assert cats[1].key == '-MX'
+        assert cats[1].key == '-MZ'
         assert len(cats[1].segments) == 1
         assert cats[1].segments[0].key == 'KEY'
         assert cats[1].segments[0].value == 'VAL'
 
     def test_three_categories(self):
-        pac = from_url('HTTPS://PAC.METTORIUS.COM/-DX/KEY0:VAL0/-MX/KEY1:VAL1/-CAT/KEY2:VAL2')
+        pac = from_url('HTTPS://PAC.METTORIUS.COM/-DZ/KEY0:VAL0/-MZ/KEY1:VAL1/-CAT/KEY2:VAL2')
         assert pac.is_valid
         cats = pac.categories
         assert len(cats) == 3
-        assert cats[0].key == '-DX'
+        assert cats[0].key == '-DZ'
         assert len(cats[0].segments) == 1
         assert cats[0].segments[0].key == 'KEY0'
         assert cats[0].segments[0].value == 'VAL0'
-        assert cats[1].key == '-MX'
+        assert cats[1].key == '-MZ'
         assert len(cats[1].segments) == 1
         assert cats[1].segments[0].key == 'KEY1'
         assert cats[1].segments[0].value == 'VAL1'
@@ -119,11 +119,11 @@ class Test_pac_cat:
         assert cats[0].segments[4].value == '4'
 
     def test_implied_segments_of_MM_category(self):
-        pac = from_url('HTTPS://PAC.METTORIUS.COM/-MM/0/1/2/3/4')
+        pac = from_url('HTTPS://PAC.METTORIUS.COM/-MX/0/1/2/3/4')
         assert pac.is_valid
         cats = pac.categories
         assert len(cats) == 1
-        assert cats[0].key == '-MM'
+        assert cats[0].key == '-MX'
         assert len(cats[0].segments) == 5
         assert cats[0].segments[0].key == '240'
         assert cats[0].segments[0].value == '0'
@@ -190,5 +190,5 @@ class Test_pac_cat:
 
     def test_keys_can_repeat_accross_categories(self):
         """Same key used in two categories is allowed"""
-        pac = from_url('HTTPS://PAC.METTORIUS.COM/-MX/KEY:VAL/-MY/KEY:VAL')
+        pac = from_url('HTTPS://PAC.METTORIUS.COM/-MZ/KEY:VAL/-MY/KEY:VAL')
         assert pac.is_valid

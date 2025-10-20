@@ -67,10 +67,10 @@ tests:
             value: "VAL"
 
   category_with_multiple_segments:
-    test_url: "HTTPS://PAC.METTORIUS.COM/-MX/KEY0:VAL0/VAL1/KEY2:VAL2"
+    test_url: "HTTPS://PAC.METTORIUS.COM/-MZ/KEY0:VAL0/VAL1/KEY2:VAL2"
     is_valid: true
     categories:
-      - key: "-MX"
+      - key: "-MZ"
         segments:
           - key: "KEY0"
             value: "VAL0"
@@ -80,27 +80,27 @@ tests:
             value: "VAL2"
 
   two_categories:
-    test_url: "HTTPS://PAC.METTORIUS.COM/-DX/KEY:VAL/-MX/KEY:VAL"
+    test_url: "HTTPS://PAC.METTORIUS.COM/-DZ/KEY:VAL/-MZ/KEY:VAL"
     is_valid: true
     categories:
-      - key: "-DX"
+      - key: "-DZ"
         segments:
           - key: "KEY"
             value: "VAL"
-      - key: "-MX"
+      - key: "-MZ"
         segments:
           - key: "KEY"
             value: "VAL"
 
   three_categories:
-    test_url: "HTTPS://PAC.METTORIUS.COM/-DX/KEY0:VAL0/-MX/KEY1:VAL1/-CAT/KEY2:VAL2"
+    test_url: "HTTPS://PAC.METTORIUS.COM/-DZ/KEY0:VAL0/-MZ/KEY1:VAL1/-CAT/KEY2:VAL2"
     is_valid: true
     categories:
-      - key: "-DX"
+      - key: "-DZ"
         segments:
           - key: "KEY0"
             value: "VAL0"
-      - key: "-MX"
+      - key: "-MZ"
         segments:
           - key: "KEY1"
             value: "VAL1"
@@ -223,6 +223,6 @@ tests:
 
   keys_can_repeat_accross_categories:
     comment: "Same key used in two categories is allowed"
-    test_url: "HTTPS://PAC.METTORIUS.COM/-MX/KEY:VAL/-MY/KEY:VAL"
+    test_url: "HTTPS://PAC.METTORIUS.COM/-MZ/KEY:VAL/-MY/KEY:VAL"
     is_valid: true
 
