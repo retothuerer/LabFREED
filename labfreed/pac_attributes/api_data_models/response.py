@@ -36,7 +36,7 @@ class AttributeBase(LabFREED_BaseModel, ABC):
     
 class DateTimeAttribute(AttributeBase):
     type: Literal["datetime"] 
-    value: datetime | list[datetime]
+    value: datetime
     
     @field_validator('value', mode='before')
     def set_utc__if_naive(cls, value):
@@ -44,59 +44,112 @@ class DateTimeAttribute(AttributeBase):
             return ensure_utc(value)
         else:
             return value
+        
+class DateTimeListAttribute(AttributeBase):
+    type: Literal["datetime-list"] 
+    value: list[datetime]
+    
+    @field_validator('value', mode='before')
+    def set_utc__if_naive(cls, value):
+        value_out = []
+        for v in value:
+            if isinstance(v, datetime):
+                value_out.append(ensure_utc(v))
+            else:
+                return ValueError(f'{v} is of type {type(v)}. It must be datetime')
+    
+    
     
 class BoolAttribute(AttributeBase):
     type: Literal["bool"] 
-    value: bool | list[bool]
+    value: bool
+    
+class BoolListAttribute(AttributeBase):
+    type: Literal["bool-list"] 
+    value: list[bool]
+
+
+
     
 class TextAttribute(AttributeBase):
     type: Literal["text"] 
-    value: str | list[str]
+    value: str
+    
+    @model_validator(mode='after')
+    def _validate_value(self):
+        _validate_text(self, self.value)
+        return self
+    
+class TextListAttribute(AttributeBase):
+    type: Literal["text-list"] 
+    value: list[str]
     
     @model_validator(mode='after')
     def _validate_value(self):
         l = [self.value] if isinstance(self.value, str) else self.value
         for v in l:
-            if len(v) > 5000: 
-                self._add_validation_message(
-                    source="Text Attribute",
-                    level=ValidationMsgLevel.WARNING,  # noqa: F821
-                    msg=f"Text attribute {v} exceeds 5000 characters. It is recommended to stay below",
-                    highlight_pattern = f'{v}'
-                )
+            _validate_text(self, v)
         return self
+    
+
+def _validate_text(mdl:LabFREED_BaseModel, v):
+    if len(v) > 5000: 
+        mdl._add_validation_message(
+            source="Text Attribute",
+            level=ValidationMsgLevel.WARNING,  # noqa: F821
+            msg=f"Text attribute {v} exceeds 5000 characters. It is recommended to stay below",
+            highlight_pattern = f'{v}'
+        )
             
+
 
 class ReferenceAttribute(AttributeBase):
     type: Literal["reference"]
-    value: str | list[str]
+    value: str 
     
+class ReferenceListAttribute(AttributeBase):
+    type: Literal["reference-list"]
+    value: list[str]
+    
+    
+        
 
 class ResourceAttribute(AttributeBase):
     type: Literal["resource"]
-    value: str | list[str]
+    value: str 
+    
+    @model_validator(mode='after')
+    def _validate_value(self):
+        _validate_resource(self, self.value)
+
+class ResourceListAttribute(AttributeBase):
+    type: Literal["resource-list"]
+    value: list[str]
     
     @model_validator(mode='after')
     def _validate_value(self):
         value_list = self.value if isinstance(self.value, list) else [self.value]
         for v in value_list:
-            r = urlparse(v)
-            if not all([r.scheme, r.netloc]):
-                self._add_validation_message(
-                    source="Resource Attribute",
-                    level=ValidationMsgLevel.ERROR,  # noqa: F821
-                    msg=f"Must be a valid url",
-                    highlight_pattern = f'{v}'
-                )
-            pattern = re.compile(r"\.\w{1,3}$", re.IGNORECASE)
-            if not bool(pattern.search(v)):
-                self._add_validation_message(
-                    source="Resource Attribute",
-                    level=ValidationMsgLevel.WARNING,  # noqa: F821
-                    msg=f"It is RECOMMENDED resource links end with a file extension",
-                    highlight_pattern = f'{v}'
-                )
+            _validate_resource(self, v)
         return self
+    
+def _validate_resource(mdl:LabFREED_BaseModel, v):
+    r = urlparse(v)
+    if not all([r.scheme, r.netloc]):
+        mdl._add_validation_message(
+            source="Resource Attribute",
+            level=ValidationMsgLevel.ERROR,  # noqa: F821
+            msg="Must be a valid url",
+            highlight_pattern = f'{v}'
+        )
+    pattern = re.compile(r"\.\w{1,3}$", re.IGNORECASE)
+    if not bool(pattern.search(v)):
+        mdl._add_validation_message(
+            source="Resource Attribute",
+            level=ValidationMsgLevel.WARNING,  # noqa: F821
+            msg="It is RECOMMENDED resource links end with a file extension",
+            highlight_pattern = f'{v}'
+        )
     
         
         
@@ -151,11 +204,22 @@ class NumericValue(LabFREED_BaseModel):
 
 class NumericAttribute(AttributeBase):
     type: Literal["numeric"] 
-    value: NumericValue | list[NumericValue]
+    value: NumericValue 
+    
+class NumericListAttribute(AttributeBase):
+    type: Literal["numeric-list"] 
+    value: list[NumericValue]
+    
+    
     
 class ObjectAttribute(AttributeBase):
     type: Literal["object"] 
-    value: dict[str, Any] |list[dict[str, Any]]
+    value: dict[str, Any]
+    
+    
+class ObjectListAttribute(AttributeBase):
+    type: Literal["object-list"] 
+    value: list[dict[str, Any]]
            
 
      
@@ -168,7 +232,15 @@ Attribute = Annotated[
         TextAttribute,
         NumericAttribute,
         ResourceAttribute,
-        ObjectAttribute
+        ObjectAttribute,
+        
+        ReferenceListAttribute,
+        DateTimeListAttribute,
+        BoolListAttribute,
+        TextListAttribute,
+        NumericListAttribute,
+        ResourceListAttribute,
+        ObjectListAttribute
     ],
     Field(discriminator="type")
 ]
