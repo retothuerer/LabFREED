@@ -1,27 +1,28 @@
 import logging
-from typing import Literal, Self
-from pydantic import computed_field
+from typing import Literal
+from pydantic import  model_validator
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel
-from labfreed.pac_id.extension import ExtensionBase
-from labfreed.utilities.base36 import from_base36, to_base36
+from labfreed.well_known_extensions.text_base36_extension import TextBase36Extension
+
+from labfreed.utilities.base36 import from_base36
 
 
-class DisplayNameExtension(ExtensionBase, LabFREED_BaseModel):
+class DisplayNameExtension(TextBase36Extension, LabFREED_BaseModel):
     name:Literal['N'] = 'N'
     type:Literal['TEXT'] = 'TEXT'
-    display_name: str       
+    display_name: str      
     
-    @computed_field
+    @model_validator(mode='before')
+    def move_display_name_to_text(cls, data):
+        # if display_name provided, move it to text
+        if isinstance(data, dict) and 'display_name' in data:
+            data['text'] = data.pop('display_name')
+        return data
+
     @property
-    def data(self)->str:
-        # return '/'.join([to_base36(dn) for dn in self.display_name])
-        return to_base36(self.display_name).root
+    def display_name(self) -> str:
+        return self.text 
     
-    @staticmethod
-    def from_extension(ext:ExtensionBase) -> Self:
-        return DisplayNameExtension.create(name=ext.name,
-                                  type=ext.type,
-                                  data=ext.data)
     
     @staticmethod
     def create(*, name, type, data):
