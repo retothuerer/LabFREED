@@ -1,5 +1,5 @@
 ## Materials
-from abc import ABC
+from abc import ABC, abstractproperty
 from pydantic import Field, computed_field, model_validator
 
 from labfreed.labfreed_infrastructure import ValidationMsgLevel
@@ -17,6 +17,10 @@ class PredefinedCategory(Category, ABC):
     @property
     def segments(self) -> list[IDSegment]:
         return self._get_segments(use_short_notation=False)
+    
+    @abstractproperty
+    def is_serialized(self) -> bool:
+        pass
     
     def _get_segments(self, use_short_notation=False) -> list[IDSegment]:
         segments = []
@@ -65,11 +69,16 @@ class Material_Device(PredefinedCategory):
         if not self.serial_number:
             self._add_validation_message(
                     source=f"Category {self.key}",
-                    level = ValidationMsgLevel.ERROR,
-                    msg=f'Category key {self.key} is missing mandatory field Serial Number',
+                    level = ValidationMsgLevel.WARNING,
+                    msg=f'Category key {self.key} is missing field Serial Number. Check that you are indeed to a product and not a specific device.',
                     highlight_pattern = f"{self.key}"
             )
         return self
+    
+    @property
+    def is_serialized(self) -> bool:
+        return bool(self.serial_number)
+    
     
 class Material_Substance(PredefinedCategory):
     '''Represents the -MS category'''
@@ -93,6 +102,11 @@ class Material_Substance(PredefinedCategory):
             )
         return self
     
+    @property
+    def is_serialized(self) -> bool:
+        return bool(self.batch_number or self.container_number or self.aliquot)
+    
+    
 class Material_Consumable(PredefinedCategory):
     '''Represents the -MC category'''
     key: str = Field(default='-MC', frozen=True)
@@ -115,6 +129,11 @@ class Material_Consumable(PredefinedCategory):
             )
         return self
     
+    @property
+    def is_serialized(self) -> bool:
+        return bool(self.batch_number or self.serial_number or self.aliquot)
+    
+    
 class Material_Misc(Material_Consumable):
     '''Represents the -MX category'''
     # same fields as Consumable
@@ -126,6 +145,8 @@ class Material_Misc(Material_Consumable):
     aliquot:str|None =          Field(default=None, alias='250')
     additional_segments: list[IDSegment] = Field(default_factory=list, exclude=True)
     ''' Category segments, which are not defined in the specification'''
+    
+
     
 
 
@@ -147,6 +168,11 @@ class Data_Abstract(PredefinedCategory, ABC):
                     highlight_pattern = f"{self.key}"
             )
         return self
+    
+    @property
+    def is_serialized(self) -> bool:
+        return True
+    
 
 class Data_Result(Data_Abstract):
     '''Represents the -DR category'''
@@ -215,6 +241,11 @@ class Processor_Abstract(PredefinedCategory, ABC):
                     highlight_pattern = f"{self.key}"
             )
         return self
+    
+    @property
+    def is_serialized(self) -> bool:
+        return bool(self.processor_instance)
+    
 
 class Processor_Software(Processor_Abstract):
     '''Represents the -PS category'''
@@ -251,6 +282,11 @@ class Misc(Category, ABC):
                     highlight_pattern = f"{self.key}"
             )
         return self
+    
+    @property
+    def is_serialized(self) -> bool:
+        return bool(self.id)
+    
     
     
 category_key_to_class_map  = {
