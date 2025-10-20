@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 from datetime import datetime
 from typing import Optional, Tuple, List, Dict
@@ -133,12 +134,35 @@ class LocalExcelAttributeDataSource(_BaseExcelAttributeDataSource):
 
     @cached(_cache)
     def _read_rows_and_last_changed(self) -> Tuple[List[tuple], Optional[datetime]]:
-        wb = load_workbook(filename=self._file_path, read_only=True, data_only=True)
-        ws = wb.active
-        rows = list(ws.iter_rows(values_only=True))
-        last_changed = wb.properties.modified
-        wb.close()
-        return rows, last_changed
+        logging.info(f"Attempting to load workbook: {self._file_path!r}")
+
+        try:
+            wb = load_workbook(
+                filename=self._file_path,
+                read_only=True,
+                data_only=True
+            )
+            ws = wb.active
+            logging.info(f"Workbook opened successfully. Active sheet: {ws.title!r}")
+
+            rows = list(ws.iter_rows(values_only=True))
+            logging.info(f"Read {len(rows)} rows from {self._file_path!r}")
+
+            last_changed = wb.properties.modified
+            logging.info(f"Workbook 'modified' property: {last_changed}")
+
+            wb.close()
+            return rows, last_changed
+
+        except FileNotFoundError:
+            logging.error(f"Workbook not found at: {self._file_path!r}", exc_info=True)
+            raise
+        except PermissionError:
+            logging.error(f"Permission denied when accessing: {self._file_path!r}", exc_info=True)
+            raise
+        except Exception as e:
+            logging.exception(f"Unexpected error reading workbook {self._file_path!r}: {e}")
+            raise
 
 
 # # ---------------------------------------------------------------------
