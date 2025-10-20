@@ -74,7 +74,7 @@ class ResolverConfigEntry(LabFREED_BaseModel):
     
     @model_validator(mode='after')
     def _validate_service_type(self):
-        allowed_types = [ServiceType.ATTRIBUTE_SERVICE_GENERIC.value, ServiceType.USER_HANDOVER_GENERIC.value]
+        allowed_types = [ServiceType.ATTRIBUTE_SERVICE_GENERIC.value, ServiceType.USER_HANDOVER_GENERIC.value, ServiceType.ACTION_GENERIC.value]
         if self.service_type not in allowed_types:
             if isinstance(self.service_type, ServiceType):
                 s= self.service_type.value
