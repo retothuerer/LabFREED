@@ -153,7 +153,7 @@ cit2.origin = 'MY_COMPANY'
 ''''''
 # resolve a pac id
 pac_str = 'HTTPS://PAC.METTORIUS.COM/-MS/X3511/CAS:7732-18-5'
-service_groups = PAC_ID_Resolver(cits=[cit, cit2]).resolve(pac_str, check_service_status=False)
+service_groups = PAC_ID_Resolver(resolver_configs=[cit, cit2]).resolve(pac_str, check_service_status=False)
 cached_session = requests_cache.CachedSession(backend='memory', expire_after=60)
 for sg in service_groups:
     sg.update_states(cached_session)

@@ -1,6 +1,6 @@
 origin: PERSONAL
 
-cit:
+config:
 # CAS Search
 - if: $.categories[?(@.key == "-MS")].segments[?(@.key == "CAS")]
   entries:

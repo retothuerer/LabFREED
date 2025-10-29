@@ -26,7 +26,7 @@ if __name__ == "__main__":
     http_client = requests.Session()
     http_client.auth = ('test', '1234')
     app = Labfreed_App_Infrastructure(language_preferences='en', http_client=http_client)
-    app.add_cit(demo_cit)
+    app.add_resolver_config(demo_cit)
     
     state = 'request-pac-input'
     
@@ -39,7 +39,7 @@ if __name__ == "__main__":
                 break
             
             if not user_input or user_input == 'demo':
-                pac_url = 'HTTPS://PAC.METTORIUS.COM/-MD/240:BAL500/21:000001/K:V*59K77LWDX8W'
+                pac_url = 'HTTPS://PAC.METTORIUS.COM/-MD/BAL500/000001*59K77LWDX8W'
 
             else:
                 try:
@@ -52,9 +52,7 @@ if __name__ == "__main__":
             try:      
                 pac_info = app.process_pac(pac_url, markup='rich')
                 rich.print(pac_info.format_for_print('rich'))
-                p = Path(__file__).parent / 'pac_info.html'
-                with open(p, 'w+', encoding="utf-8") as f:
-                    f.write(pac_info.render_html())
+
             except AuthenticationError as e:
                 state = 'request-credentials-input'
                 
