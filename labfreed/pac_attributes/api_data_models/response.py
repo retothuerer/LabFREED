@@ -38,7 +38,7 @@ class DateTimeAttribute(AttributeBase):
     type: Literal["datetime"] 
     value: datetime
     
-    @field_validator('value', mode='before')
+    @field_validator('value', mode='after')
     def set_utc__if_naive(cls, value):
         if isinstance(value, datetime):
             return ensure_utc(value)
@@ -49,14 +49,15 @@ class DateTimeListAttribute(AttributeBase):
     type: Literal["datetime-list"] 
     value: list[datetime]
     
-    @field_validator('value', mode='before')
+    @field_validator('value', mode='after')
     def set_utc__if_naive(cls, value):
         value_out = []
         for v in value:
             if isinstance(v, datetime):
                 value_out.append(ensure_utc(v))
             else:
-                return ValueError(f'{v} is of type {type(v)}. It must be datetime')
+                raise ValueError(f'{v} is of type {type(v)}. It must be datetime')
+        return value_out
     
     
     

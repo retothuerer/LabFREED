@@ -86,7 +86,7 @@ class AttributeFlaskApp(Flask):
             except Exception as e:
                 print(e)
                 return "The request was valid, but the server encountered an error", 500
-            return (response_body, 200, {"Content-Type": "application/json"})
+            return (response_body, 200, {"Content-Type": "application/json; charset=utf-8"})
 
         @bp.route("/", methods=["GET"], strict_slashes=False)
         def capabilities():

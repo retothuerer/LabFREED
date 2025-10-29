@@ -51,7 +51,7 @@ def http_attribute_request_default_callback_factory(session: requests.Session = 
 
     def callback(url: str, attribute_request_body: str) -> tuple[int, str]:
         try:
-            resp = session.post(url, data=attribute_request_body, headers={'Content-Type': 'application/json'}, timeout=10)
+            resp = session.post(url, data=attribute_request_body, headers={'Content-Type': 'application/json; ; charset=utf-8'}, timeout=10)
             return resp.status_code, resp.text
         except requests.exceptions.RequestException as e:
             return 500, str(e)

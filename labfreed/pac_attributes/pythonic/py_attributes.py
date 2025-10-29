@@ -6,7 +6,7 @@ import warnings
 from pydantic import RootModel, field_validator
 
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel
-from labfreed.pac_attributes.api_data_models.response import AttributeBase, AttributeGroup, BoolAttribute, BoolListAttribute, DateTimeAttribute, DateTimeListAttribute,  NumericAttribute, NumericListAttribute, NumericValue, ObjectAttribute, ReferenceAttribute, ReferenceListAttribute, ResourceAttribute, ResourceListAttribute, TextAttribute, TextListAttribute
+from labfreed.pac_attributes.api_data_models.response import AttributeBase, AttributeGroup, BoolAttribute, BoolListAttribute, DateTimeAttribute, DateTimeListAttribute,  NumericAttribute, NumericListAttribute, NumericValue, ObjectAttribute,ObjectListAttribute, ReferenceAttribute, ReferenceListAttribute, ResourceAttribute, ResourceListAttribute, TextAttribute, TextListAttribute
 from labfreed.pac_attributes.client.attribute_cache import CacheableAttributeGroup
 from labfreed.pac_id.pac_id import PAC_ID
 from labfreed.trex.pythonic.quantity import Quantity
@@ -141,7 +141,10 @@ class pyAttributes(RootModel[list[pyAttribute]]):
         else: #this covers the last resort case of arbitrary objects. Must be json serializable.
             try :
                 values = [json.loads(json.dumps(v)) for v in value_list]
-                return ObjectAttribute(value=values, **common_args)
+                if len(values) == 1:
+                    return ObjectAttribute(value=values[0], **common_args)
+                else:
+                    return ObjectListAttribute(value=values, **common_args)
             except TypeError as e:  # noqa: F841
                 raise ValueError(f'Invalid Type: {type(first_value)} cannot be converted to attribute. You may want to use ObjectAttribute, but would have to implement the conversion from your python type yourself.')
         
@@ -162,16 +165,16 @@ class pyAttributes(RootModel[list[pyAttribute]]):
                 case NumericAttribute() | NumericListAttribute():                                       
                     values = [ Quantity.from_str_value(value=v.numerical_value, unit=v.unit) for v in value_list]
 
-                case BoolAttribute() | BoolAttribute():
+                case BoolAttribute() | BoolListAttribute():
                     values = value_list
                     
                 case TextAttribute() | TextListAttribute():
                     values = value_list
                     
-                case DateTimeAttribute() | DateTimeAttribute():                    
+                case DateTimeAttribute() | DateTimeListAttribute():                    
                     values = value_list
                 
-                case ObjectAttribute() | ObjectAttribute():
+                case ObjectAttribute() | ObjectListAttribute():
                     values = value_list
 
                        
