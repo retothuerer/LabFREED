@@ -44,7 +44,7 @@ class Labfreed_App_Infrastructure():
         self._resolver._resolver_configs.discard(resolver_config)
         
         
-    def process_pac(self, pac_url, markup=None):
+    def process_pac(self, pac_url) -> PacInfo:
         if not isinstance(pac_url, PAC_ID):
             pac = PAC_ID.from_url(pac_url)
         else:
