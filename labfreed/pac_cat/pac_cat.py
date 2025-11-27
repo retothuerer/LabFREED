@@ -123,7 +123,7 @@ class PAC_CAT(PAC_ID):
                         msg=f"Duplicate key {k} in category {c.key}",
                         highlight_pattern = k
                     )
-            return self
+        return self
         
         
     @model_validator(mode='after')
