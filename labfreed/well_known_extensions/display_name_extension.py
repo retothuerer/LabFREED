@@ -11,7 +11,6 @@ from labfreed.utilities.base36 import from_base36
 class DisplayNameExtension(TextBase36Extension, LabFREED_BaseModel):
     name:Literal['N'] = 'N'
     type:Literal['TEXT'] = 'TEXT'
-    display_name: str      
     
     @model_validator(mode='before')
     def move_display_name_to_text(cls, data):
