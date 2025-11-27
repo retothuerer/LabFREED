@@ -18,7 +18,8 @@ dependencies = [
     "jsonpath-ng>=1.7.0",
     "requests>=2.32.3",
     "requests_cache>=1.2.1",
-    "cachetools>=6.1.0"
+    "cachetools>=6.1.0",
+    "deprecated>=1.2.18"
 ]
 classifiers = [
     "License :: OSI Approved :: MIT License",
@@ -42,7 +43,8 @@ dev = [
 ]
 extended = [
     "Flask>=3.1.1",
-    "openpyxl>=3.1.5"
+    "openpyxl>=3.1.5",
+    "bleak>=2.0.0"
 ]
 
 
@@ -57,6 +59,7 @@ name = "labfreed"
 
 [tool.flit.sdist]
 exclude = [
+    "labfreed_experimental.py/",
     "tests/",
     "examples/",
     "docs/",
