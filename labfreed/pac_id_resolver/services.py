@@ -66,10 +66,11 @@ class ServiceGroup(LabFREED_BaseModel):
 
         table.add_column("Service Name")
         table.add_column("URL")
+        table.add_column("Service Type")
         table.add_column('Reachable')
         
         for s in self.services:
-            table.add_row(s.service_name, s.url, s.status.name)
+            table.add_row(s.service_name, s.url, s.service_type, s.status.name)
 
         print(table)
         
