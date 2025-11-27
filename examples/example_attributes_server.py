@@ -4,7 +4,7 @@ import os
 import random
 
 from flask import Request
-from labfreed.pac_attributes.pythonic.py_attributes import pyAttribute, pyAttributes, pyReference
+from labfreed.pac_attributes.pythonic.py_attributes import pyAttribute, pyAttributes, pyReference, pyResource
 from labfreed.pac_attributes.pythonic.py_dict_data_source import pyDict_DataSource
 from labfreed.pac_cat.pac_cat import PAC_CAT
 from labfreed.pac_cat.predefined_categories import Material_Device
@@ -46,13 +46,13 @@ data_sources.append(
             # first entry of a balance
             "HTTPS://PAC.METTORIUS.COM/-MD/BAL500/000001/K:V": pyAttributes([
                 pyAttribute(key=MetaAttributeKeys.DISPLAYNAME.value, value="My Balance"),
-                pyAttribute(key=MetaAttributeKeys.IMAGE, value="https://picsum.photos/id/82/200"),
+                pyAttribute(key=MetaAttributeKeys.IMAGE, value=pyResource("https://picsum.photos/id/82/200")),
             ]),
             
             # this is for a calibration weight, which is referenced by attributes of the balances
             "HTTPS://PAC.METTORIUS.COM/-MD/CALWEIGH/A00002": pyAttributes([
                 pyAttribute(key=MetaAttributeKeys.DISPLAYNAME.value, value="Calibration Weight PRN003"),
-                pyAttribute(key=MetaAttributeKeys.IMAGE, value="https://picsum.photos/id/86/200"),
+                pyAttribute(key=MetaAttributeKeys.IMAGE, value=pyResource("https://picsum.photos/id/86/200")),
             ])
         } 
     )
@@ -130,7 +130,10 @@ class DynamicDemoAttributeGroup(AttributeGroupDataSource):
     def attributes(self, pac_url: str) -> AttributeGroup:
         # Check if we deal with a BAL500. We can make use of the full might of PAC-CAT
         pac_cat = PAC_CAT.from_url(pac_url)
-        cat: Material_Device = pac_cat.get_category("-MD")
+        if not isinstance(pac_cat, PAC_CAT):
+            return None
+        
+        cat: Material_Device = pac_cat.get_category("-MD") 
         if not cat.model_number == "BAL500":
             return None
         
@@ -139,14 +142,22 @@ class DynamicDemoAttributeGroup(AttributeGroupDataSource):
                     pyAttribute(key="https://labfreed.org/terms/example/TextAttribute", value=random.choice(["Foo", "Bar"])),
                     pyAttribute(key="https://labfreed.org/terms/example/NumericAttribute", value=Quantity(value=round(random.uniform(0, 100), 2), unit=random.choice(["m", "kg", "mol/L"]))),
                     pyAttribute(key="https://labfreed.org/terms/example/ReferenceAttribute", value=pyReference('HTTPS://PAC.METTORIUS.COM/-MD/CALWEIGH/A00002')),
+                    pyAttribute(key="https://labfreed.org/terms/example/ResourceAttribute", value=pyResource('https://picsum.photos/id/86/200')),
                     pyAttribute(key="https://labfreed.org/terms/example/DateTimeAttribute", value=datetime.now(tz=timezone.utc)),
                     pyAttribute(key="https://labfreed.org/terms/example/BoolAttribute", value=random.choice([True, False])),
-                    pyAttribute(key="https://labfreed.org/terms/example/ObjectAttribute", value={'k1':1, 'k2': {'a':'bar', 'b':'foo'}, 'k3': [0,1,2]})
+                    pyAttribute(key="https://labfreed.org/terms/example/ObjectAttribute", value={'k1':1, 'k2': {'a':'bar', 'b':'foo'}, 'k3': [0,1,2]}),
+                    
+                    pyAttribute(key="https://labfreed.org/terms/example/TextAttributeList", value=["Foo", "Bar"]),
+                    pyAttribute(key="https://labfreed.org/terms/example/NumericAttributeList", value= [Quantity(value=100, unit="m"), Quantity(value=110, unit='m')] ),
+                    pyAttribute(key="https://labfreed.org/terms/example/ReferenceAttributeList", value=[ pyReference('HTTPS://PAC.METTORIUS.COM/-MD/CALWEIGH/A00002'), pyReference('HTTPS://PAC.METTORIUS.COM/-MD/CALWEIGH/A00003')] ),
+                    pyAttribute(key="https://labfreed.org/terms/example/ResourceAttributeList", value= [pyResource('https://picsum.photos/id/86/200'), pyResource('https://picsum.photos/id/87/200')]),
+                    pyAttribute(key="https://labfreed.org/terms/example/DateTimeAttributeList", value= [ datetime.now(tz=timezone.utc), datetime(2015,12,6) ]),
+                    pyAttribute(key="https://labfreed.org/terms/example/BoolAttributeList", value=random.choices([True, False], k=2)),
+                    pyAttribute(key="https://labfreed.org/terms/example/ObjectAttributeList", value=[ {'k1':1, 'k2': {'a':'bar', 'b':'foo'}, 'k3': [0,1,2]}, {'k1':10} ])
                 ]
             ).to_payload_attributes()
             
         return AttributeGroup(key=self._attribute_group_key, 
-                              state_of=datetime.now(tz=timezone.utc),
                               attributes=attributes)
 
 
