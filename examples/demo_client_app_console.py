@@ -26,7 +26,12 @@ if __name__ == "__main__":
     http_client = requests.Session()
     http_client.auth = ('test', '1234')
     app = Labfreed_App_Infrastructure(language_preferences='en', http_client=http_client)
-    app.add_resolver_config(demo_cit)
+    
+    # read resolver_config from file
+    with open('resolver_config_demo.yaml') as f:
+        demo_resolver_config_file = f.read()
+    
+    app.add_resolver_config(demo_resolver_config_file)
     
     state = 'request-pac-input'
     
@@ -50,7 +55,7 @@ if __name__ == "__main__":
                     continue
             
             try:      
-                pac_info = app.process_pac(pac_url, markup='rich')
+                pac_info = app.process_pac(pac_url)
                 rich.print(pac_info.format_for_print('rich'))
 
             except AuthenticationError as e:

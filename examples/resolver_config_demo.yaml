@@ -1,0 +1,38 @@
+schema_version: '2.0'
+
+origin: EXAMPLE OF MEETUP DEMO
+
+config:   
+
+# Devices
+- if: $.categories[?(@.key == "-MD")]
+  entries: 
+  - service_type: attributes-generic
+    service_name: DemoAttributes
+    application_intents:
+    - attributes
+    template_url: webtools.labfreed.org/attributes/
+
+# Substances
+- if: $.categories[?(@.key == "-MS")]
+  entries: 
+  - service_name: Inventory
+    service_type: userhandover-generic
+    application_intents:
+    - inventory-chemicals
+    template_url: https://chem-inventory.com/my-company/{$.identifier[1].value}
+    
+# Searches
+- if: $.categories[?(@.key == "-MS")].segments[?(@.key == "CAS")]
+  entries:
+  - service_name: CAS Search
+    service_type: userhandover-generic
+    application_intents:
+      - chem-info
+    template_url: https://pubchem.ncbi.nlm.nih.gov/#query={$.categories[?(@.key == "-MS")].segments[?(@.key == 'CAS')].value}
+    
+  - service_name: Supplier Search Google
+    service_type: userhandover-generic
+    application_intents:
+      - chem-info
+    template_url: https://www.google.com/search?q={$.issuer}
