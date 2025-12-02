@@ -1,4 +1,18 @@
 ## Change Log
+
+### v1.0.0
+PAC-CAT
+- added new categories 
+- BREAKING: Renamed category MM to MX
+
+
+PAC-ID Attributes
+- new building block
+  
+
+  
+
+
 ### v0.2.12
 - bugfix:no warning message if PAC-CAT has same segment key in two segments
 
