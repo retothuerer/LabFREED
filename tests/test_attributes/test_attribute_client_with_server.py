@@ -5,12 +5,26 @@
 from datetime import datetime
 import json
 from labfreed.pac_attributes.client.client import AttributeClient
-from labfreed_extended.pac_attributes.py_attributes import pyAttribute, pyAttributes, pyReference
+from labfreed.pac_attributes.pythonic.py_attributes import pyAttribute, pyAttributes, pyReference
 from labfreed.pac_attributes.server.attribute_data_sources import Dict_DataSource, PACAnalyzerAttributeDataSource, RandomAttributeGroupDataSource
 from labfreed.pac_attributes.server.server import AttributeServerRequestHandler
 from labfreed.pac_attributes.server.translation_data_sources import DictTranslationDataSource
 from labfreed.pac_id.pac_id import PAC_ID
-from labfreed.trex.python_convenience.quantity import Quantity
+from labfreed.trex.pythonic.quantity import Quantity
+
+
+
+def in_memory_callback(url: str, attribute_request_body: str) -> tuple[int, str]:
+    try:
+        resp = request_handler.handle_attribute_request(attribute_request_body)
+        return 200, resp
+    except Exception as e:
+        return 500, str(e)
+
+
+attribute_client = AttributeClient(http_post_callback=in_memory_callback, cache_store=MemoryAttributeCache())
+
+
 
 
 data_source = Dict_DataSource(attribute_group_key='ProductionData', 

@@ -21,6 +21,6 @@ def test_pac_url_must_be_valid():
 
     
 def test_single_pac_url():
-    r = AttributeRequestPayload(pac_ids=dummy_pac)
+    r = AttributeRequestPayload(pac_ids=[dummy_pac])
     assert r.is_valid
     
