@@ -299,7 +299,8 @@ class ResolverConfig(LabFREED_BaseModel):
         for placeholder in placeholders:
             expanded_placeholder = self._apply_convenience_substitutions(placeholder)
             res = self._evaluate_jsonpath(pac_id_json, expanded_placeholder) or ['']
-            url = url.replace(f'{{{placeholder}}}', str(res[0]))
+            url:str = url.replace(f'{{{placeholder}}}', str(res[0]))
+            url = url.strip()
             # res = self.substitute_jsonpath_expressions(expanded_placeholder, Patterns.jsonpath.value, as_bool=False)
             # url = url.replace(f'{{{placeholder}}}', res)
         return url
