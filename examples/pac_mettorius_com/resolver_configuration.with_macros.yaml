@@ -1,0 +1,21 @@
+schema_version: '2.0'
+
+origin: Mettorius Demo
+
+
+config:
+# Devices
+- if: "True"
+  entries: 
+  - service_name: Attributes
+    service_type: attributes-generic
+    application_intents:
+    - attributes
+    template_url: "${BASE_URL}/attributes"
+- if: $.issuer == METTORIUS.COM AND $.categories[0].key == -MD
+  entries:
+  - service_name: Manual
+    service_type: userhandover-generic
+    application_intents:
+    - document-manual
+    template_url: "${METTORIUS_HOME}/"

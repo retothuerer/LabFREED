@@ -1,0 +1,386 @@
+/* ========================================================
+   LabFREED Constants
+   ========================================================*/
+
+   :root {
+    --color-labfreed-main-action: #438AD7;
+    --color-labfreed-main-forestgreen: #093A34;
+    --color-labfreed-main-lcdblue: #1C1847;
+    --color-labfreed-main-black: #000000;
+    --color-labfreed-main-darkgrey: #1D1D1D;
+    --color-labfreed-main-lightgrey: #F8F8F8;
+    --color-labfreed-main-white: #FFFFFF;
+
+    --bp-small: 480px;
+    --bp-medium: 810px;
+    --bp-large: 1440px;
+    --bp-xlarge: 5000px;
+
+    --flux-layout-page-margin: 20px;
+
+
+    --button-min-width: 80px;
+    --button-max-width: 300px;
+
+    --z-index-nav: 10000;
+    --z-index-fixed: 9999;
+}
+
+
+
+/* utility classes */
+
+.horizontal-center{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+
+
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    margin: 0;
+    display: flex;
+    flex-direction: column; /* stack header, main, footer vertically */
+    min-height: 100vh;      /* ensure at least full viewport height */
+}
+
+
+main {
+    flex: 1;                /* expand to fill remaining space */
+    padding: 1rem;
+    box-sizing: border-box;
+  }
+
+/* ========================================================
+Footer
+========================================================*/  
+footer {
+    background: #eee;
+    padding: 1rem;
+    width:100%;
+    bottom: 0;
+    font-size: 0.8rem;
+    border-top: 1px solid black;
+    background-color: var(--color-labfreed-main-lightgrey);
+}
+
+
+/* ========================================================
+   Commons
+   ========================================================*/
+
+
+/* show empty links as regular style */
+a {
+    color: black;
+    text-decoration: none;
+      font-weight: 700;
+  }
+
+a:hover {
+    color: #0a58ca;
+  }
+  
+
+a[href=""]{
+    color: inherit;       /* Inherit color from parent element */
+    text-decoration: none; /* Remove underline */
+    cursor: default;      /* Change cursor to default */
+    pointer-events: none; /* Disable clickability */
+}
+
+.inline-load-spinner {
+    font-size:32px; 
+    color: var(--color-labfreed-main-lcdblue);
+}
+
+
+input::placeholder {
+    color: black !important;
+    opacity: 0.25 !important;
+  }
+
+/* ========================================================
+   Layout
+   ========================================================*/
+
+/* Container for flex layout */
+.lf-content-container {  
+    max-width:66%;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.lf-content-container > *{
+    margin: 0 auto;
+    width:100%;
+}
+
+@media (max-width: 640px) {
+    .lf-content-container {
+      max-width: 100%;
+      box-sizing: border-box;
+      padding: 0px;
+    }
+    .lf-content-container > *{
+        margin-left: auto;    /* center the element */
+        margin-right: auto;   /* center the element */
+    }
+  }
+
+
+
+.backnav {
+    margin-left:20px
+}
+
+.indent-1 {
+    margin-left: 12px;
+}
+
+
+
+@media (max-width: 810px) {
+
+    .lf-content-container {
+        max-width:100%;
+    }
+}
+
+
+.spacer {
+    height:50vh;
+}
+
+
+
+/* ========================================================
+   Buttons
+   ========================================================*/
+
+
+
+.btn {
+    max-width: var(--button-max-width);
+    width: fit-content; 
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    size: 18px;
+    border: 2px inset #FFFFFF00 ;
+    padding: 10px;
+}
+
+.btn-min-width {
+    min-width: var(--button-min-width);
+}
+
+
+.btn-primary-action, .btn-primary-action *{
+    background-color: var(--color-accent-primary); 
+    color: var(--color-accent-primary-background);  
+}
+
+.btn-primary-action:focus {
+    border: 2px inset #438AD7 ;
+}
+
+.btn-primary-action:hover {
+    border: 2px inset #438AD7 ;
+}
+
+.btn-primary, .btn-primary * {
+    background-color: #E6EBEA;   
+    color: var(--color-labfreed-main-lcdblue);
+}
+
+.btn-primary:hover {
+    background-color: #E6EBEA;   
+    border: 2px solid #CCCCCC;
+}
+
+.btn-secondary {
+    background-color: var(--color-labfreed-main-lcdblue);
+}
+
+.btn-secondary:hover {
+    background-color: var(--color-labfreed-main-action);   
+}
+
+.right-align {
+    right:0
+}
+
+
+
+.btn-sticky {
+    position:sticky;
+    bottom:4px;
+    /*height:100px;
+    width:100px;
+    border-radius:100px; */
+    box-shadow: 4px 4px 20 px;
+    margin-bottom:20px;
+    margin-top:20px;
+    background:white;
+    z-index:5000
+}
+
+
+.fixed{
+    position:fixed;
+    box-shadow: 4px 4px 20 px;
+    margin:4px;
+    background:white;
+    z-index:5000
+}
+
+.bottom {
+    bottom:0;
+}
+
+.top {
+    top:0;
+}
+
+.right {
+    right:var(--flux-layout-page-margin);
+}
+
+.left {
+    left:var(--flux-layout-page-margin);
+}
+
+
+/* ========================================================
+   Navigation
+   ========================================================*/
+
+nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: var(--color-labfreed-main-white);
+    color: var(--color-labfreed-main-black);
+}
+
+
+.nav-logo {
+    max-height: 100px;   /* limit by height */
+    max-width: 150px;    /* limit by width */
+    height: auto;        /* maintain aspect ratio */
+    width: 4.75em;         /* maintain aspect ratio */
+}
+
+/* Hamburger button */
+.hamburger {
+    display: none;
+    background: none;
+    color: var(--color-labfreed-main-black);
+    font-size: 1.5em;
+    border: none;
+    cursor: pointer;
+}
+
+/* Nav links */
+.nav-links {
+    list-style: none;
+    display: flex;
+    gap: 8px;
+}
+
+
+.nav-links a:not(.nav-links-close) {
+    color: var(--color-labfreed-main-black);
+    text-decoration: none;
+    transition: color 0.3s ease;
+
+    display: flex;
+    align-items: center;   
+    gap: 0.4em; 
+}
+
+.nav-links-close {
+    display:none;
+}
+
+
+
+
+
+/* Responsive styling for smaller screens */
+@media screen and (max-width: 810px) {
+    .hamburger {
+        display: block;
+    }
+
+
+    .nav-links {
+        display: none;
+        flex-direction: column;
+        position: fixed;
+        top:10px;
+        background-color: var(--color-labfreed-main-white);
+        border: 1px solid var(--color-labfreed-main-darkgrey) ;
+        padding: 8px;
+        width: 100vw;
+        height: 100vh;
+        border-radius: 5px;
+        
+        z-index: var(--z-index-nav);
+    }
+
+    .nav-links.show {
+        display: flex;
+    }
+
+
+    .nav-links-close {
+        display:block;
+
+        width:32px;
+        height: auto;
+        margin-bottom: 20px;
+        margin-top: 20px;
+        margin-left: 20px;
+    }
+
+    .nav-links-close::before{
+        width:100%;
+        padding-left: 4px;
+        padding-top: 4px;
+    }
+
+    .nav-links li {
+        margin-bottom: 4px;
+        margin-left: 20px;
+    }
+
+    .nav-links li:last-child {
+        margin-bottom: 0;
+    }
+}
+
+
+
+
+
+/* ========================================================
+   Search
+   ========================================================*/
+
+.search {
+    --iconwidth: 20px;
+    background-color: var(--color-labfreed-main-lightgrey);
+    position: relative;
+    padding-left: calc(4px + var(--iconwidth) );
+    background-image: url('search.svg');
+    background-size: var(--iconwidth) var(--iconwidth);
+    background-repeat: no-repeat;
+    background-position: 2px 50%;
+}
+

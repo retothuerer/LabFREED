@@ -1,0 +1,261 @@
+.lf-info-block {
+    border-radius: 8px;
+    padding: 20px;
+    background-color: var(--color-labfreed-main-lightgrey);
+}
+
+.lf-info-block-highlight {
+    background-color: var(--color-buchi-main-forestgreen);
+    color: var(--color-buchi-main-white)
+}
+
+
+.lf-info-block > *:first-child {
+    margin-top: 0;
+  }
+
+
+
+
+.lf-section {
+    margin-top: 0.5rem;
+}
+
+.lf-origin-hint {
+    font-style: italic;     /* cursive */
+    font-size: 1rem;        /* reset to regular text size */
+    font-weight: normal;    /* not bold, even if inside a heading */
+}
+
+
+.lf-results {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem; /* same spacing */
+  }
+
+
+
+/* Card wrapper with slim frame */
+.lf-info-card {
+    padding: 1rem;
+    margin: 1rem 0;
+    border: 1px solid #d1d5db; /* slim gray frame */
+    border-radius: 8px;
+    background: #fff;
+    text-align: left;
+}
+
+/* Title */
+.lf-info-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: .75rem;
+}
+
+/* Layout: grid with image left, details right */
+.lf-info-content {
+    display: grid;
+    grid-template-columns: 1fr 2fr;  /* image ~1/3, details ~2/3 on small */
+    gap: 1rem;
+    align-items: start;
+}
+
+/* Image column */
+.lf-info-media { }
+.lf-info-img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 6px;
+}
+
+.lf-info-cat-icon {
+    width:50%;
+    height: auto;
+    display: block;
+    border-radius: 6px;
+}
+
+/* Details grid */
+.lf-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+    gap: .5rem;
+}
+
+.lf-info-item { padding: .25rem 0; }
+.lf-info-key  { font-size: .875rem; font-weight: 600; margin-bottom: .15rem; color: #374151; }
+.lf-info-val  { font-size: .95rem; color: #111827; }
+
+/* Larger screens: cap image width at ~300px, let details take rest */
+@media (min-width: 900px) {
+    .lf-info-content {
+    grid-template-columns: minmax(240px, 300px) 1fr;
+    }
+    .lf-info-media,
+    .lf-info-img .lf-info-cat-icon {
+        width:100%;
+        max-width: 300px;
+    }
+}
+
+
+
+
+
+
+
+.prod_img {
+    height: 10vw;
+    width: auto;
+}
+
+
+/* Apply to all PAC macro tables */
+.lf-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;   /* ensures consistent column widths */
+}
+
+.lf-table th,
+.lf-table td {
+    border: 1px solid #ccc;
+    padding: 0.4rem 0.6rem;
+    vertical-align: top;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Key/value style: 1/3 vs 2/3 columns */
+.lf-table--kv th.lf-th--label {
+    width: 33%;
+    font-weight: 600;
+}
+.lf-table--kv td.lf-td--val {
+    width: 67%;
+}
+
+.lf-th--key {
+    display:none
+}
+.lf-th:hover > .lf-th--key  {
+    display:block
+}
+
+.lf-attr-image {
+    width: 30px;
+}
+
+/* Services laid out as equal-width grid columns */
+.lf-services {
+    display: grid;
+    gap: 0 0.75rem;
+
+    /* 2 columns on small, 3 on md, 4 on lg — tweak as you like */
+    grid-template-columns: repeat(2, 1fr);
+}
+
+@media (min-width: 640px) {
+    .lf-services { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 1024px) {
+    .lf-services { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* 2) Allow children to shrink within their cell */
+.lf-services > * {
+    min-width: 0;  /* critical for preventing overflow */
+  }
+
+/* Each service card fills its grid cell */
+.lf-service {
+    display: flex;            /* still use flex inside for icon + text */
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.6rem;
+    height: 100%;             /* same height across a row (since your content height is uniform) */
+    width: 100%;              /* ensure full cell width */
+    text-decoration: none;
+    color: var(--color-accent-secondary, #2563eb);
+}
+
+.lf-service:hover {
+    font-size: 1.05em;            /* ~5% larger */
+    text-decoration: none;
+}
+
+.lf-service__icon { width: 1rem; height: 1rem; flex-shrink: 0; }
+.lf-service__name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+    
+
+
+/* Position context */
+.lf-ref-card-wrap {
+    position: relative;
+    display: inline-block;
+}
+
+/* The floating card is hidden by default */
+.lf-ref-card {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+  
+    width: min(420px, 90vw);
+    background: #fff;
+    color:black;
+    border-radius: 8px;
+  
+    /* big, soft shadow that fades with distance */
+    box-shadow:
+      0 0 60px 30px rgba(0,0,0,0.2),   /* wide outer glow */
+      0 10px 25px rgba(0,0,0,0.15);    /* subtle local lift */
+  }
+  .lf-ref-card > *{
+    margin:0;
+  }
+  
+
+/* Show on hover */
+.lf-ref-card-wrap:hover .lf-ref-card {
+    display: block;
+}
+
+/* Style the inline reference */
+.lf-reference {
+    color: var(--color-accent-secondary, #2563eb);
+}
+
+
+
+
+
+.stacked-flex{
+    display:flex; 
+    flex-direction:column; 
+    gap:10px;
+}
+
+.stacked-flex > * {
+    padding: 0.5em 0;
+    border-top: 1px solid #ccc;
+  }
+  
+  /* remove line after last element */
+  .stacked-flex > *:first-child {
+    border-top: none;
+  }
+
+

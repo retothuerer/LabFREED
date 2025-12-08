@@ -1,0 +1,83 @@
+{% macro card_title() %}    
+    {% if pac_info.display_name %}
+        <span class="lf-info-title">{{ pac_info.display_name }}</span>
+    {% endif %}
+{% endmacro %}
+
+
+{% macro card_image() %}
+    {% if pac_info.image_url %}
+            <div class="lf-info-media">
+                <img src="{{ pac_info.image_url }}" alt="" class="lf-info-img">
+            </div>
+        {% elif pac_info.main_category %}
+            <div class="lf-info-media">
+                <img src="{{ resolve_static_image('cat' + pac_info.main_category.key + '.svg') }}"
+                    alt="{{ pac_info.main_category.key }}"
+                    class="lf-info-cat-icon">
+            </div>
+        {% endif %}
+{% endmacro %}
+
+{% macro card_main() %}
+    <div class="lf-info-content">
+        {{ card_image() }}
+        {{ card_category_info() }}
+    </div>
+{% endmacro%}
+
+{% macro card_category_info() %} 
+        {% if pac_info.main_category %}
+            {% set c =  pac_info.main_category %}
+            {{ card_info_block(c.segments_as_dict()) }}
+        {% endif %}
+{% endmacro %}
+
+{% macro card_info_block(dict) %}
+    <div class="lf-info-grid">
+        {% for k, v in dict.items() %}
+            {% if k != "key" %}
+                <div class="lf-info-item">
+                <div class="lf-info-key">
+                    {% if k %}{{ title_format(k) }}{% else %}<i>No Key</i>{% endif %}
+                </div>
+                <div class="lf-info-val">{{ v }}</div>
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+{% endmacro%}
+
+
+
+
+
+{% macro safety_pictograms() %}
+    {% if pac_info.safety_pictograms %}
+        <div class="lf-info-pictos">
+        {% for p in pac_info.safety_pictograms.values() %}
+            <figure class="lf-figure lf-figure--image">
+            <img src="{{ p.value|e }}" alt="{{ p.label|e }}" class="lf-attr-image">
+            <figcaption class="lf-figure__caption sr-only">{{ p.label }}</figcaption>
+            </figure>
+        {% endfor %}
+        </div>
+    {% endif %}
+{% endmacro %}
+
+
+{% macro qualification_state() %}
+    {% if pac_info.qualification_state %}
+    {{pac_info.qualification_state.label }}: {{pac_info.qualification_state.value }}
+    {% endif %}
+{% endmacro %}
+
+
+
+
+
+
+
+
+
+
