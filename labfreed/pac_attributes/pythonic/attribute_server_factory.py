@@ -1,8 +1,11 @@
 from enum import Enum
+import json
+import logging
 from typing import Any, Protocol
+from urllib.parse import unquote, unquote_plus
 
-from flask import Blueprint, current_app, url_for
-from labfreed.pac_attributes.api_data_models.request import AttributeRequestPayload
+from flask import Blueprint, current_app, redirect, url_for
+from labfreed.pac_attributes.api_data_models.request import AttributeRequestData
 from labfreed.pac_attributes.server.server import AttributeGroupDataSource, AttributeServerRequestHandler, InvalidRequestError, TranslationDataSource
 
 try:
@@ -70,16 +73,21 @@ class AttributeFlaskApp(Flask):
     ) -> Blueprint:
         bp = Blueprint("attribute", __name__)
 
-        @bp.route("/", methods=["POST"], strict_slashes=False)
-        def handle_attribute_request():
+
+        @bp.get("/<pac_id_url_encoded>", strict_slashes=False)
+        def handle_attribute_request(pac_id):
+            
             if authenticator and not authenticator(request):
                 return Response(
                     "Unauthorized", 401,
                     {"WWW-Authenticate": 'Basic realm="Login required"'}
                 )
             try:
-                json_request_body = request.get_data(as_text=True)
-                response_body = request_handler.handle_attribute_request(json_request_body)
+                request_data = AttributeRequestData(pac_id = pac_id,
+                                                    include_attribute_groups = request.args.getlist("restrict_to_attribute_groups"), 
+                                                    suppress_forward_lookup = request.args.get("suppress_forward_lookup"),
+                                                    language_preferences = request.accept_languages)
+                response_body = request_handler.handle_attribute_request(request_data)
             except InvalidRequestError as e:
                 print(e)
                 return "Invalid request", 400
@@ -87,13 +95,25 @@ class AttributeFlaskApp(Flask):
                 print(e)
                 return "The request was valid, but the server encountered an error", 500
             return (response_body, 200, {"Content-Type": "application/json; charset=utf-8"})
-
-        @bp.route("/", methods=["GET"], strict_slashes=False)
+        
+        
+        @bp.post("/", strict_slashes=False)
+        def handle_attribute_request_legacy(pac_id):
+            if request.method == 'POST':
+                return '\n'.join(('POST request was part of the DRAFT specification, but was changed to GET.',
+                                  'You are probably using an pre-release version of the python package.',
+                                  'update to the newest version "pip install labfreed"'
+                                  )
+                )
+        
+        
+        @bp.get("/",  strict_slashes=False)
+        @bp.get("/capabilities",  strict_slashes=False)
         def capabilities():
             doc_text = current_app.config.get('DOC_TEXT', "") 
             capabilities = request_handler.capabilities()
             authentication_required = bool(current_app.config.get('AUTHENTICATOR'))
-            example_request = AttributeRequestPayload(pac_ids=['HTTPS://PAC.METTORIUS.COM/EXAMPLE'], language_preferences=['fr', 'de']).model_dump_json(indent=2, exclude_none=True, exclude_unset=True)
+            example_request = AttributeRequestData(pac_id=['HTTPS://PAC.METTORIUS.COM/EXAMPLE'], language_preferences=['fr', 'de']).model_dump_json(indent=2, exclude_none=True, exclude_unset=True)
             server_address = request.url.rstrip('/')
             css_url = url_for("static", filename="style.css")
             response = f'''

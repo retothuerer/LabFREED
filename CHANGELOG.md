@@ -5,12 +5,18 @@ PAC-CAT
 - added new categories 
 - BREAKING: Renamed category MM to MX
 
+PAC-ID Resolver
+- Transition to improved resolver configuration ( replaces coupling information table )
+
 
 PAC-ID Attributes
 - new building block
-  
 
-  
+
+General
+- Minor Bugfixes
+- BREAKING: reorganization of module structure > some import paths have changed
+
 
 
 ### v0.2.12

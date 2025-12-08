@@ -1,7 +1,8 @@
 import logging
 from typing import   Self
-from flask import redirect
-from pydantic import ConfigDict, model_validator
+from urllib.parse import unquote
+from werkzeug.datastructures import LanguageAccept
+from pydantic import ConfigDict, field_validator, model_validator
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel, LabFREED_ValidationError, ValidationMsgLevel
 from labfreed.pac_id.pac_id import PAC_ID
 
@@ -10,8 +11,8 @@ class AttributeRequestData(LabFREED_BaseModel):
     model_config = ConfigDict(frozen=True)
     
     pac_id: str
-    language_preferences: list[str]|str|None = None
-    restrict_to_attribute_groups: list[str]|str|None = None
+    language_preferences: list[str]|None = None
+    restrict_to_attribute_groups: list[str]|None = None
     suppress_forward_lookup: bool = False
     
     def as_json(self):
@@ -21,15 +22,29 @@ class AttributeRequestData(LabFREED_BaseModel):
     def from_json(cls, json):
         return cls.model_validate_json(json)
     
-    @model_validator(mode="before")
     @classmethod
-    def _handle_multiple_pac_url(cls, data):
-        p = data.get('pac_id')
-        if isinstance(p, list) and len(p) > 0:
-            logging.error("Multiple PAC-ID are no longer supported. For half assed backwards compatibility the first element is now selected.")
-            data['pac_id'] = p[0]
-        return data
+    @model_validator(mode="before")
+    def _scalars_to_list(cls, d):
+        if isinstance(lp:= d.get("language_preferences"), str):
+            d["language_preferences"] = [lp]
+        if isinstance(rag := d.get("restrict_to_attribute_groups"), str):
+            d["restrict_to_attribute_groups"] = [rag]
+        return d
     
+    @classmethod
+    @field_validator('language_preferences', mode="before")
+    def _convert_language_given_as_language_accept(cls, lp):
+        if isinstance(lp, LanguageAccept):
+            v  = [v[0] for v in lp.values()]
+        return v
+    
+    @model_validator(mode="after")
+    def _revert_url_encoding(self):
+        self.pac_id = unquote(self.pac_id)
+        if self.restrict_to_attribute_groups:
+            self.restrict_to_attribute_groups = [unquote(g) for g in self.restrict_to_attribute_groups]
+        return self
+       
     @model_validator(mode="after")
     def _validate_pacs(self) -> Self:           
         try:
@@ -46,6 +61,12 @@ class AttributeRequestData(LabFREED_BaseModel):
                 
         return self
     
+    def language_preference_http_header(self) -> dict[str, str]:
+        lq = [(lng, 1-i/len(self.language_preferences)) for i, lng in enumerate(self.language_preferences)]
+        headers={'Accept-Language':  LanguageAccept(lq).to_header()}
+        return headers
+    
+    def request_params(self) -> dict(str, Any):
+        
     
     
-

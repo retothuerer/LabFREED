@@ -3,12 +3,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Protocol, runtime_checkable
+from urllib.parse import quote
 
 import requests
 
 from pydantic import ValidationError
+from werkzeug.datastructures import LanguageAccept 
 
-from labfreed.pac_attributes.api_data_models.request import AttributeRequestPayload
+from labfreed.pac_attributes.api_data_models.request import AttributeRequestData
 from labfreed.pac_attributes.api_data_models.response import AttributeResponsePayload
 from labfreed.pac_attributes.client.attribute_cache import AttributeCache, CacheableAttributeGroup
 from labfreed.pac_attributes.server.server import AttributeServerRequestHandler
@@ -49,9 +51,17 @@ def http_attribute_request_default_callback_factory(session: requests.Session = 
     if session is None:
         session = requests.Session()
 
-    def callback(url: str, attribute_request_body: str) -> tuple[int, str]:
+    def callback(url: str, attribute_request_data: AttributeRequestData) -> tuple[int, str]:
         try:
-            resp = session.post(url, data=attribute_request_body, headers={'Content-Type': 'application/json; ; charset=utf-8'}, timeout=10)
+            url = url + '/' + quote(attribute_request_data.pac_id)
+            params = {
+                       "restrict_to_attribute_groups": attribute_request_data.restrict_to_attribute_groups, 
+                      "suppress_forward_lookup": attribute_request_data.suppress_forward_lookup
+                      } #session.get does url encode parameters automatically           
+            resp = session.get(url, 
+                               params = params,
+                               headers=attribute_request_data.language_preference_http_header,
+                               timeout=10)
             return resp.status_code, resp.text
         except requests.exceptions.RequestException as e:
             return 500, str(e)
@@ -68,9 +78,9 @@ def local_attribute_request_callback_factory(request_handler:AttributeServerRequ
         AttributeRequestCallback: a callback following the AttributeRequestCallback protocol.
     """
 
-    def callback(url: str, attribute_request_body: str) -> tuple[int, str]:
+    def callback(url: str, attribute_request_data: AttributeRequestData) -> tuple[int, str]:
         try:
-            resp = request_handler.handle_attribute_request(attribute_request_body)
+            resp = request_handler.handle_attribute_request(attribute_request_data)
             return 200, resp
         except requests.exceptions.RequestException as e:
             return 500, str(e)
@@ -126,7 +136,7 @@ class AttributeClient():
                 return attribute_groups
         
         # no valid data found in cache > request to server
-        attribute_request_body = AttributeRequestPayload(pac_ids=[pac_id.to_url()], 
+        attribute_request_body = AttributeRequestData(pac_id=[pac_id.to_url()], 
                                                             restrict_to_attribute_groups=restrict_to_attribute_groups,
                                                             language_preferences=language_preferences
                                 )

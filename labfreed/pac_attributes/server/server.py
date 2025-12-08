@@ -5,7 +5,7 @@ import warnings
 
 import rich
 
-from labfreed.pac_attributes.api_data_models.request import AttributeRequestPayload
+from labfreed.pac_attributes.api_data_models.request import AttributeRequestData
 from labfreed.pac_attributes.api_data_models.response import AttributeResponsePayload, AttributesOfPACID, ReferenceAttribute
 from labfreed.pac_attributes.api_data_models.server_capabilities_response import ServerCapabilities
 from labfreed.pac_attributes.server.attribute_data_sources import AttributeGroupDataSource
@@ -55,14 +55,16 @@ class AttributeServerRequestHandler():
                     
                
         
-    def handle_attribute_request(self, json_request_body:str) -> str:
+    def handle_attribute_request(self, request_data:AttributeRequestData) -> str:
+        if not isinstance(request_data, AttributeRequestData):
+            raise ValueError('request_data most be of AttributeRequestData')
         try:
-            r = AttributeRequestPayload.model_validate_json(json_request_body)
+            r = AttributeRequestData.model_validate_json(request_data)
         except Exception:
             raise InvalidRequestError
         attributes_for_pac_id = []
         referenced_pac_ids = set()
-        for pac_url in r.pac_ids:
+        for pac_url in r.pac_id:
             attributes_for_pac = self._get_attributes_for_pac_id(pac_url=pac_url, 
                                                                 restrict_to_attribute_groups = r.restrict_to_attribute_groups)
             attributes_for_pac_id.append(attributes_for_pac)
