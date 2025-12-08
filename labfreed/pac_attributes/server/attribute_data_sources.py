@@ -58,7 +58,7 @@ class Dict_DataSource(AttributeGroupDataSource):
         lookup_key = self._pac_to_key(pac_url) if self._pac_to_key else pac_url
         attributes = self._data.get(lookup_key)
         if not attributes:
-            return None     
+            return self._data.get('default', None)   
         
         return AttributeGroup(key=self._attribute_group_key, 
                               attributes=attributes)
