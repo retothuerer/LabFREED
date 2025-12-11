@@ -6,9 +6,7 @@ from flask import Blueprint
 from labfreed.labfreed_extended.pac_issuer_lib.app_factory import IssuerFlaskAppFactory, NavItem, PacInfoExtender, SiteMeta, attribute_data_from_module
 
 
-from labfreed.labfreed_extended.app.pac_info.pac_info import PacInfo
 
-PAC_ID_BASE = 'HTTPS://PAC.METTORIUS.COM'
 resolver_macros = { "METTORIUS_HOME": "https://mettorius.com", 
                     "BASE_URL":os.environ.get("WEBSITE_HOSTNAME") # for Azure webapp this gives us the url the site runs on. Adapt if needed
                     }
@@ -21,12 +19,16 @@ site_meta_data = SiteMeta(site_title="PAC-Info",
                             ]
                           )
 
-import examples.pac_mettorius_com.attribute_datasources as mettorius 
+import examples.pac_mettorius_com.attribute_datasources as mettorius  # noqa: E402
 attribute_data = attribute_data_from_module(mettorius, default_language='en')
 
+
+'''
+# Extend PACInfo for your own purposes (Optional)
+'''
+from labfreed.labfreed_extended.app.pac_info.pac_info import PacInfo  # noqa: E402
 class MettoriusPACInfoExtended(PacInfo):   
-    has_dummy_action:bool|None = None
-    
+    has_dummy_action:bool|None = None    
 class MettoriusPacInfoExtender(PacInfoExtender):
     
     @staticmethod
@@ -38,8 +40,16 @@ class MettoriusPacInfoExtender(PacInfoExtender):
                           
         return out
 
+
+'''
+# Point to a folder with custom resources (Optional)
+'''
 path_to_custom_resources=Path(__file__).parent
 
+
+''' 
+## Create the app
+'''
 app = IssuerFlaskAppFactory.create_app(
     issuer='METTORIUS.COM',
     site_meta=site_meta_data,
@@ -53,7 +63,12 @@ app = IssuerFlaskAppFactory.create_app(
 
 
 
-
+'''
+# Add more endpoints (Optional)
+If desired we can add more endpoints to our app.
+This can be useful, since we don't need another web app if we have additional functionality.
+This is entirely Flask functionality - Refer to the [documentation of Flask](https://flask.palletsprojects.com/en/stable/)
+'''
 bp_add_on = Blueprint('add_on_blueprint', __name__, url_prefix='/add_on')
 
 @bp_add_on.get('/', strict_slashes=False)
