@@ -82,9 +82,11 @@ class IssuerFlaskAppFactory():
                     app_secret:str|None = None,
                     pac_info_extender:PacInfoExtender|None = None,
                     resolver_macros:dict[str, str] = None,
-                    use_issuer_resolver_config=True):
+                    use_issuer_resolver_config=True,
+                    feature_flags:dict|None = None):
         
         app =  Flask(__name__, static_folder=None, static_url_path='/static') 
+        app.config['feature_flags'] = feature_flags
         
         app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
@@ -426,7 +428,10 @@ class IssuerFlaskAppFactory():
             env.globals.update(render_context_utils)
 
             tpl = env.get_template(template_name)
-            return tpl.render(**context, EXPERIMENTAL= os.environ.get('EXPERIMENTAL'))
+            
+            
+            
+            return tpl.render(**context)
         
         
         
