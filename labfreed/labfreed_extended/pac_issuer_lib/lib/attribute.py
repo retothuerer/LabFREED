@@ -39,6 +39,13 @@ def is_device(pac_url):
     is_device = isinstance(pac_cat.categories[0], Material_Device)
     return is_device
 
+def model(pac_url):
+    if not is_device(pac_url):
+        return None
+    cat:Material_Device = PAC_CAT.from_url(pac_url).categories[0]
+    model = cat.model_number
+    return model
+
 
 
 class DynamicDemoAttributeGroup(AttributeGroupDataSource):
