@@ -86,6 +86,9 @@ class IssuerFlaskAppFactory():
                     feature_flags:dict|None = None):
         
         app =  Flask(__name__, static_folder=None, static_url_path='/static') 
+        
+        if not feature_flags:
+            feature_flags = dict()
         app.config['feature_flags'] = feature_flags
         
         app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
