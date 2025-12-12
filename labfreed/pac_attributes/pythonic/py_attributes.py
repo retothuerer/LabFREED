@@ -112,7 +112,7 @@ class pyAttributes(RootModel[list[pyAttribute]]):
         
         elif isinstance(first_value, str):
             # capture quantities in the form of "100.0e5 g/L"
-            if Quantity.from_str_with_unit(first_value):
+            if Quantity.can_convert_to_quantity(first_value):
                 values = []
                 for v in value_list:
                     q = Quantity.from_str_with_unit(v)

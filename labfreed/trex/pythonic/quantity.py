@@ -66,8 +66,18 @@ class Quantity(BaseModel):
         return q
     
     @classmethod
+    def can_convert_to_quantity(cls, value:str):
+        ''' assumes value and unit are separated by " " '''
+        m = re.match(r'^\s*(?P<mantissa>-?\d+(\.\d+)?)([Ee]-?(?P<exponent>\d+))?\s+(?P<unit>\S+)\s*$', value)
+        return bool(m) 
+    
+    @classmethod
     def from_str_with_unit(cls, value:str):
         ''' assumes value and unit are separated by " " '''
+        m = re.match(r'^\s*(?P<mantissa>-?\d+(\.\d+)?)([Ee]-?(?P<exponent>\d+))?\s+(?P<unit>\S+)\s*$', value)
+        if not m:
+            print(f'{value} cannot be converted to Quantity')
+            return None
         try:
             parts = value.strip().split(' ', 1)
             if len(parts) == 2:
