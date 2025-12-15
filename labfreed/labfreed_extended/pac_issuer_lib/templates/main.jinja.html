@@ -8,10 +8,11 @@
             <meta name="author" content="{{site_meta.site_author}}" />
     
             <title>{{site_meta.site_title}}</title>
-            {#
+            
             <!-- Favicon-->
-            <link rel="icon" type="image/svg+xml" href="{{ resolve_static_image('logo.svg') }}" />
-            #}
+            <link rel="icon" type="image" href="{{ url_for_within_issuer('static', filename='logo') }}" />
+            <link rel="icon" type="image" href="{{ url_for_within_issuer('static', filename='favicon.ico') }}" />
+            
     
             <!-- General styles -->
             <link rel="stylesheet" type="text/css" href="{{ url_for_within_issuer('static', filename='styles.css') }}" />
