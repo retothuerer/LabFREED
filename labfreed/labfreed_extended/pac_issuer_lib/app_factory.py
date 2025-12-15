@@ -82,7 +82,7 @@ class IssuerFlaskAppFactory():
                     app_secret:str|None = None,
                     pac_info_extender:PacInfoExtender|None = None,
                     resolver_macros:dict[str, str] = None,
-                    use_issuer_resolver_config=True,
+                    use_issuer_resolver_config=False,
                     feature_flags:dict|None = None):
         
         app =  Flask(__name__, static_folder=None, static_url_path='/static') 
@@ -118,7 +118,7 @@ class IssuerFlaskAppFactory():
                             path_to_custom_resources:str|None = None,
                             pac_info_extender:PacInfoExtender|None = None,
                             resolver_macros:dict[str, str] = None, 
-                            use_issuer_resolver_config=True):
+                            use_issuer_resolver_config=False):
         
         logging.info('initializing Blueprint')
         
