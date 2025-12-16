@@ -1,0 +1,42 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 48 48"
+  role="img"
+  aria-label="Mettorius Webshop Icon"
+>
+  <!-- Background tile -->
+  <rect
+    x="4" y="4" width="40" height="40" rx="8"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+  />
+
+  <!-- Shopping cart -->
+  <g transform="translate(10 14)" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Basket -->
+    <path d="M2 6h18l-2 9H5z" />
+    <!-- Handle -->
+    <path d="M2 6L0 0" />
+    <!-- Wheels -->
+    <circle cx="7" cy="17" r="2" fill="currentColor" />
+    <circle cx="15" cy="17" r="2" fill="currentColor" />
+  </g>
+
+  <!-- PAC-style marker (bottom-right) -->
+  <g transform="translate(30 28)" fill="currentColor">
+    <rect x="0" y="0" width="4" height="4" rx="0.5" />
+    <rect x="6" y="0" width="4" height="4" rx="0.5" />
+    <rect x="0" y="6" width="4" height="4" rx="0.5" />
+  </g>
+
+  <!-- Subtle M-like motif (top-left) -->
+  <path
+    d="M12 14 L16 10 L20 14"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>

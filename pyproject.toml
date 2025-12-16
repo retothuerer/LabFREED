@@ -43,7 +43,9 @@ dev = [
 ]
 extended = [
     "Flask>=3.1.1",
-    "openpyxl>=3.1.5",
+    "openpyxl>=3.1.5", 
+]
+experimental = [
     "bleak>=2.0.0"
 ]
 

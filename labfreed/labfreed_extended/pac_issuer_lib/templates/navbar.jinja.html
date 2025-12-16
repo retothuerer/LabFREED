@@ -1,0 +1,60 @@
+  {% macro nav_element(nav_item) %}
+    <li data-ref="Header:item">
+        <a href={{nav_item.href}} onclick="nav_item_navigate('{{nav_item.href}}')">
+            <img class="SvgIcon svg-icons-knowledge-dims" src="{{ resolve_static_image(nav_item.icon_filename)}}" >
+            {{ nav_item.name }}
+        </a>
+    </li>
+  {% endmacro %}
+
+
+
+  <header role="banner">
+    <nav>
+        <!--Logo-->
+        <img src={{ resolve_static_image('logo') }} alt="" class="nav-logo">
+        
+        {% if site_meta.nav_items %}
+        <!--Nav Links-->
+        <ul class="nav-links">
+            <!--Close Icon-->
+            <a class="nav-links-close" >
+                <img src="{{ resolve_static_image('cancel.svg')}}" >
+            </a>
+            
+            {% for nav_item in site_meta.nav_items%}
+            <li data-ref="Header:item">
+                {{ nav_element(nav_item) }}
+            </li>
+            {% endfor%}
+            
+        </ul>
+        
+        <!--Hamburger-->
+        <button class="hamburger">
+            <img src="{{ resolve_static_image('menu.svg')}}" >
+        </button>
+    {% endif %}
+
+        
+    </nav>
+
+  </header>
+
+
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const hamburger = document.querySelector(".hamburger");
+        const navLinks = document.querySelector(".nav-links");
+        const navLinksClose = document.querySelector(".nav-links-close");
+    
+        hamburger.addEventListener("click", function() {
+            navLinks.classList.toggle("show");
+        });
+
+        navLinksClose.addEventListener("click", function() {
+            navLinks.classList.toggle("show");
+        });
+    });
+  </script>

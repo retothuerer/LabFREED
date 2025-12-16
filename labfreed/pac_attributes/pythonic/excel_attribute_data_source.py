@@ -76,10 +76,11 @@ class _BaseExcelAttributeDataSource(AttributeGroupDataSource):
     Subclasses implement `_read_rows_and_last_changed()`.
     """
 
-    def __init__(self, *, base_url: str = "", cache_duration_seconds: int = 0, uses_pac_cat_short_form:bool=True, pac_to_key=None, **kwargs):
+    def __init__(self, *, base_url: str = "", cache_duration_seconds: int = 0, uses_pac_cat_short_form:bool=True, pac_to_key=None, header_mappings=None, **kwargs):
         self._base_url = base_url
         self._uses_pac_cat_short_form = uses_pac_cat_short_form
         self._pac_to_key = pac_to_key
+        self._header_mappings = header_mappings or dict()
         # allow instance-level TTL override
         try:
             _cache.ttl = int(cache_duration_seconds)
@@ -117,7 +118,7 @@ class _BaseExcelAttributeDataSource(AttributeGroupDataSource):
         d = _get_row_by_first_cell(rows, key, self._base_url)
         if not d:
             return None
-        attributes = [pyAttribute(key=k, value=v) for k, v in d.items() if v is not None]
+        attributes = [pyAttribute(key= self._header_mappings.get(k, k), value=v) for k, v in d.items() if v is not None]
         return AttributeGroup(
             key=self._attribute_group_key,
             attributes=pyAttributes(attributes).to_payload_attributes()

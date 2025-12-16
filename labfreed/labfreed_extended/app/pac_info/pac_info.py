@@ -15,7 +15,7 @@ from labfreed.labfreed_extended.app.formatted_print import StringIOLineBreak
 from labfreed.trex.pythonic.data_table import DataTable
 from labfreed.trex.pythonic.pyTREX import pyTREX
 from labfreed.well_known_extensions.display_name_extension import DisplayNameExtension
-
+from enum import Enum
 
 class PacInfo(BaseModel):
     """A convenient collection of information about a PAC-ID"""
@@ -74,20 +74,29 @@ class PacInfo(BaseModel):
     # Handovers and Actions
         
     def get_user_handovers_by_intent(self, intent:str, partial_match=False) -> list[Service]:
+        # capture the common mistake of forgetting to access key of enum
+        if isinstance(intent, Enum):
+            intent = intent.value    
         services = [s for sg in self.user_handovers for s in sg.services if self._match_intent(intent, s.application_intents, partial_match)]
         return services
     
     def get_user_handover_by_intent(self, intent:str, partial_match=False, mode="first"):
+        if isinstance(intent, Enum):
+            intent = intent.value 
         handovers = self.get_user_handovers_by_intent(intent=intent, partial_match=partial_match)
         return self._pick_from_list(handovers, mode)
         
     
     
     def get_actions_by_intent(self, intent:str, partial_match=False) -> list[Service]:
+        if isinstance(intent, Enum):
+            intent = intent.value 
         actions = [s for sg in self.actions for s in sg.services if self._match_intent(intent, s.application_intents, partial_match)]
         return actions
     
     def get_action_by_intent(self, intent:str, partial_match=False, mode="first"):
+        if isinstance(intent, Enum):
+            intent = intent.value 
         actions = self.get_actions_by_intent(intent=intent, partial_match=partial_match)
         return self._pick_from_list(actions, mode)
     
@@ -126,10 +135,16 @@ class PacInfo(BaseModel):
     
         
     def get_attributes(self, key:str) -> list[pyAttribute]:
+        # capture the common mistake of forgetting to access key of enum
+        if isinstance(key, Enum):
+            key = key.value    
         attributes = [a for k, a in self._all_attributes.items() if key in a.key]
         return attributes  
     
-    def get_attribute(self, key:str, mode="first"):        
+    def get_attribute(self, key:str, mode="first"):  
+        # capture the common mistake of forgetting to access key of enum
+        if isinstance(key, Enum):
+            key = key.value      
         attributes = self.get_attributes(key)
         return self._pick_from_list(attributes, mode)
 

@@ -2,6 +2,7 @@
 from datetime import UTC, date, datetime, time
 import json
 from typing import  Literal
+from enum import Enum
 import warnings
 from pydantic import RootModel, field_validator
 
@@ -10,6 +11,7 @@ from labfreed.pac_attributes.api_data_models.response import AttributeBase, Attr
 from labfreed.pac_attributes.client.attribute_cache import CacheableAttributeGroup
 from labfreed.pac_id.pac_id import PAC_ID
 from labfreed.trex.pythonic.quantity import Quantity
+
 
 
 class pyReference(RootModel[str]):
@@ -45,6 +47,15 @@ class pyAttribute(LabFREED_BaseModel):
             return v[0]
         else:
             return v
+        
+    @field_validator('key', mode='before')
+    def handle_enum_key(v):
+        if isinstance(v, Enum) :
+            return v.value
+        else:
+            return v
+        
+    
 
 class pyAttributes(RootModel[list[pyAttribute]]):
     def to_payload_attributes(self) -> list[AttributeBase]:
@@ -101,7 +112,7 @@ class pyAttributes(RootModel[list[pyAttribute]]):
         
         elif isinstance(first_value, str):
             # capture quantities in the form of "100.0e5 g/L"
-            if Quantity.from_str_with_unit(first_value):
+            if Quantity.can_convert_to_quantity(first_value):
                 values = []
                 for v in value_list:
                     q = Quantity.from_str_with_unit(v)

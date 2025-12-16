@@ -1,0 +1,193 @@
+{# ---------- PAC-INFO MACROS ---------- #}
+{# These macros render semantic HTML with light class hooks. #}
+
+{%- macro key_value_table(pairs) -%}
+  {# pairs: dict-like object #}
+  <table class="lf-table lf-table--kv">
+    <tbody>
+      {%- for k, v in pairs.items() -%}
+        {%- if k != "key" -%}
+          <tr>
+            <th class="lf-th lf-th--key">{{ k }}</th>
+            <td class="lf-td lf-td--val">{{ v }}</td>
+          </tr>
+        {%- endif -%}
+      {%- endfor -%}
+    </tbody>
+  </table>
+{%- endmacro -%}
+
+
+{%- macro category_block(category) -%}
+  <div class="lf-section lf-section--category">
+    <h5 class="lf-section__title">{{ category.__class__.__name__ }}</h5>
+    {{ key_value_table(category.segments_as_dict()) }}
+  </div>
+{%- endmacro -%}
+
+
+{%- macro service_table_section(services) %}
+    <div class="lf-services">
+    {%- for s in services -%}
+        <a href="{{ with_ga_and_trace(s.url) }}" target="_blank" rel="noopener" class="lf-service">
+            <img src="{{ resolve_static_image('external-link.svg')  }}" alt="" class="lf-service__icon">
+            <span class="lf-service__name">{{ s.service_name }}</span>
+        </a>
+    {%- endfor -%}
+    </div>
+{%- endmacro -%}
+
+{%- macro services_table(user_handover_group) -%}
+<div class="lf-section lf-section--services">
+    <div class="lf-origin-hint"> from {{ user_handover_group.origin }}</div>
+    {{ service_table_section(user_handover_group.services)}}
+</div>
+{%- endmacro -%}
+
+
+{%- macro reference(value, label=None, card_request_params=dict(), target_class=None, display_label=True) %}
+    <div class="lf-ref-card-wrap"
+        {% if pac_card_url_for is defined %}
+        hx-get="{{ pac_card_url_for(pac_id=value, **card_request_params) }}"
+        hx-trigger="load"
+        hx-swap="innerHTML"
+        hx-target="find .lf-ref-card"
+        {% endif %}
+        >
+
+        {% if display_label %}
+            {% if route_pac_id_url_for is defined %}
+            <a class="lf-reference" a href="{{route_pac_id_url_for(pac_id=value)}}" target="_default">
+                {{ label or value }}
+            </a>
+            {% else %}
+                {{ label or value }}
+            {% endif %}
+        {% endif %}
+
+
+        {% if pac_card_url_for is defined %}
+        <div class="{{target_class}} lf-ref-card">
+            <!-- PAC info card gets injected here by HTMX -->
+        </div>
+        {% endif %}
+    </div>
+{%- endmacro %}
+
+
+{%- macro attribute_row(a) -%}
+  <tr>
+    <th class="lf-th lf-th--label">
+        {% if is_reference(a.key) %}
+            {{ reference(a.key, a.label)}}
+        {% elif is_url(a.key) %}
+            <a href="{{a.key}}" target="_default"> {{ a.label }} </a>
+        {% else %}
+            {{ a.label }}
+        {% endif %}
+        <br>
+        <span class="lf-th--key">{{a.key}}</span>
+    </th>
+    <td class="lf-td lf-td--val">
+        {% for value in a.value_list%}
+            {%- if is_image(value) -%}
+                <figure class="lf-figure lf-figure--image">
+                    <img src="{{ value|e }}" alt="{{ label|e }}" class="lf-attr-image">
+                    <figcaption class="lf-figure__caption sr-only">{{ label }}</figcaption>
+                </figure>
+            {%- elif is_url(value) -%}
+                <a href="{{ value|e }}" target="_blank" rel="noopener" class="lf-link">{{ value }}</a>
+            {%- elif is_reference(value) -%}
+                {{ reference(value)}}
+            {%- else -%}
+                <span class="lf-text">{{ value }}</span>
+            {%- endif -%}
+            {% if not loop.last %}<br>{% endif %}
+        {% endfor%}
+    </td>
+  </tr>
+{%- endmacro -%}
+
+
+{%- macro attribute_group_block(ag) -%}
+  <div class="lf-section lf-section--attributes">
+    <h5 class="lf-section__title">
+      {{ ag.label }} <span class="lf-origin-hint">(from {{ ag.origin }})</span>
+    </h5>
+    <table class="lf-table lf-table--kv">
+      <tbody>
+        {%- for a in ag.attributes.values() -%}
+          {{ attribute_row(a) }}
+        {%- endfor -%}
+      </tbody>
+    </table>
+</div>
+{%- endmacro -%}
+
+
+
+{%- macro data_table_inline(dt) -%}
+  {# Renders your DataTable structure; expects filters: is_data_table(dt) #}
+  {%- if dt.data | length == 1 -%}
+    <table class="lf-table lf-table--kv">
+      <tbody>
+        {%- for i in range(dt.col_names | length) -%}
+          <tr>
+            <th class="lf-th ">{{ dt.col_names[i] }}</th>
+            <td class="lf-td ">{{ dt.data[0][i] }}</td>
+          </tr>
+        {%- endfor -%}
+      </tbody>
+    </table>
+  {%- else -%}
+    <table class="lf-table lf-table--grid">
+      <thead>
+        <tr>
+          {%- for rn in dt.col_names -%}
+            <th class="lf-th">{{ rn }}</th>
+          {%- endfor -%}
+        </tr>
+      </thead>
+      <tbody>
+        {%- for row in dt.data -%}
+          <tr>
+            {%- for e in row -%}
+              <td class="lf-td">{{ e }}</td>
+            {%- endfor -%}
+          </tr>
+        {%- endfor -%}
+      </tbody>
+    </table>
+  {%- endif -%}
+{%- endmacro -%}
+
+
+{%- macro attached_data_block(attached_data) -%}
+  <div class="lf-section lf-section--attached">
+    {%- for name, trex in attached_data.items() -%}
+        {{ attached_data_trex(name, trex) }}
+    {%- endfor -%}
+    </div>
+{%- endmacro -%}
+
+{%- macro attached_data_trex(name, trex) %}
+    <div class="lf-subsection">
+        <h5 class="lf-subsection__title">{{ name }}</h5>
+        <table class="lf-table lf-table--kv">
+        <tbody>
+            {%- for k, v in trex.items() -%}
+            <tr>
+                <th class="lf-td lf-td--val">{{ k }} </th>
+                <td class="lf-td lf-td--val">
+                {%- if is_data_table(v) -%}
+                    {{ data_table_inline(v) }}
+                {%- else -%}
+                    {{ v }}
+                {%- endif -%}
+                </td>
+            </tr>
+            {%- endfor -%}
+        </tbody>
+        </table>
+    </div>
+{% endmacro %}

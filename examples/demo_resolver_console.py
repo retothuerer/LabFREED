@@ -17,14 +17,7 @@ def main():
     # run loop, which asks for console input
     run_console_input(resolve_and_print)
     
- 
- 
- 
- 
- 
- 
- 
- 
+  
     
 from labfreed.labfreed_infrastructure import LabFREED_ValidationError  # noqa: E402
 def run_console_input(resolve_callback):

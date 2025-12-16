@@ -44,7 +44,7 @@ class Dict_DataSource(AttributeGroupDataSource):
     
     @property
     def provides_attributes(self):
-        return [a.key for attributes in self._data.values() for a in attributes]
+        return list(set([a.key for attributes in self._data.values() for a in attributes]))
     
            
     def attributes(self, pac_url: str) -> AttributeGroup:

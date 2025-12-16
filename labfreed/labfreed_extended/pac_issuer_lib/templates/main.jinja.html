@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <head>
+            <meta charset="utf-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+            <meta name="description" content="{{ site_meta.site_description}}" />
+            <meta name="author" content="{{site_meta.site_author}}" />
+    
+            <title>{{site_meta.site_title}}</title>
+            
+            <!-- Favicon-->
+            <link rel="icon" type="image" href="{{ url_for_within_issuer('static', filename='logo') }}" />
+            <link rel="icon" type="image" href="{{ url_for_within_issuer('static', filename='favicon.ico') }}" />
+            
+    
+            <!-- General styles -->
+            <link rel="stylesheet" type="text/css" href="{{ url_for_within_issuer('static', filename='styles.css') }}" />
+
+            <!-- Branding  styles -->
+            <link rel="stylesheet" type="text/css" href="{{ url_for_within_issuer('static', filename='styles_brand.css') }}" />
+    
+            <link rel="preconnect" href="https://fonts.googleapis.com">
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+            <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700&display=swap" >
+            <!--icons-->
+            <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,400,0,0" />
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css">
+    
+            <!--jQuery-->
+            <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+            <!--HTMX-->
+            <script src="https://unpkg.com/htmx.org@2.0.3/dist/htmx.min.js" integrity="sha384-0895/pl2MU10Hqc6jd4RvrthNlDiE9U1tWmX7WRESftEDRosgxNsQG/Ze9YMRzHq" crossorigin="anonymous"></script>
+    
+
+        
+        </head>
+
+        {% block head_extension %}
+        {% endblock %}
+    </head>
+
+
+    <body >
+        <main>
+
+            {% include 'navbar.jinja.html'  %}
+
+            {% include 'flash_error_messages.jinja.html' %}
+
+            {% block page_main_content required %}
+                {# to be overwritten by pages #}
+            {% endblock %}
+        </main>
+
+
+    {% block footer %}
+        <footer>
+            {% include 'footer.jinja.html'  %}
+        </footer>
+    {% endblock %}
+        
+
+    </body>
+ 
+    
+</html>

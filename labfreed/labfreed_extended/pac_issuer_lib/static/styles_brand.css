@@ -1,0 +1,11 @@
+:root {
+    --color-accent-primary: var(--color-labfreed-main-action);
+    --color-accent-primary-background: var(--color-labfreed-white);
+
+    --color-accent-secondary: var(--color-labfreed-main-forestgreen);
+    --color-accent-secondary-background: var(--color-labfreed-white);
+
+    font-family: Arial, Helvetica, sans-serif;
+    
+}
+
