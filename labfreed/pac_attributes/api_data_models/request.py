@@ -1,4 +1,4 @@
-from typing import   Any, Iterable, Self
+from typing import   Any, Self
 from urllib.parse import unquote
 from werkzeug.datastructures import LanguageAccept
 from werkzeug.http import parse_accept_header
@@ -28,9 +28,13 @@ class AttributeRequestData(LabFREED_BaseModel):
     @classmethod
     def from_http_request(cls, pac_id:str, params:dict, headers:dict):
         restrict_to_attribute_groups = params.get(ATTR_GROUPS)
+        if restrict_to_attribute_groups == '':
+            restrict_to_attribute_groups = None
         if restrict_to_attribute_groups:
             restrict_to_attribute_groups = restrict_to_attribute_groups.split(',')
-        do_forward_lookup = bool(params.get(ATTR_GROUPS_FWD_LKP,'true'))
+            
+        fwd_lkp = params.get(ATTR_GROUPS_FWD_LKP,'true')
+        do_forward_lookup = fwd_lkp.lower() not in ['false', 'no', '0', 'n', 'off']
         lang_hdr = headers.get('Accept-Language')
         language_preferences: LanguageAccept = parse_accept_header(lang_hdr, LanguageAccept)
         out = cls(pac_id=pac_id, 
