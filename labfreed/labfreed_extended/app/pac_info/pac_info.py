@@ -1,5 +1,3 @@
-
-
 from functools import cached_property
 from pathlib import Path
 from urllib.parse import urlparse
@@ -164,10 +162,10 @@ class PacInfo(BaseModel):
     @cached_property
     def image_url(self) -> str:
         image_attr = self._all_attributes.get(MetaAttributeKeys.IMAGE.value)
-        if isinstance(image_attr.value, pyResource):
-            return image_attr.value.root
-        if isinstance(image_attr.value, str):
-            return image_attr.value
+        if isinstance(image_attr.values, pyResource):
+            return image_attr.values.root
+        if isinstance(image_attr.values, str):
+            return image_attr.values
         
         
     @cached_property
@@ -180,7 +178,7 @@ class PacInfo(BaseModel):
         # there can be a display name in attributes, too
 
         if dn_attr := self._all_attributes.get(MetaAttributeKeys.DISPLAYNAME.value): 
-            dn = dn_attr.value
+            dn = dn_attr.values
             display_name = dn + f' ( aka {display_name} )' if display_name else dn
             
         if not display_name and self.main_category:
