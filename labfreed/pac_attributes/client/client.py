@@ -54,7 +54,7 @@ def http_attribute_request_default_callback_factory(session: requests.Session = 
 
     def callback(url: str, attribute_request_data: AttributeRequestData) -> tuple[int, str]:
         try:
-            url = url + '/' + quote(attribute_request_data.pac_id)
+            url = url + '/' + quote(attribute_request_data.pac_id, safe='')
             params = attribute_request_data.request_params()           
             resp = session.get(url, 
                                params = params,
