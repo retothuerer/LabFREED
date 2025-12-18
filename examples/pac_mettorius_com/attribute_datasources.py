@@ -20,7 +20,7 @@ from labfreed.labfreed_extended.pac_issuer_lib.lib.attribute import DynamicDemoA
 data_sources = []
 translation_data_sources = []
 
-static_url_prefix = "http://127.0.1:5051/mettorius/static" if os.environ.get('DEV') else "https://pbue-app-labfreed-issuer-cwe-cag3hzgvcua2apem.westeurope-01.azurewebsites.net/mettorius/static" #"https://webtools.labfreed.org/mettorius/static"
+static_url_prefix = "http://127.0.0.1:5099/mettorius/static" if os.environ.get('DEV') else "https://pbue-app-labfreed-issuer-cwe-cag3hzgvcua2apem.westeurope-01.azurewebsites.net/mettorius/static" #"https://webtools.labfreed.org/mettorius/static"
 
 '''
 This example shows you how to setup an attribute server. 
