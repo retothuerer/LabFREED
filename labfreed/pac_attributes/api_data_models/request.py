@@ -28,7 +28,7 @@ class AttributeRequestData(LabFREED_BaseModel):
         restrict_to_attribute_groups = params.get(ATTR_GROUPS)
         if restrict_to_attribute_groups:
             restrict_to_attribute_groups = restrict_to_attribute_groups.split(',')
-        do_forward_lookup = params.get(ATTR_GROUPS_FWD_LKP,'true').lower() in ['true', '1']
+        do_forward_lookup = bool(params.get(ATTR_GROUPS_FWD_LKP,'true'))
         language_preferences = headers.get('Accept-Language')
         out = cls(pac_id=pac_id, 
                             restrict_to_attribute_groups = restrict_to_attribute_groups,
