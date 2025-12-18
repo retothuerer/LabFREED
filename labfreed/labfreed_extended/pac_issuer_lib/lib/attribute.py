@@ -1,6 +1,7 @@
 
 import logging
 from flask import render_template, request
+from labfreed.pac_attributes.api_data_models.request import AttributeRequestData
 from labfreed.pac_attributes.api_data_models.response import AttributeGroup
 from labfreed.pac_cat.pac_cat import PAC_CAT
 from labfreed.pac_cat.predefined_categories import Material_Device, Material_Consumable, Material_Substance
@@ -106,7 +107,7 @@ class SessionLocalDirectCall(requests.Session):
         self._request_handlers = request_handlers
         
     
-    def post(self, url, *args, **kwargs):
+    def get(self, url, *args, **kwargs):
     
         if is_self_request(url):
             # Case: server calls itself
@@ -122,11 +123,15 @@ class SessionLocalDirectCall(requests.Session):
         # Example: directly call the Flask view function instead of HTTP
         # You could map URLs to functions if you know your routing
         # For now, just return a mock response
-        rh = self._request_handlers.get(path.strip("/"))
+        path, pac = path.strip("/").rsplit("/", 1)
+        rh = self._request_handlers.get(path)
         
         r = Response()
         if rh:
-            body = rh.handle_attribute_request(json_request_body=kwargs.get("data"))
+            request_data = AttributeRequestData.from_http_request(pac_id = pac,
+                                                                params = kwargs.get('params'),
+                                                                 headers = kwargs.get('headers'))
+            body = rh.handle_attribute_request(request_data=request_data)
             r.status_code = 200
             r._content = body.encode("utf-8")
             r.encoding = "utf-8"
@@ -161,8 +166,6 @@ def is_self_request(url: str) -> bool:
     target_ip = resolve_ip(parsed.hostname.lower())
     current_ip = resolve_ip(request.host.split(":")[0].lower())
     
-    
-
     return target_ip == current_ip
 
 
