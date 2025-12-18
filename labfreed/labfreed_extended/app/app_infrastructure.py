@@ -4,7 +4,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import requests
 
 from labfreed.labfreed_extended.app.pac_info.pac_info import PacInfo
-from labfreed.pac_attributes.client.attribute_cache import MemoryAttributeCache
 from labfreed.pac_attributes.client.client import AttributeClient, http_attribute_request_default_callback_factory
 from labfreed.pac_attributes.pythonic.py_attributes import pyAttributeGroup
 
@@ -30,7 +29,7 @@ class Labfreed_App_Infrastructure():
         self._http_client= http_client
         callback = http_attribute_request_default_callback_factory(http_client)
             
-        self._attribute_client = AttributeClient(http_post_callback=callback, cache_store=MemoryAttributeCache(), always_use_cached_value_for_minutes=1)
+        self._attribute_client = AttributeClient(http_post_callback=callback)
 
 
     def add_resolver_config(self, cit:str):

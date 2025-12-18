@@ -12,7 +12,7 @@ from labfreed.pac_attributes.api_data_models.response import (Attribute, Attribu
                                                               BoolAttributeItemsElement, DateTimeAttributeItemsElement, NumericAttributeItemsElement,  
                                                               ObjectAttributeItemsElement, ReferenceAttributeItemsElement,  ResourceAttributeItemsElement,
                                                               TextAttributeItemsElement)
-from labfreed.pac_attributes.client.attribute_cache import CacheableAttributeGroup
+from labfreed.pac_attributes.client.client_attribute_group import ClientAttributeGroup
 from labfreed.pac_id.pac_id import PAC_ID
 from labfreed.trex.pythonic.quantity import Quantity
 
@@ -170,7 +170,7 @@ class pyAttributes(RootModel[list[pyAttribute]]):
             
             
         
-class pyAttributeGroup(CacheableAttributeGroup):
+class pyAttributeGroup(ClientAttributeGroup):
     attributes:dict[str,pyAttribute]
     
     @staticmethod

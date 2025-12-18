@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Protocol, runtime_checkable
 from urllib.parse import quote
+import warnings
 
 import requests
 
@@ -11,8 +12,8 @@ from pydantic import ValidationError
 from werkzeug.datastructures import LanguageAccept 
 
 from labfreed.pac_attributes.api_data_models.request import AttributeRequestData
-from labfreed.pac_attributes.api_data_models.response import AttributeResponsePayload
-from labfreed.pac_attributes.client.attribute_cache import AttributeCache, CacheableAttributeGroup
+from labfreed.pac_attributes.api_data_models.response import AttributeGroup, AttributeResponsePayload
+from labfreed.pac_attributes.client.client_attribute_group import ClientAttributeGroup
 from labfreed.pac_attributes.server.server import AttributeServerRequestHandler
 from labfreed.pac_id.pac_id import PAC_ID
 
@@ -90,18 +91,14 @@ def local_attribute_request_callback_factory(request_handler:AttributeServerRequ
 class AttributeClient():
     """ Client handling attribute requests and caching thereof.
     """
-
     http_post_callback:AttributeRequestCallback
-    cache_store:AttributeCache
-    always_use_cached_value_for_minutes:int
-                
+                   
     def get_attributes(self, 
                        server_url:str, 
                        pac_id:PAC_ID|str, 
                        restrict_to_attribute_groups:list[str]|None=None, 
-                       language_preferences:list[str]|None=None,
-                       force_server_request=False
-                       ) -> list[CacheableAttributeGroup]:
+                       language_preferences:list[str]|None=None
+                       ) -> list[AttributeGroup]:
         """gets the attributes from one attribute server for one PAC-ID. Uses a cached version if possible, otherwise requests from the server again.
 
         Args:
@@ -121,17 +118,7 @@ class AttributeClient():
         """
         if isinstance(pac_id, str):
             pac_id = PAC_ID.from_url(pac_id)
-        
-        # try the cache
-        if not force_server_request: 
-            if restrict_to_attribute_groups:
-                attribute_groups = self.cache_store.get_attribute_groups(server_url, pac_id, restrict_to_attribute_groups)
-            else:
-                attribute_groups = self.cache_store.get_all(server_url, pac_id)
                 
-            if attribute_groups and all([ag.still_valid(accept_cache_for_minutes=self.always_use_cached_value_for_minutes) for ag in attribute_groups]): 
-                return attribute_groups
-        
         # no valid data found in cache > request to server
         attribute_request_body = AttributeRequestData(pac_id=pac_id.to_url(), 
                                                         restrict_to_attribute_groups=restrict_to_attribute_groups,
@@ -155,21 +142,19 @@ class AttributeClient():
             raise AttributeServerError("The server accepted the request, and sent a reponse. However, the response is not adhering to the PAC Attributes specifications. Contact the server admin.")
 
         
-        # update cache
         attribute_groups_out = []
         for ag_for_pac in r.data:
             pac_from_response = PAC_ID.from_url(ag_for_pac.pac_id)
             ags = [
-                CacheableAttributeGroup(
+                ClientAttributeGroup(
                     group_key= ag.group_key, 
                     attributes=ag.attributes, 
                     origin=server_url, 
                     language=r.language, 
-                    group_label=ag.group_label,
-                    value_from=datetime.now(tz=UTC)) 
+                    group_label=ag.group_label
+                    ) 
                 for ag in ag_for_pac.attribute_groups
                 ]
-            self.cache_store.update(server_url, pac_from_response, ags)
             
             # compare pac_id from response with pac_id we need attributes for.
             # if identical this is the part of the response we care about. other PAC-ID are just for the cache
