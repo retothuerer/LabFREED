@@ -1,8 +1,6 @@
 from abc import ABC, abstractmethod, abstractproperty
-from datetime import datetime, timezone
-from labfreed.pac_attributes.api_data_models.response import Attribute, AttributeItemsElementBase, AttributeGroup
+from labfreed.pac_attributes.api_data_models.response import Attribute, AttributeGroup
 from labfreed.pac_cat.pac_cat import PAC_CAT
-from labfreed.pac_id.pac_id import PAC_ID
 
 
 class AttributeGroupDataSource(ABC):
