@@ -13,8 +13,6 @@ from labfreed.pac_id_resolver.services import ServiceGroup
 
         
 
-
-
 class Labfreed_App_Infrastructure():
     def __init__(self, markup = 'rich', language_preferences:list[str]|str='en', http_client:requests.Session|None=None, use_issuer_resolver_config=True):
         if isinstance(language_preferences, str):
