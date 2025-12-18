@@ -5,7 +5,6 @@
 from datetime import datetime
 
 from flask import Flask
-from labfreed.pac_attributes.client.attribute_cache import MemoryAttributeCache
 from labfreed.pac_attributes.client.client import AttributeClient, http_attribute_request_default_callback_factory
 from labfreed.pac_attributes.pythonic.attribute_server_factory import AttributeServerFactory, NoAuthRequiredAuthenticator
 from labfreed.pac_attributes.pythonic.py_attributes import pyAttribute, pyAttributes, pyReference
@@ -32,8 +31,7 @@ data_source = pyDict_DataSource(attribute_group_key='ProductionData',
                                 "HTTPS://PAC.METTORIUS.COM/-MD/BAL500/000001": pyAttributes([
                                     pyAttribute(key="MfgDate", value=datetime(year=2015, month=10, day=1, hour=10, minute=12)),
                                     pyAttribute(key="MaxWeight", values=Quantity(value=100.00, unit='g', log_least_significant_digit=-2)),
-                                    pyAttribute(key="CalWeight", values=pyReference('HTTPS://PAC.METTORIUS.COM/-MD/CALWEIGH/A00002')),
-                                    pyAttribute(key="multitext", values=["foo", "bar"])
+                                    pyAttribute(key="CalWeight", values=pyReference('HTTPS://PAC.METTORIUS.COM/-MD/CALWEIGH/A00002'))
                                 ]),
                                 "HTTPS://PAC.METTORIUS.COM/-MD/BAL500/12341": pyAttributes([
                                     pyAttribute(key="MfgDate", values=datetime(year=2015, month=10, day=1, hour=10, minute=12)),
@@ -106,15 +104,47 @@ translation_data_source = DictTranslationDataSource(
                                                                      ("fr", "Poids calibration")
                                                                 ]
                                         ),
-                                        Term.create("https://mettorius.com/terms/attribute_group_example", [ ("en", "Example Attribute Group") ] ),
-                                        Term.create("https://mettorius.com/terms/attribute_group_example_lists", [ ("en", "Example Attribute Group Lists") ] ),
-                                        Term.create("https://labfreed.org/terms/example/TextAttribute", [ ("en", "Text Attribute")]),
-                                        Term.create("https://labfreed.org/terms/example/NumericAttribute", [ ("en", "Numeric Attribute")]),
-                                        Term.create("https://labfreed.org/terms/example/ReferenceAttribute", [("en", "Reference Attribute")]),
-                                        Term.create("https://labfreed.org/terms/example/DateTimeAttribute", [("en", "Date Attribute")]),
-                                        Term.create("https://labfreed.org/terms/example/BoolAttribute", [ ("en", "Bool Attribute")]),
-                                        Term.create("https://labfreed.org/terms/example/ObjectAttribute", [("en", "Object Attribute (LAST RESORT)")]),
-                                        Term.create("https://labfreed.org/terms/example/Mixed", [ ("en", "Mixed List (ACTUALLY NOT ALLOWED)")])
+                                        Term.create("NominalWeight", [    ("en", "Nominal weight"),
+                                                                     ("fr", "Poids nominel")
+                                                                ]
+                                        ),
+                                        Term.create("https://mettorius.com/terms/attribute_group_example", [
+                                            ("en", "Example Attribute Group"),
+                                            ("fr", "Groupe d’attributs exemple"),
+                                        ]),
+                                        Term.create("https://mettorius.com/terms/attribute_group_example_lists", [
+                                            ("en", "Example Attribute Group Lists"),
+                                            ("fr", "Listes de groupes d’attributs exemple"),
+                                        ]),
+                                        Term.create("https://labfreed.org/terms/example/TextAttribute", [
+                                            ("en", "Text Attribute"),
+                                            ("fr", "Attribut texte"),
+                                        ]),
+                                        Term.create("https://labfreed.org/terms/example/NumericAttribute", [
+                                            ("en", "Numeric Attribute"),
+                                            ("fr", "Attribut numérique"),
+                                        ]),
+                                        Term.create("https://labfreed.org/terms/example/ReferenceAttribute", [
+                                            ("en", "Reference Attribute"),
+                                            ("fr", "Attribut de référence"),
+                                        ]),
+                                        Term.create("https://labfreed.org/terms/example/DateTimeAttribute", [
+                                            ("en", "Date Attribute"),
+                                            ("fr", "Attribut de date"),
+                                        ]),
+                                        Term.create("https://labfreed.org/terms/example/BoolAttribute", [
+                                            ("en", "Bool Attribute"),
+                                            ("fr", "Attribut booléen"),
+                                        ]),
+                                        Term.create("https://labfreed.org/terms/example/ObjectAttribute", [
+                                            ("en", "Object Attribute (LAST RESORT)"),
+                                            ("fr", "Attribut objet (EN DERNIER RECOURS)"),
+                                        ]),
+                                        Term.create("https://labfreed.org/terms/example/Mixed", [
+                                            ("en", "Mixed List (ACTUALLY NOT ALLOWED)"),
+                                            ("fr", "Liste mixte (EN FAIT INTERDITE)"),
+                                        ]),
+
                                     ]
                                     )
                                 )
@@ -142,7 +172,7 @@ class FlaskServerThread(threading.Thread):
         self._server.shutdown()
 
 
-client = AttributeClient(http_post_callback=http_attribute_request_default_callback_factory(), cache_store=MemoryAttributeCache(), always_use_cached_value_for_minutes=0)
+client = AttributeClient(http_post_callback=http_attribute_request_default_callback_factory() )
   
 def test():
     pac_id = PAC_ID.from_url("HTTPS://PAC.METTORIUS.COM/-MD/BAL500/12340")

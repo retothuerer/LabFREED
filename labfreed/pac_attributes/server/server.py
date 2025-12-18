@@ -4,6 +4,7 @@ import traceback
 import warnings
 
 import rich
+from werkzeug.datastructures.accept import LanguageAccept
 
 from labfreed.pac_attributes.api_data_models.request import AttributeRequestData
 from labfreed.pac_attributes.api_data_models.response import AttributeResponsePayload, AttributesOfPACID, ReferenceAttributeItemsElement
@@ -164,21 +165,13 @@ class AttributeServerRequestHandler():
         return None
                 
                 
-    def _find_response_language(self, requested_languages):
+    def _find_response_language(self, requested_languages:LanguageAccept):
         '''finds the language the server will respond in'''
         if not requested_languages:
             return self._default_language
-        
-        for language in requested_languages:
-            if language in self._supported_languages:
-                return language
-            
-        # remove the country codes and try the again
-        for l_fallback in [lang.split('-')[0] for lang in requested_languages]:
-            if language in self._supported_languages:
-                return l_fallback
+        best_match = requested_languages.best_match(self._supported_languages, default="en")
+        return best_match
 
-        return self._default_language
                 
                 
         

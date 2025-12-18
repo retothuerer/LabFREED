@@ -1,7 +1,7 @@
-import logging
-from typing import   Any, Self
+from typing import   Any, Iterable, Self
 from urllib.parse import unquote
 from werkzeug.datastructures import LanguageAccept
+from werkzeug.http import parse_accept_header
 from pydantic import ConfigDict, field_validator, model_validator
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel, LabFREED_ValidationError, ValidationMsgLevel
 from labfreed.pac_id.pac_id import PAC_ID
@@ -10,9 +10,11 @@ ATTR_GROUPS = 'attr_grps'
 ATTR_GROUPS_FWD_LKP= 'attr_fwd_lkp'
 
 
-class AttributeRequestData(LabFREED_BaseModel):    
+class AttributeRequestData(LabFREED_BaseModel):  
+    model_config = ConfigDict(arbitrary_types_allowed=True)  
+    
     pac_id: str
-    language_preferences: list[str]|None = None
+    language_preferences: LanguageAccept|None = None
     restrict_to_attribute_groups: list[str]|None = None
     do_forward_lookup: bool = True
     
@@ -29,18 +31,15 @@ class AttributeRequestData(LabFREED_BaseModel):
         if restrict_to_attribute_groups:
             restrict_to_attribute_groups = restrict_to_attribute_groups.split(',')
         do_forward_lookup = bool(params.get(ATTR_GROUPS_FWD_LKP,'true'))
-        language_preferences = headers.get('Accept-Language')
+        lang_hdr = headers.get('Accept-Language')
+        language_preferences: LanguageAccept = parse_accept_header(lang_hdr, LanguageAccept)
         out = cls(pac_id=pac_id, 
                             restrict_to_attribute_groups = restrict_to_attribute_groups,
                             do_forward_lookup = do_forward_lookup,
                             language_preferences=language_preferences
-                            )
-        
+                            )   
         return out
         
-
-    
-    
 
     
     @model_validator(mode="before")
@@ -53,12 +52,14 @@ class AttributeRequestData(LabFREED_BaseModel):
         return d
     
     
-    # @field_validator('language_preferences', mode="before")
-    # @classmethod
-    # def _convert_language_given_as_language_accept(cls, lp):
-    #     v  = [v for v in lp.split(',')]
-    #     return v
-    
+    @field_validator('language_preferences', mode='before')
+    @classmethod
+    def convert_language_preferences(cls,lp):
+        if isinstance(lp, LanguageAccept):
+            return lp
+        lq = [(lng, 1-i/len(lp)) for i, lng in enumerate(lp)]
+        return LanguageAccept(lq)
+        
     
     @model_validator(mode="after")
     def _revert_url_encoding(self):
@@ -66,7 +67,7 @@ class AttributeRequestData(LabFREED_BaseModel):
         if self.restrict_to_attribute_groups:
             self.restrict_to_attribute_groups = [unquote(g) for g in self.restrict_to_attribute_groups]
         return self
-       
+           
     @model_validator(mode="after")
     def _validate_pacs(self) -> Self:           
         try:
@@ -86,7 +87,6 @@ class AttributeRequestData(LabFREED_BaseModel):
     def language_preference_http_header(self) -> dict[str, str]:
         if not self.language_preferences:
             return {}
-        lq = [(lng, 1-i/len(self.language_preferences)) for i, lng in enumerate(self.language_preferences)]
         headers={'Accept-Language':  LanguageAccept(lq).to_header()}
         return headers
     

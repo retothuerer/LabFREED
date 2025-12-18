@@ -9,7 +9,6 @@ import warnings
 import requests
 
 from pydantic import ValidationError
-from werkzeug.datastructures import LanguageAccept 
 
 from labfreed.pac_attributes.api_data_models.request import AttributeRequestData
 from labfreed.pac_attributes.api_data_models.response import AttributeGroup, AttributeResponsePayload
