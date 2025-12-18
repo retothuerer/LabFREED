@@ -79,7 +79,7 @@ class Labfreed_App_Infrastructure():
         for sg in service_groups:  
             attributes_urls = [s.url  for s in sg.services if s.service_type == 'attributes-generic']
             for url in attributes_urls:
-                ags = {ag.key: pyAttributeGroup.from_attribute_group(ag) for ag in self._attribute_client.get_attributes(url, pac_id=pac.to_url(include_extensions=False), language_preferences=self._language_preferences)}
+                ags = {ag.group_key: pyAttributeGroup.from_attribute_group(ag) for ag in self._attribute_client.get_attributes(url, pac_id=pac.to_url(include_extensions=False), language_preferences=self._language_preferences)}
                 if ags:
                     attribute_groups.update(ags)
         pac_info.attribute_groups = attribute_groups

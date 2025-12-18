@@ -244,7 +244,7 @@ class PacInfo(BaseModel):
         
         printout.title1("Attributes")
         for ag in self.attribute_groups.values():  
-            printout.title2(f'{ag.label} (from {ag.origin})')
+            printout.title2(f'{ag.group_label} (from {ag.origin})')
             for v in ag.attributes.values():
                 v:pyAttribute
                 #print(f'{k}: ({v.label})           :: {v.value}  ')

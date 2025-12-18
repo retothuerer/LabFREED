@@ -1,13 +1,17 @@
 
 from datetime import UTC, date, datetime, time
 import json
+import logging
 from typing import  Literal
 from enum import Enum
 import warnings
-from pydantic import RootModel, field_validator
+from pydantic import RootModel, field_validator, model_validator
 
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel
-from labfreed.pac_attributes.api_data_models.response import AttributeBase, AttributeGroup, BoolAttribute, BoolListAttribute, DateTimeAttribute, DateTimeListAttribute,  NumericAttribute, NumericListAttribute, NumericValue, ObjectAttribute,ObjectListAttribute, ReferenceAttribute, ReferenceListAttribute, ResourceAttribute, ResourceListAttribute, TextAttribute, TextListAttribute
+from labfreed.pac_attributes.api_data_models.response import (Attribute, AttributeItemsElementBase, AttributeGroup, 
+                                                              BoolAttributeItemsElement, DateTimeAttributeItemsElement, NumericAttributeItemsElement,  
+                                                              ObjectAttributeItemsElement, ReferenceAttributeItemsElement,  ResourceAttributeItemsElement,
+                                                              TextAttributeItemsElement)
 from labfreed.pac_attributes.client.attribute_cache import CacheableAttributeGroup
 from labfreed.pac_id.pac_id import PAC_ID
 from labfreed.trex.pythonic.quantity import Quantity
@@ -33,15 +37,21 @@ AllowedList = list[AllowedValue]
 class pyAttribute(LabFREED_BaseModel):
     key:str
     label:str = ""
-    value: AllowedValue | AllowedList
+    values: AllowedValue | AllowedList
     
     @property
     def value_list(self):    
         '''helper function to more conveniently iterate over value elements, even if it's scalar'''   
-        return self.value if isinstance(self.value, list) else [self.value]
+        return self.values if isinstance(self.values, list) else [self.values]
     
+    @model_validator(mode='before')
+    def value_to_values(cls, d:dict):
+        value =d.pop('value', None)
+        if value is not None:
+            d['values'] = value
+        return d
     
-    @field_validator('value', mode='before')
+    @field_validator('values', mode='before')
     def handle_one_element_list(v):
         if isinstance(v, list) and len(v)==1:
             return v[0]
@@ -58,140 +68,102 @@ class pyAttribute(LabFREED_BaseModel):
     
 
 class pyAttributes(RootModel[list[pyAttribute]]):
-    def to_payload_attributes(self) -> list[AttributeBase]:
-        out = []
+    def to_payload_attributes(self) -> dict[str, Attribute]:
+        out = {}
         for e in self.root:
-            apt = self._attribute_to_attribute_payload_type(e)
-            if isinstance(apt.value, list) and len(apt.value) ==1:
-                apt.value = apt.value[0]
-            out.append(apt)
+            payload_attr = self._attribute_to_attribute_payload_type(e)
+            out.update({e.key: payload_attr})
         return out
     
             
     @staticmethod        
-    def _attribute_to_attribute_payload_type(attribute:pyAttribute) -> AttributeBase:
-        common_args = {
-            "key": attribute.key,
-            "label": attribute.label,
-        }
-        value_list = attribute.value_list
-        first_value = value_list[0]
-        if isinstance(first_value, bool):
-            if len(value_list) == 1:
-                return BoolAttribute(value=value_list[0], **common_args)
-            else:
-                return BoolListAttribute(value=value_list, **common_args)
-         
+    def _attribute_to_attribute_payload_type(attribute:pyAttribute) -> AttributeItemsElementBase:
+        items = []
+        for value in attribute.value_list:
             
-        elif isinstance(first_value, datetime | date | time):
-            for v in value_list:
-                if not v.tzinfo:
-                    warnings.warn(f'No timezone given for {v}. Assuming it is in UTC.')
-                    v.replace(tzinfo=UTC)
-            if len(value_list) == 1:
-                return DateTimeAttribute(value=value_list[0], **common_args)
-            else:
-                return DateTimeListAttribute(value=value_list, **common_args)
-            # return DateTimeAttribute(value =_date_value_from_python_type(value).value, **common_args)
-            
-        
-        elif isinstance(first_value, Quantity|int|float):
-            values = []
-            for v in value_list:
-                if not isinstance(v, Quantity):
-                    v = Quantity(value=v, unit='dimensionless')
-                values.append(NumericValue(numerical_value=v.value_as_str(), 
-                                            unit = v.unit))
-            if len(values) == 1:
-                num_attr = NumericAttribute(value=values[0], **common_args)
-            else:
-                num_attr = NumericListAttribute(value=values, **common_args)
-            num_attr.print_validation_messages()
-            
-            return num_attr
-        
-        elif isinstance(first_value, str):
-            # capture quantities in the form of "100.0e5 g/L"
-            if Quantity.can_convert_to_quantity(first_value):
-                values = []
-                for v in value_list:
-                    q = Quantity.from_str_with_unit(v)
-                    values.append( NumericValue(numerical_value=q.value_as_str(), unit = q.unit) )
-                if len(values) == 1:
-                    return NumericAttribute(value=values[0], **common_args)
+            if isinstance(value, bool):
+                items.append(BoolAttributeItemsElement(value=value))
+             
+            elif isinstance(value, datetime | date | time):
+                if not value.tzinfo:
+                    warnings.warn(f'No timezone given for {value}. Assuming it is in UTC.')
+                    value.replace(tzinfo=UTC)
+                items.append(DateTimeAttributeItemsElement(value=value))
+                
+            elif isinstance(value, Quantity|int|float):
+                if not isinstance(value, Quantity):
+                    value = Quantity(value=value, unit='dimensionless')
+                v = f"{value.value_as_str()} {value.unit}"
+                items.append(NumericAttributeItemsElement(value=v))    
+                
+            elif isinstance(value, str):
+                # capture quantities in the form of "100.0e5 g/L"
+                if Quantity.can_convert_to_quantity(value):
+                    q = Quantity.from_str_with_unit(value)
+                    v = f"{q.value_as_str()} {q.unit}"
+                    items.append(NumericAttributeItemsElement(value=v))      
                 else:
-                    return NumericListAttribute(value=values, **common_args)
+                    items.append(TextAttributeItemsElement(value=value))
 
-            else:
-                if len(value_list) == 1:
-                    return TextAttribute(value=value_list[0], **common_args)
-                else:
-                    return TextListAttribute(value=value_list, **common_args)
+            elif isinstance(value, pyReference):
+                items.append(ReferenceAttributeItemsElement(value=value.root))
+
+            elif isinstance(value, pyResource):
+                items.append(ResourceAttributeItemsElement(value=value.root))
+                
+            elif isinstance(value, PAC_ID):
+                v = value.to_url(include_extensions=False)
+                items.append(ReferenceAttributeItemsElement(value=v))
+                
+            else: #this covers the last resort case of arbitrary objects. Must be json serializable.
+                try :
+                    v = json.loads(json.dumps(value))
+                    items.append(ObjectAttributeItemsElement(value=v))
+                except TypeError as e:  # noqa: F841
+                    raise ValueError(f'Invalid Type: {type(value)} cannot be converted to attribute. You may want to use ObjectAttribute, but would have to implement the conversion from your python type yourself.')
+        
+                    
+        if not all(type(e) is type(items[0]) for e in items):
+            logging.warning("Not all elements in items have the same type. This might cause unexpected behaviour in clients.")
+        
+        attr = Attribute(key=attribute.key,
+                         label= attribute.label,
+                         items=items)
+        return attr
             
-        elif isinstance(first_value, pyReference):
-            values = [v.root for v in value_list]
-            if len(values) == 1:
-                return ReferenceAttribute(value=values[0], **common_args)
-            else:
-                return ReferenceListAttribute(value=values, **common_args)
-        
-        elif isinstance(first_value, pyResource):
-            values = [v.root for v in value_list]
-            if len(values) == 1:
-                return ResourceAttribute(value=values[0], **common_args)
-            else:
-                return ResourceListAttribute(value=values, **common_args)
-            
-        elif isinstance(first_value, PAC_ID):
-            values = [v.to_url(include_extensions=False) for v in value_list]
-            if len(values) == 1:
-                return ReferenceAttribute(value=values[0], **common_args)
-            else:
-                return ReferenceListAttribute(value=values, **common_args)
-        
-        else: #this covers the last resort case of arbitrary objects. Must be json serializable.
-            try :
-                values = [json.loads(json.dumps(v)) for v in value_list]
-                if len(values) == 1:
-                    return ObjectAttribute(value=values[0], **common_args)
-                else:
-                    return ObjectListAttribute(value=values, **common_args)
-            except TypeError as e:  # noqa: F841
-                raise ValueError(f'Invalid Type: {type(first_value)} cannot be converted to attribute. You may want to use ObjectAttribute, but would have to implement the conversion from your python type yourself.')
-        
-        
+  
         
     @staticmethod
-    def from_payload_attributes(attributes:list[AttributeBase]) -> 'pyAttributes':
+    def from_payload_attributes(attributes:dict[str, Attribute]) -> 'pyAttributes':
         out = list()
-        for a in attributes:
-            value_list = a.value if isinstance(a.value, list) else [a.value]
-            match a:
-                case ReferenceAttribute() | ReferenceListAttribute():
-                    values =  [pyReference(v) for v in value_list]
-                    
-                case ResourceAttribute() | ResourceListAttribute():
-                    values =  [pyResource(v) for v in value_list]
-                    
-                case NumericAttribute() | NumericListAttribute():                                       
-                    values = [ Quantity.from_str_value(value=v.numerical_value, unit=v.unit) for v in value_list]
+        for a in attributes.values():
+            values = []
+            for v in a.items:
+                match v:
+                    case ReferenceAttributeItemsElement() :
+                        values.append(pyReference(v.value))
+                        
+                    case ResourceAttributeItemsElement() :
+                        values.append(pyResource(v.value))
+                        
+                    case NumericAttributeItemsElement() :                                       
+                        values.append(Quantity.from_str_value(value=v._numerical_value, unit=v._unit))
 
-                case BoolAttribute() | BoolListAttribute():
-                    values = value_list
+                    case BoolAttributeItemsElement() :
+                        values.append(v.value)
+                        
+                    case TextAttributeItemsElement() :
+                        values.append(v.value)
+                        
+                    case DateTimeAttributeItemsElement() :                    
+                        values.append(v.value)
                     
-                case TextAttribute() | TextListAttribute():
-                    values = value_list
-                    
-                case DateTimeAttribute() | DateTimeListAttribute():                    
-                    values = value_list
-                
-                case ObjectAttribute() | ObjectListAttribute():
-                    values = value_list
-
-                       
+                    case ObjectAttributeItemsElement() :
+                        values.append(v.value)
+   
             attr = pyAttribute(key=a.key, 
-                               label=a.label,
-                               value=values
+                            label=a.label,
+                            values=values
             )
             out.append(attr )
         return out

@@ -2,40 +2,47 @@
 from abc import ABC
 from datetime import  datetime
 import re
-from typing import Annotated, Any,  Literal, Union, get_args
+from typing import  Annotated, Any,  Literal, Union, get_args
 from urllib.parse import urlparse
 
 from labfreed.utilities.ensure_utc_time import ensure_utc
 from labfreed.labfreed_infrastructure import  LabFREED_BaseModel, ValidationMsgLevel, _quote_texts
-from pydantic import   Field, field_validator, model_validator
+from pydantic import   BaseModel, Field, field_validator, model_validator
 
 
-class AttributeBase(LabFREED_BaseModel, ABC):
-    key: str
+
+class AttributeItemsElementBase(LabFREED_BaseModel, ABC):
     value: Any
-    label: str = ""
-        
-    def __init__(self, **data):
-        # Automatically inject the Literal value for `type`
-        discriminator_value = self._get_discriminator_value()
-        data["type"] = discriminator_value
-        super().__init__(**data)       
+    type:str
     
-    @classmethod
-    def _get_discriminator_value(cls) -> str:
-        """Extract the Literal value from the 'type' annotation."""
-        try:
-            type_annotation = cls.__annotations__["type"]
-            literal_value = get_args(type_annotation)[0]
-            return literal_value
-        except Exception as e:
-            raise TypeError(
-                f"{cls.__name__} must define `type: Literal[<value>]` annotation"
-            ) from e
+    @model_validator(mode="after")
+    def _no_base_instances(self):
+        if type(self) is AttributeItemsElementBase:
+            raise TypeError("AttributeItemsElementBase must not be instantiated")
+        return self
         
+    # def __init__(self, **data):
+    #     # Automatically inject the Literal value for `type`
+    #     discriminator_value = self._get_discriminator_value()
+    #     data["type"] = discriminator_value
+    #     super().__init__(**data)       
     
-class DateTimeAttribute(AttributeBase):
-    type: Literal["datetime"] 
+    # @classmethod
+    # def _get_discriminator_value(cls) -> str:
+    #     """Extract the Literal value from the 'type' annotation."""
+    #     try:
+    #         type_annotation = cls.__annotations__["type"]
+    #         literal_value = get_args(type_annotation)[0]
+    #         return literal_value
+    #     except Exception as e:
+    #         raise TypeError(
+    #             f"{cls.__name__} must define `type: Literal[<value>]` annotation"
+    #         ) from e
+            
+
+    
+class DateTimeAttributeItemsElement(AttributeItemsElementBase):
+    type: Literal["datetime"] = "datetime"
     value: datetime
     
     @field_validator('value', mode='after')
@@ -45,53 +52,24 @@ class DateTimeAttribute(AttributeBase):
         else:
             return value
         
-class DateTimeListAttribute(AttributeBase):
-    type: Literal["datetime-list"] 
-    value: list[datetime]
-    
-    @field_validator('value', mode='after')
-    def set_utc__if_naive(cls, value):
-        value_out = []
-        for v in value:
-            if isinstance(v, datetime):
-                value_out.append(ensure_utc(v))
-            else:
-                raise ValueError(f'{v} is of type {type(v)}. It must be datetime')
-        return value_out
     
     
-    
-class BoolAttribute(AttributeBase):
-    type: Literal["bool"] 
+class BoolAttributeItemsElement(AttributeItemsElementBase):
+    type: Literal["bool"] = "bool"
     value: bool
     
-class BoolListAttribute(AttributeBase):
-    type: Literal["bool-list"] 
-    value: list[bool]
-
 
 
     
-class TextAttribute(AttributeBase):
-    type: Literal["text"] 
+class TextAttributeItemsElement(AttributeItemsElementBase):
+    type: Literal["text"] = "text"
     value: str
     
     @model_validator(mode='after')
     def _validate_value(self):
         _validate_text(self, self.value)
         return self
-    
-class TextListAttribute(AttributeBase):
-    type: Literal["text-list"] 
-    value: list[str]
-    
-    @model_validator(mode='after')
-    def _validate_value(self):
-        l = [self.value] if isinstance(self.value, str) else self.value
-        for v in l:
-            _validate_text(self, v)
-        return self
-    
+       
 
 def _validate_text(mdl:LabFREED_BaseModel, v):
     if len(v) > 5000: 
@@ -104,19 +82,14 @@ def _validate_text(mdl:LabFREED_BaseModel, v):
             
 
 
-class ReferenceAttribute(AttributeBase):
-    type: Literal["reference"]
+class ReferenceAttributeItemsElement(AttributeItemsElementBase):
+    type: Literal["reference"] = "reference"
     value: str 
     
-class ReferenceListAttribute(AttributeBase):
-    type: Literal["reference-list"]
-    value: list[str]
-    
-    
-        
+          
 
-class ResourceAttribute(AttributeBase):
-    type: Literal["resource"]
+class ResourceAttributeItemsElement(AttributeItemsElementBase):
+    type: Literal["resource"] = "resource"
     value: str 
     
     @model_validator(mode='after')
@@ -124,16 +97,6 @@ class ResourceAttribute(AttributeBase):
         _validate_resource(self, self.value)
         return self
 
-class ResourceListAttribute(AttributeBase):
-    type: Literal["resource-list"]
-    value: list[str]
-    
-    @model_validator(mode='after')
-    def _validate_value(self):
-        value_list = self.value if isinstance(self.value, list) else [self.value]
-        for v in value_list:
-            _validate_resource(self, v)
-        return self
     
 def _validate_resource(mdl:LabFREED_BaseModel, v):
     r = urlparse(v)
@@ -153,15 +116,23 @@ def _validate_resource(mdl:LabFREED_BaseModel, v):
             highlight_pattern = f'{v}'
         )
     
-        
-        
-class NumericValue(LabFREED_BaseModel):
-    numerical_value: str
-    unit: str
+
+class NumericAttributeItemsElement(AttributeItemsElementBase):
+    type: Literal["numeric"] = "numeric"
+    value: str 
+    _numerical_value:str
+    _unit:str
     
     @model_validator(mode='after')
+    def _validate_model(self):
+        self._numerical_value, self._unit = self.value.split(' ', 1)
+        self._validate_value()
+        self._validate_unit()
+        return self
+
+    
     def _validate_value(self):
-        value = self.numerical_value
+        value = self._numerical_value
         if not_allowed_chars := set(re.sub(r'[0-9\.\-\+Ee]', '', value)):
             self._add_validation_message(
                 source="Numeric Attribute",
@@ -177,81 +148,76 @@ class NumericValue(LabFREED_BaseModel):
                 msg=f"{value} cannot be converted to number",
                 highlight_pattern = f'{value}'               
             )
-        return self
     
-    @model_validator(mode="after")
-    def _validate_units(self):
+    def _validate_unit(self):
         '''A sanity check on unit complying with UCUM. NOTE: It is not a complete validation
         - I check for blankspaces and ^, which are often used for units, but are invalid.
         - the general structure of a ucum unit is validated, but 1)parentheses are not matched 2) units are not validated 3)prefixes are not checked
         '''
-        if ' ' in self.unit or '^' in self.unit:
+        if ' ' in self._unit or '^' in self._unit:
             self._add_validation_message(
                     source="Numeric Attribute",
                     level= ValidationMsgLevel.ERROR,
-                    msg=f"Unit {self.unit} is invalid. Must not contain blankspace  or '^'.",
-                    highlight_pattern = self.unit
+                    msg=f"Unit {self._unit} is invalid. Must not contain blankspace  or '^'.",
+                    highlight_pattern = self._unit
             )
-        elif not re.fullmatch(r"^(((?P<unit>[\w\[\]]+?)(?P<exponent>\-?\d+)?|(?P<annotation>)\{\w+?\})(?P<operator>[\./]?)?)+", self.unit):
+        elif not re.fullmatch(r"^(((?P<unit>[\w\[\]]+?)(?P<exponent>\-?\d+)?|(?P<annotation>)\{\w+?\})(?P<operator>[\./]?)?)+", self._unit):
             self._add_validation_message(
                     source="Numeric Attribute",
                     level= ValidationMsgLevel.WARNING,
-                    msg=f"Unit {self.unit} is probably invalid. Ensure it complies with UCUM specifications.",
-                    highlight_pattern = self.unit
+                    msg=f"Unit {self._unit} is probably invalid. Ensure it complies with UCUM specifications.",
+                    highlight_pattern = self._unit
             )
-        return self
-    
-    
-
-
-class NumericAttribute(AttributeBase):
-    type: Literal["numeric"] 
-    value: NumericValue 
-    
-class NumericListAttribute(AttributeBase):
-    type: Literal["numeric-list"] 
-    value: list[NumericValue]
     
     
     
-class ObjectAttribute(AttributeBase):
-    type: Literal["object"] 
+class ObjectAttributeItemsElement(AttributeItemsElementBase):
+    type: Literal["object"] = "object"
     value: dict[str, Any]
     
     
-class ObjectListAttribute(AttributeBase):
-    type: Literal["object-list"] 
-    value: list[dict[str, Any]]
-           
-
-     
-     
-Attribute = Annotated[
+AttributeItemsElement = Annotated[
     Union[
-        ReferenceAttribute,
-        DateTimeAttribute,
-        BoolAttribute,
-        TextAttribute,
-        NumericAttribute,
-        ResourceAttribute,
-        ObjectAttribute,
-        
-        ReferenceListAttribute,
-        DateTimeListAttribute,
-        BoolListAttribute,
-        TextListAttribute,
-        NumericListAttribute,
-        ResourceListAttribute,
-        ObjectListAttribute
+        DateTimeAttributeItemsElement,
+        BoolAttributeItemsElement,
+        TextAttributeItemsElement,
+        NumericAttributeItemsElement,
+        ReferenceAttributeItemsElement,
+        ResourceAttributeItemsElement,
+        ObjectAttributeItemsElement
     ],
-    Field(discriminator="type")
+    Field(discriminator="type"),
 ]
+    
 
+           
+class Attribute(LabFREED_BaseModel):
+    key: str|None = Field(exclude=True)
+    label: str = ""
+    items: list[AttributeItemsElement]
+    
+     
 
 class AttributeGroup(LabFREED_BaseModel):
-    key: str
-    label: str = ""
-    attributes: list[Attribute]
+    group_key: str
+    group_label: str = ""
+    attributes: dict[str, Attribute]
+    
+    @field_validator("attributes", mode="before")
+    @classmethod
+    def set_attribute_keys(cls, v):
+        if not isinstance(v, dict):
+            return v
+
+        out = {}
+        for k, a in v.items():
+            if isinstance(a, dict):
+                # raw input dict -> inject key if missing
+                out[k] = {**a, "key": a.get("key") or k}
+            else:
+                # already an Attribute (or something pydantic can parse)
+                out[k] = a
+        return out
        
 
 
@@ -260,14 +226,21 @@ class AttributesOfPACID(LabFREED_BaseModel):
     attribute_groups: list[AttributeGroup]
     
     
+    
+IMPORT_URL = "https://vocab.labfreed.org/attributes/v1.jsonld"
+class JsonLdContext(BaseModel):
+    import_: str = Field(alias='@import', default=IMPORT_URL)
 
 class AttributeResponsePayload(LabFREED_BaseModel):
     schema_version: str = Field(default='1.0')
     language:str 
-    pac_attributes: list[AttributesOfPACID]      
+    data: list[AttributesOfPACID]    
+    
+    context: JsonLdContext = Field(alias='@context', default=JsonLdContext())
+      
     
     def to_json(self):
-        return self.model_dump_json(exclude_none=True)
+        return self.model_dump_json(exclude_none=True, by_alias=True)
     
     
 

@@ -4,9 +4,11 @@
 
 from datetime import datetime
 import json
+from labfreed.pac_attributes.client.attribute_cache import MemoryAttributeCache
 from labfreed.pac_attributes.client.client import AttributeClient
+from labfreed.pac_attributes.pythonic.attribute_server_factory import AttributeServerFactory
 from labfreed.pac_attributes.pythonic.py_attributes import pyAttribute, pyAttributes, pyReference
-from labfreed.pac_attributes.server.attribute_data_sources import Dict_DataSource, PACAnalyzerAttributeDataSource, RandomAttributeGroupDataSource
+from labfreed.pac_attributes.server.attribute_data_sources import Dict_DataSource
 from labfreed.pac_attributes.server.server import AttributeServerRequestHandler
 from labfreed.pac_attributes.server.translation_data_sources import DictTranslationDataSource
 from labfreed.pac_id.pac_id import PAC_ID
@@ -14,15 +16,15 @@ from labfreed.trex.pythonic.quantity import Quantity
 
 
 
-def in_memory_callback(url: str, attribute_request_body: str) -> tuple[int, str]:
-    try:
-        resp = request_handler.handle_attribute_request(attribute_request_body)
-        return 200, resp
-    except Exception as e:
-        return 500, str(e)
+# def in_memory_callback(url: str, attribute_request_body: str) -> tuple[int, str]:
+#     try:
+#         resp = request_handler.handle_attribute_request(attribute_request_body)
+#         return 200, resp
+#     except Exception as e:
+#         return 500, str(e)
 
 
-attribute_client = AttributeClient(http_post_callback=in_memory_callback, cache_store=MemoryAttributeCache())
+# attribute_client = AttributeClient(http_post_callback=in_memory_callback, cache_store=MemoryAttributeCache())
 
 
 
@@ -48,10 +50,10 @@ data_source = Dict_DataSource(attribute_group_key='ProductionData',
                                 }
                 )
 
-data_source2 = RandomAttributeGroupDataSource(attribute_group_key="Random", attribute_keys=["Foo", "Bar", "Deadmeat", "Abc"])
+# data_source2 = RandomAttributeGroupDataSource(attribute_group_key="Random", attribute_keys=["Foo", "Bar", "Deadmeat", "Abc"])
 
 
-data_source3 = PACAnalyzerAttributeDataSource(attribute_group_key="PACAnalyzer")
+# data_source3 = PACAnalyzerAttributeDataSource(attribute_group_key="PACAnalyzer")
 
 
 translation_data_source = DictTranslationDataSource(data=
@@ -78,6 +80,7 @@ def local_no_network_callback(url:str, attribute_request_body=str, params:dict=N
     return test_handler.handle_attribute_request(attribute_request_body)
 
 client = AttributeClient(http_post_callback=local_no_network_callback)
+
 
 pac_id = PAC_ID.from_url("HTTPS://PAC.METTORIUS.COM/-MD/BAL500/12340")
 pac_id2 = PAC_ID.from_url("HTTPS://PAC.METTORIUS.COM/-MD/BAL500/12341*ABC$TREX/A$T.A:BLUBB")

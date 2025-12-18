@@ -33,7 +33,7 @@ class AttributeServerError(Exception):
 
 @runtime_checkable
 class AttributeRequestCallback(Protocol):
-    def __call__(self, url: str, attribute_request_body: str) -> tuple[int, str]:
+    def __call__(self, url: str, attribute_request_data: AttributeRequestData) -> tuple[int, str]:
         '''handle the request
         returns a tuple of HTTP status code and the body of the response or an error message'''
         ...
@@ -54,13 +54,10 @@ def http_attribute_request_default_callback_factory(session: requests.Session = 
     def callback(url: str, attribute_request_data: AttributeRequestData) -> tuple[int, str]:
         try:
             url = url + '/' + quote(attribute_request_data.pac_id)
-            params = {
-                       "restrict_to_attribute_groups": attribute_request_data.restrict_to_attribute_groups, 
-                      "suppress_forward_lookup": attribute_request_data.suppress_forward_lookup
-                      } #session.get does url encode parameters automatically           
+            params = attribute_request_data.request_params()           
             resp = session.get(url, 
                                params = params,
-                               headers=attribute_request_data.language_preference_http_header,
+                               headers=attribute_request_data.language_preference_http_header(),
                                timeout=10)
             return resp.status_code, resp.text
         except requests.exceptions.RequestException as e:
@@ -136,16 +133,19 @@ class AttributeClient():
                 return attribute_groups
         
         # no valid data found in cache > request to server
-        attribute_request_body = AttributeRequestData(pac_id=[pac_id.to_url()], 
-                                                            restrict_to_attribute_groups=restrict_to_attribute_groups,
-                                                            language_preferences=language_preferences
+        attribute_request_body = AttributeRequestData(pac_id=pac_id.to_url(), 
+                                                        restrict_to_attribute_groups=restrict_to_attribute_groups,
+                                                        language_preferences=language_preferences
                                 )
-        response_code, response_body_str = self.http_post_callback(server_url, attribute_request_body.model_dump_json())
+        response_code, response_body_str = self.http_post_callback(server_url, attribute_request_body)
 
         if response_code == 400:
             raise AttributeClientInternalError(f"The server did not accept the request. Server message: '{response_body_str}'")
         if response_code == 401:
             raise AuthenticationError(f"Failed to authorize at the server. Server message: {response_body_str}")
+        if response_code == 404:
+            print(f'No atributes found for {pac_id.to_url()}')
+            return []
         if response_code == 500:
             raise AttributeServerError(f"The server accepted the request, but encountered an internal error. Contact the server admin. Server message: {response_body_str}")
         try: 
@@ -157,15 +157,15 @@ class AttributeClient():
         
         # update cache
         attribute_groups_out = []
-        for ag_for_pac in r.pac_attributes:
+        for ag_for_pac in r.data:
             pac_from_response = PAC_ID.from_url(ag_for_pac.pac_id)
             ags = [
                 CacheableAttributeGroup(
-                    key= ag.key, 
+                    group_key= ag.group_key, 
                     attributes=ag.attributes, 
                     origin=server_url, 
                     language=r.language, 
-                    label=ag.label,
+                    group_label=ag.group_label,
                     value_from=datetime.now(tz=UTC)) 
                 for ag in ag_for_pac.attribute_groups
                 ]

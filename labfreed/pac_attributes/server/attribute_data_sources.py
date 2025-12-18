@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod, abstractproperty
 from datetime import datetime, timezone
-from labfreed.pac_attributes.api_data_models.response import AttributeBase, AttributeGroup
+from labfreed.pac_attributes.api_data_models.response import Attribute, AttributeItemsElementBase, AttributeGroup
 from labfreed.pac_cat.pac_cat import PAC_CAT
 from labfreed.pac_id.pac_id import PAC_ID
 
@@ -31,8 +31,8 @@ class AttributeGroupDataSource(ABC):
     
 
 class Dict_DataSource(AttributeGroupDataSource):
-    def __init__(self, data:dict[str, list[AttributeBase]], uses_pac_cat_short_form=True, pac_to_key: callable = None, *args, **kwargs):
-        if not all([isinstance(e, list) for e in data.values()]):
+    def __init__(self, data:dict[str, dict[str, Attribute]], uses_pac_cat_short_form=True, pac_to_key: callable = None, *args, **kwargs):
+        if not all([isinstance(e, dict) for e in data.values()]):
             raise ValueError('Invalid data')
         
         self._data = data
@@ -44,7 +44,7 @@ class Dict_DataSource(AttributeGroupDataSource):
     
     @property
     def provides_attributes(self):
-        return list(set([a.key for attributes in self._data.values() for a in attributes]))
+        return list(set([a.key for attributes in self._data.values() for a in attributes.values()]))
     
            
     def attributes(self, pac_url: str) -> AttributeGroup:
@@ -63,7 +63,7 @@ class Dict_DataSource(AttributeGroupDataSource):
             else:
                 return None  
         
-        return AttributeGroup(key=self._attribute_group_key, 
+        return AttributeGroup(group_key=self._attribute_group_key, 
                               attributes=attributes)
         
         

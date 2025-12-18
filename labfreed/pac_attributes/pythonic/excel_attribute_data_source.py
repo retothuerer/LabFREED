@@ -120,7 +120,7 @@ class _BaseExcelAttributeDataSource(AttributeGroupDataSource):
             return None
         attributes = [pyAttribute(key= self._header_mappings.get(k, k), value=v) for k, v in d.items() if v is not None]
         return AttributeGroup(
-            key=self._attribute_group_key,
+            group_key=self._attribute_group_key,
             attributes=pyAttributes(attributes).to_payload_attributes()
         )
 

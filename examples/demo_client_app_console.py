@@ -1,4 +1,3 @@
-from pathlib import Path
 import requests
 import rich
 
@@ -9,11 +8,11 @@ from labfreed.pac_id.pac_id import PAC_ID
 
  
             
-demo_cit ='''
+demo_resolver_config ='''
 origin: DEMO
 
-cit:
-- if: $.categories[?(@.key == "-MD")]
+config:
+- if: "True"
   entries:
   - service_type: attributes-generic
     service_name: Demo Attributes
@@ -28,10 +27,11 @@ if __name__ == "__main__":
     app = Labfreed_App_Infrastructure(language_preferences='en', http_client=http_client)
     
     # read resolver_config from file
-    with open('resolver_config_demo.yaml') as f:
-        demo_resolver_config_file = f.read()
+    # with open('resolver_config_demo.yaml') as f:
+    #     demo_resolver_config_file = f.read()
+    #app.add_resolver_config(demo_resolver_config_file)
     
-    app.add_resolver_config(demo_resolver_config_file)
+    app.add_resolver_config(demo_resolver_config)
     
     state = 'request-pac-input'
     

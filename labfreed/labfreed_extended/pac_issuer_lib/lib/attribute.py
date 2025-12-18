@@ -75,7 +75,7 @@ class DynamicDemoAttributeGroup(AttributeGroupDataSource):
             return None
         
         attributes = pyAttributes( [pyAttribute(key=d[0], value=d[1]) for d in self._data] ).to_payload_attributes()
-        return AttributeGroup(key=self._attribute_group_key, 
+        return AttributeGroup(group_key=self._attribute_group_key, 
                               attributes=attributes)
         
         

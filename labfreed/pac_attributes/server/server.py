@@ -6,7 +6,7 @@ import warnings
 import rich
 
 from labfreed.pac_attributes.api_data_models.request import AttributeRequestData
-from labfreed.pac_attributes.api_data_models.response import AttributeResponsePayload, AttributesOfPACID, ReferenceAttribute
+from labfreed.pac_attributes.api_data_models.response import AttributeResponsePayload, AttributesOfPACID, ReferenceAttributeItemsElement
 from labfreed.pac_attributes.api_data_models.server_capabilities_response import ServerCapabilities
 from labfreed.pac_attributes.server.attribute_data_sources import AttributeGroupDataSource
 from labfreed.pac_attributes.server.translation_data_sources import TranslationDataSource
@@ -59,21 +59,21 @@ class AttributeServerRequestHandler():
         if not isinstance(request_data, AttributeRequestData):
             raise ValueError('request_data most be of AttributeRequestData')
         try:
-            r = AttributeRequestData.model_validate_json(request_data)
-        except Exception:
+            r = AttributeRequestData.model_validate(request_data)
+        except Exception as e:
+            print(e)
             raise InvalidRequestError
         attributes_for_pac_id = []
         referenced_pac_ids = set()
-        for pac_url in r.pac_id:
-            attributes_for_pac = self._get_attributes_for_pac_id(pac_url=pac_url, 
-                                                                restrict_to_attribute_groups = r.restrict_to_attribute_groups)
-            attributes_for_pac_id.append(attributes_for_pac)
-            ref = self._get_referenced_pac_ids(attributes_for_pac)
-            if ref:
-                referenced_pac_ids.update(ref)
+        attributes_for_pac = self._get_attributes_for_pac_id(pac_url=r.pac_id, 
+                                                            restrict_to_attribute_groups = r.restrict_to_attribute_groups)
+        attributes_for_pac_id.append(attributes_for_pac)
+        ref = self._get_referenced_pac_ids(attributes_for_pac)
+        if ref:
+            referenced_pac_ids.update(ref)
             
         # also find attributes of referenced pac-ids 
-        if not r.suppress_forward_lookup:
+        if r.do_forward_lookup:
             for pac_url in referenced_pac_ids:
                 attributes_for_pac = self._get_attributes_for_pac_id(pac_url=pac_url, 
                                                                     restrict_to_attribute_groups = r.restrict_to_attribute_groups)
@@ -84,7 +84,7 @@ class AttributeServerRequestHandler():
         for e in attributes_for_pac_id:
             self._add_display_names(e, response_language)
             
-        response = AttributeResponsePayload(pac_attributes=attributes_for_pac_id, language=response_language
+        response = AttributeResponsePayload(data=attributes_for_pac_id, language=response_language
                     ).to_json()
         return response
     
@@ -115,13 +115,14 @@ class AttributeServerRequestHandler():
     def _get_referenced_pac_ids(self, attributes_for_pac:AttributesOfPACID):
         referenced_pacs = []
         for ag in attributes_for_pac.attribute_groups:
-            for a in ag.attributes :
-                if isinstance(a, ReferenceAttribute):
-                    try:
-                        PAC_ID.from_url(a.value)
-                        referenced_pacs.append(a.value)
-                    except Exception:
-                        pass
+            for a in ag.attributes.values() :
+                for e in a.items:
+                    if isinstance(e, ReferenceAttributeItemsElement):
+                        try:
+                            PAC_ID.from_url(e.value)
+                            referenced_pacs.append(e.value)
+                        except Exception:
+                            pass
         return referenced_pacs
             
     
@@ -133,12 +134,12 @@ class AttributeServerRequestHandler():
         this function should never get into the situation not to find translations.
         '''
         for ag in attributes_of_pac.attribute_groups:
-            if dn := self._get_display_name_for_key(ag.key, language):
-                ag.label = dn
+            if dn := self._get_display_name_for_key(ag.group_key, language):
+                ag.group_label = dn
             else:
-                ag.label = self.fallback_label(ag.key)
-                rich.print(f"[yellow]WARNING:[/yellow] No translation for '{ag.key}' in '{language}'. Falling back to '{ag.label}'")
-            for a in ag.attributes:
+                ag.group_label = self.fallback_label(ag.group_key)
+                rich.print(f"[yellow]WARNING:[/yellow] No translation for '{ag.group_key}' in '{language}'. Falling back to '{ag.group_label}'")
+            for a in ag.attributes.values():
                 if dn := self._get_display_name_for_key(a.key, language):
                     a.label = dn
                 else:

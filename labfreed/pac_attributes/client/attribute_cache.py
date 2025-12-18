@@ -52,7 +52,7 @@ class MemoryAttributeCache(AttributeCache):
     
     def get_attribute_groups(self, service_url:str, pac:PAC_ID, attribute_groups:list[str]):
         all_ags = self.get_all(service_url=service_url, pac=pac)
-        selected_ags = [ag for ag in all_ags if ag.key in attribute_groups]
+        selected_ags = [ag for ag in all_ags if ag.group_key in attribute_groups]
         return selected_ags
         
     def update(self, service_url:str, pac:PAC_ID, attribute_groups: list[CacheableAttributeGroup] ):

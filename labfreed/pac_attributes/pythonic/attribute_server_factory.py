@@ -74,8 +74,10 @@ class AttributeFlaskApp(Flask):
         bp = Blueprint("attribute", __name__)
 
 
-        @bp.get("/<pac_id_url_encoded>", strict_slashes=False)
-        def handle_attribute_request(pac_id):
+        @bp.get("/<path:pac_id_url_encoded>", strict_slashes=False)
+        def handle_attribute_request(pac_id_url_encoded):
+            if pac_id_url_encoded in ['favicon.ico']:
+                return ''
             
             if authenticator and not authenticator(request):
                 return Response(
@@ -83,10 +85,9 @@ class AttributeFlaskApp(Flask):
                     {"WWW-Authenticate": 'Basic realm="Login required"'}
                 )
             try:
-                request_data = AttributeRequestData(pac_id = pac_id,
-                                                    include_attribute_groups = request.args.getlist("restrict_to_attribute_groups"), 
-                                                    suppress_forward_lookup = request.args.get("suppress_forward_lookup"),
-                                                    language_preferences = request.accept_languages)
+                request_data = AttributeRequestData.from_http_request(pac_id = pac_id_url_encoded,
+                                                                      params = request.args,
+                                                                     headers = request.headers)
                 response_body = request_handler.handle_attribute_request(request_data)
             except InvalidRequestError as e:
                 print(e)
@@ -113,8 +114,8 @@ class AttributeFlaskApp(Flask):
             doc_text = current_app.config.get('DOC_TEXT', "") 
             capabilities = request_handler.capabilities()
             authentication_required = bool(current_app.config.get('AUTHENTICATOR'))
-            example_request = AttributeRequestData(pac_id=['HTTPS://PAC.METTORIUS.COM/EXAMPLE'], language_preferences=['fr', 'de']).model_dump_json(indent=2, exclude_none=True, exclude_unset=True)
-            server_address = request.url.rstrip('/')
+            example_request = AttributeRequestData(pac_id='HTTPS://PAC.METTORIUS.COM/EXAMPLE', language_preferences=['fr', 'de']).model_dump_json(indent=2, exclude_none=True, exclude_unset=True)
+            server_address = request.url.replace('/capabilities','').rstrip('/')
             css_url = url_for("static", filename="style.css")
             response = f'''
                 <html>
@@ -132,12 +133,17 @@ class AttributeFlaskApp(Flask):
                         
 
                         <h2>How to use</h2>
-                        Make a <b>POST</b> request to <a href="{server_address}">{server_address}</a> with the following body:
-                        <pre>{example_request}</pre>
+                        Make a <b>GET</b> request to <a href="{server_address}">{server_address}/<url encoded PAC-ID> </a> 
+                        <br><br>
+                        Query parameters (optional):<br>
+                          attr_grps (optional): An comma separated list of attribute group keys. MUST be url-encoded.  <br>
+                          attr_fwd_lkp (optional): Boolean flag ('true' or 'false'). Instructs the server to not include attributes of PAC-IDs which are attributes of type reference of the requested PAC-ID. Defaults to true <br>
+                        
+                        <br>
                         Consult <a href="https://github.com/ApiniLabs/PAC-Attributes"> the specification </a> for details. <br>
 
                         
-                        {'This server <b> requires authentication </b> ' if authentication_required else ''}  
+                        {'<h2> Authentication </h2> This server <b> requires authentication </b> ' if authentication_required else ''}  
                         <br>
                         
                         {"<h2>Further Information</h2>"if doc_text else ""} 

@@ -157,7 +157,7 @@ class DynamicDemoAttributeGroup(AttributeGroupDataSource):
                 ]
             ).to_payload_attributes()
             
-        return AttributeGroup(key=self._attribute_group_key, 
+        return AttributeGroup(group_key=self._attribute_group_key, 
                               attributes=attributes)
 
 
