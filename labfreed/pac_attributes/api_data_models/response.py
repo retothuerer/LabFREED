@@ -228,15 +228,13 @@ class AttributesOfPACID(LabFREED_BaseModel):
     
     
 IMPORT_URL = "https://vocab.labfreed.org/attributes/v1.jsonld"
-class JsonLdContext(BaseModel):
-    import_: str = Field(alias='@import', default=IMPORT_URL)
 
 class AttributeResponsePayload(LabFREED_BaseModel):
     schema_version: str = Field(default='1.0')
     language:str 
     data: list[AttributesOfPACID]    
     
-    context: JsonLdContext = Field(alias='@context', default=JsonLdContext())
+    context: str = Field(alias='@context', default=IMPORT_URL)
       
     
     def to_json(self):
