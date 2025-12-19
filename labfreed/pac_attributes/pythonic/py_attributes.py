@@ -5,6 +5,7 @@ import logging
 from typing import  Literal
 from enum import Enum
 import warnings
+from deprecated import deprecated
 from pydantic import RootModel, field_validator, model_validator
 
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel
@@ -43,6 +44,11 @@ class pyAttribute(LabFREED_BaseModel):
     def value_list(self):    
         '''helper function to more conveniently iterate over value elements, even if it's scalar'''   
         return self.values if isinstance(self.values, list) else [self.values]
+    
+    @property
+    @deprecated
+    def value(self):
+        return self.values
     
     @model_validator(mode='before')
     def value_to_values(cls, d:dict):
