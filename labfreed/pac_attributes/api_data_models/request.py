@@ -33,8 +33,12 @@ class AttributeRequestData(LabFREED_BaseModel):
         if restrict_to_attribute_groups:
             restrict_to_attribute_groups = restrict_to_attribute_groups.split(',')
             
-        fwd_lkp = params.get(ATTR_GROUPS_FWD_LKP,'true')
-        do_forward_lookup = fwd_lkp.lower() not in ['false', 'no', '0', 'n', 'off']
+        fwd_lkp = params.get(ATTR_GROUPS_FWD_LKP, True)
+        if fwd_lkp is True:
+            do_forward_lookup = True
+        else:
+            do_fwd_lookup =  fwd_lkp.lower() not in ['false', 'no', '0', 'n', 'off']
+
         lang_hdr = headers.get('Accept-Language')
         language_preferences: LanguageAccept = parse_accept_header(lang_hdr, LanguageAccept)
         out = cls(pac_id=pac_id, 
@@ -91,7 +95,7 @@ class AttributeRequestData(LabFREED_BaseModel):
     def language_preference_http_header(self) -> dict[str, str]:
         if not self.language_preferences:
             return {}
-        headers={'Accept-Language':  LanguageAccept(lq).to_header()}
+        headers={'Accept-Language':  LanguageAccept(self.language_preferences).to_header()}
         return headers
     
     def request_params(self) -> dict[str, Any]:
