@@ -91,7 +91,7 @@ class pyAttributes(RootModel[list[pyAttribute]]):
                 items.append(BoolAttributeItemsElement(value=value))
              
             elif isinstance(value, datetime | date | time):
-                if not value.tzinfo:
+                if getattr(value, 'tzinfo', None) and not value.tzinfo:
                     warnings.warn(f'No timezone given for {value}. Assuming it is in UTC.')
                     value.replace(tzinfo=UTC)
                 items.append(DateTimeAttributeItemsElement(value=value))
