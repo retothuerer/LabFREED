@@ -4,7 +4,7 @@ import logging
 from typing import Any, Protocol
 from urllib.parse import unquote, unquote_plus
 
-from flask import Blueprint, current_app, redirect, url_for
+from flask import Blueprint, current_app, redirect, url_for, send_from_directory
 from labfreed.pac_attributes.api_data_models.request import AttributeRequestData
 from labfreed.pac_attributes.server.server import AttributeGroupDataSource, AttributeServerRequestHandler, InvalidRequestError, TranslationDataSource
 
@@ -76,8 +76,6 @@ class AttributeFlaskApp(Flask):
 
         @bp.get("/<path:pac_id_url_encoded>", strict_slashes=False)
         def handle_attribute_request(pac_id_url_encoded):
-            if pac_id_url_encoded in ['favicon.ico']:
-                return ''
             
             if authenticator and not authenticator(request):
                 return Response(
@@ -155,6 +153,10 @@ class AttributeFlaskApp(Flask):
     '''
         
             return response
+        
+        @bp.get("/favicon.<ext>", strict_slashes=False)
+        def favicon(ext):
+            return send_from_directory("static", f"favicon.{ext}")
 
         return bp
     
