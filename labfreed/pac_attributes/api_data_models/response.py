@@ -1,6 +1,6 @@
 
 from abc import ABC
-from datetime import  datetime
+from datetime import  datetime, date
 import re
 from typing import  Annotated, Any,  Literal, Union, get_args
 from urllib.parse import urlparse
@@ -43,7 +43,7 @@ class AttributeItemsElementBase(LabFREED_BaseModel, ABC):
     
 class DateTimeAttributeItemsElement(AttributeItemsElementBase):
     type: Literal["datetime"] = "datetime"
-    value: datetime
+    value: date | datetime
     
     @field_validator('value', mode='after')
     def set_utc__if_naive(cls, value):
