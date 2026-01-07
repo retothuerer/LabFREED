@@ -84,7 +84,7 @@ class AttributeRequestData(LabFREED_BaseModel):
             self._add_validation_message(
                     source="pac_id",
                     level = ValidationMsgLevel.ERROR,
-                    msg='{self.pac_id} is not a valid PAC-ID'
+                    msg=f'{self.pac_id} is not a valid PAC-ID'
                 )
                 
         if not self.is_valid:
