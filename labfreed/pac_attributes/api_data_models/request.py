@@ -1,3 +1,4 @@
+import re
 from typing import   Any, Self
 from urllib.parse import unquote
 from werkzeug.datastructures import LanguageAccept
@@ -27,6 +28,9 @@ class AttributeRequestData(LabFREED_BaseModel):
     
     @classmethod
     def from_http_request(cls, pac_id:str, params:dict, headers:dict):
+        # Azure seems to meddle with double slashes in a path, even if url encoded. This is to rectify this behaviour and add back a second slash if necessary
+        pac_id = re.sub('HTTPS:/{1,2}', 'HTTPS://', pac_id, re.IGNORECASE)
+        
         restrict_to_attribute_groups = params.get(ATTR_GROUPS)
         if restrict_to_attribute_groups == '':
             restrict_to_attribute_groups = None
