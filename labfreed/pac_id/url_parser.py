@@ -82,7 +82,7 @@ class PAC_Parser():
     @classmethod
     def _parse_pac_id(cls,id_str:str) -> "PAC_ID":
         # m = re.match('(HTTPS://)?(PAC.)?(?P<issuer>.+?\..+?)/(?P<identifier>.*)', id_str)
-        m = re.match('(HTTPS://)?(PAC.)?(?P<issuer>.+?)/(?P<identifier>.*)', id_str, re.IGNORECASE)
+        m = re.match('(HTTPS://)?(PAC\.)?(?P<issuer>.+?)/(?P<identifier>.*)', id_str, re.IGNORECASE)
         if not m:
             raise LabFREED_ValidationError(f'{id_str} does not match the pattern expected for PAC-ID')
         d = m.groupdict()
