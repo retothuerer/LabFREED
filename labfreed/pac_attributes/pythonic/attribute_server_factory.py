@@ -1,10 +1,11 @@
 from enum import Enum
+from functools import wraps
 import json
 import logging
 from typing import Any, Protocol
 from urllib.parse import unquote, unquote_plus
 
-from flask import Blueprint, current_app, redirect, url_for, send_from_directory
+from flask import Blueprint, current_app, make_response, redirect, url_for, send_from_directory
 from labfreed.pac_attributes.api_data_models.request import AttributeRequestData
 from labfreed.pac_attributes.server.server import AttributeGroupDataSource, AttributeServerRequestHandler, InvalidRequestError, TranslationDataSource
 
@@ -75,6 +76,7 @@ class AttributeFlaskApp(Flask):
 
 
         @bp.get("/<path:pac_id_url_encoded>", strict_slashes=False)
+        @cors_attributes
         def handle_attribute_request(pac_id_url_encoded):
             
             if authenticator and not authenticator(request):
@@ -159,6 +161,26 @@ class AttributeFlaskApp(Flask):
             return send_from_directory("static", f"favicon.{ext}")
 
         return bp
+    
+    
+def cors_attributes(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        # Preflight
+        if request.method == "OPTIONS":
+            response = make_response()
+            response.headers["Access-Control-Allow-Origin"] = "*"
+            response.headers["Access-Control-Allow-Methods"] = "GET, OPTIONS"
+            response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+            response.headers["Access-Control-Max-Age"] = "86400"
+            return response
+
+        # Actual request
+        response = make_response(fn(*args, **kwargs))
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        return response
+
+    return wrapper
     
     
 
