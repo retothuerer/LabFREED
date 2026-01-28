@@ -4,6 +4,7 @@ from typing import Self
 from pydantic import Field, field_validator, model_validator
 import yaml
 import jsonpath_ng.ext as jsonpath
+from urllib.parse import quote as url_encode
 
 
 from labfreed.pac_id_resolver.services import Service, ServiceGroup
@@ -301,6 +302,7 @@ class ResolverConfig(LabFREED_BaseModel):
             res = self._evaluate_jsonpath(pac_id_json, expanded_placeholder) or ['']
             url:str = url.replace(f'{{{placeholder}}}', str(res[0]))
             url = url.strip()
+            url = url_encode(url)
             # res = self.substitute_jsonpath_expressions(expanded_placeholder, Patterns.jsonpath.value, as_bool=False)
             # url = url.replace(f'{{{placeholder}}}', res)
         return url
