@@ -13,7 +13,6 @@ from labfreed.labfreed_extended.pac_issuer_lib.lib.utils import add_ga_params, a
 from pydantic import BaseModel, Field
 
 from flask import Blueprint, Flask, Response, current_app, flash, make_response, render_template, request, send_from_directory, session, url_for
-from flask_cors import CORS
 
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -109,19 +108,12 @@ class IssuerFlaskAppFactory():
                                     use_issuer_resolver_config = use_issuer_resolver_config)
         app.register_blueprint(bp)
         
-        CORS(
-            app,
-            resources={
-                r"/resolver_config(\.ya?ml)?": {
-                    "origins": ["*"],
-                    "methods": ["GET"],
-                },
-                r"/attributes/.*": {
-                    "origins": ["*"],
-                    "methods": ["GET"]
-                },
-            },
-        )
+        endpoints_to_cors = [
+            r"/attributes/.*$",  
+            r"/resolver_config(\.ya?ml)?$",  
+        ]
+
+        add_cors_to_paths(app, endpoints_to_cors, origins="*", methods="GET")
         return app
     
     
@@ -514,6 +506,56 @@ def attribute_data_from_module(module, default_language):
                                    translation_data_sources=tds)
     
     return attribute_data
+
+
+
+
+def cors_headers(origins="*", methods="GET"):
+    """Decorator to add CORS headers to a Flask route response."""
+    def decorator(f):
+        @wraps(f)
+        def wrapped(*args, **kwargs):
+            resp = f(*args, **kwargs)
+            
+            # Ensure we have a Response object
+            if not isinstance(resp, Response):
+                # Convert tuples/dicts/str to Response
+                from flask import make_response
+                resp = make_response(resp)
+            
+            resp.headers["Access-Control-Allow-Origin"] = origins
+            resp.headers["Access-Control-Allow-Methods"] = methods
+
+            # Optional: allow preflight requests
+            if request.method == "OPTIONS":
+                resp.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+                resp.status_code = 200
+
+            return resp
+        return wrapped
+    return decorator
+
+def add_cors_to_paths(app, path_patterns, origins="*", methods="GET"):
+    """
+    Decorate all routes whose URL matches any regex in path_patterns with CORS headers.
+    
+    Args:
+        app: Flask app
+        path_patterns: list of regex strings (e.g., [r"^/attributes/.*$", r"^/resolver_config(\.ya?ml)?$"])
+        origins: value for Access-Control-Allow-Origin
+        methods: value for Access-Control-Allow-Methods
+    """
+    compiled_patterns = [re.compile(p) for p in path_patterns]
+
+    for rule in app.url_map.iter_rules():
+        for pat in compiled_patterns:
+            if pat.match(rule.rule):
+                endpoint = rule.endpoint
+                view = app.view_functions[endpoint]
+                app.view_functions[endpoint] = cors_headers(origins, methods)(view)
+                break  # match only once per rule
+
+
 
 
 
