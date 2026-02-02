@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from functools import cache, partial, partialmethod
+from functools import cache, partial, partialmethod, wraps
 import logging
 import os
 from pathlib import Path
@@ -12,7 +12,9 @@ import jinja2
 from labfreed.labfreed_extended.pac_issuer_lib.lib.utils import add_ga_params, add_trace_id_params
 from pydantic import BaseModel, Field
 
-from flask import Blueprint, Flask, Response, current_app, flash, render_template, request, send_from_directory, session, url_for
+from flask import Blueprint, Flask, Response, current_app, flash, make_response, render_template, request, send_from_directory, session, url_for
+from flask_cors import CORS
+
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 
@@ -106,6 +108,20 @@ class IssuerFlaskAppFactory():
                                     resolver_macros=resolver_macros,
                                     use_issuer_resolver_config = use_issuer_resolver_config)
         app.register_blueprint(bp)
+        
+        CORS(
+            app,
+            resources={
+                r"/resolver_config(\.ya?ml)?": {
+                    "origins": ["*"],
+                    "methods": ["GET"],
+                },
+                r"/attributes/.*": {
+                    "origins": ["*"],
+                    "methods": ["GET"]
+                },
+            },
+        )
         return app
     
     
@@ -373,6 +389,7 @@ class IssuerFlaskAppFactory():
         def resolver_configuration():
             return Response(bp._resolver_configuration, mimetype="application/x-yaml")
         
+       
         
         @bp_landing_page.get('/info_card')
         def pac_card():
@@ -479,15 +496,6 @@ render_context_utils = {
     
     
     
-        
-
-    
-        
-
-
-
-
-
 def attribute_data_from_module(module, default_language):
     try:
         ds = module.data_sources
@@ -508,5 +516,5 @@ def attribute_data_from_module(module, default_language):
     return attribute_data
 
 
-        
+
 

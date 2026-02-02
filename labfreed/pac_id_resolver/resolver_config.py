@@ -1,6 +1,6 @@
 import json
 import re
-from typing import Self
+from typing import Literal, Self
 from pydantic import Field, field_validator, model_validator
 import yaml
 import jsonpath_ng.ext as jsonpath
@@ -106,7 +106,7 @@ class ResolverConfigBlock(LabFREED_BaseModel):
 
 
 class ResolverConfig(LabFREED_BaseModel):
-    schema_version: str = Field(default='2.0')
+    schema_version: Literal["2.0"] = Field(default='2.0')
     '''Resolver Configuration'''
     origin: str = ''
     model_config = {
