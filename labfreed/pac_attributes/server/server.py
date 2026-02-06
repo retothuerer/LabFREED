@@ -143,6 +143,8 @@ class AttributeServerRequestHandler():
             for a in ag.attributes.values():
                 if dn := self._get_display_name_for_key(a.key, language):
                     a.label = dn
+                elif a.label:
+                    pass # label was provided. let's use it as is
                 else:
                     a.label = self.fallback_label(a.key)
                     rich.print(f"[yellow]WARNING:[/yellow] No translation for '{a.key}' in '{language}'. Falling back to '{a.label}' ")
