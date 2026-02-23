@@ -11,6 +11,7 @@ from jinja2 import ChoiceLoader, FileSystemLoader
 import jinja2
 from labfreed.labfreed_extended.pac_issuer_lib.lib.utils import add_ga_params, add_trace_id_params
 from pydantic import BaseModel, Field
+from typing import Literal
 
 from flask import Blueprint, Flask, Response, current_app, flash, make_response, render_template, request, send_from_directory, session, url_for, make_response
 import flask_cors
@@ -81,6 +82,7 @@ class IssuerFlaskAppFactory():
                     issuer:str,
                     site_meta:SiteMeta|None = None, 
                     attribute_data:AttributeData|None = None, 
+                    keep_duplicate_attributes:Literal["all", "first", "last"] = "all",
                     path_to_custom_resources:str|None = None,
                     app_secret:str|None = None,
                     pac_info_extender:PacInfoExtender|None = None,
@@ -104,6 +106,7 @@ class IssuerFlaskAppFactory():
                                     as_multi_issuer_app=False,
                                     site_meta=site_meta,
                                     attribute_data=attribute_data,
+                                    keep_duplicate_attributes = keep_duplicate_attributes,
                                     path_to_custom_resources=path_to_custom_resources,
                                     pac_info_extender=pac_info_extender,
                                     resolver_macros=resolver_macros,
@@ -129,6 +132,7 @@ class IssuerFlaskAppFactory():
                             as_multi_issuer_app:bool,
                             site_meta:SiteMeta|None = None, 
                             attribute_data:AttributeData|None = None, 
+                            keep_duplicate_attributes:Literal["all", "first", "last"] = "all",
                             path_to_custom_resources:str|None = None,
                             pac_info_extender:PacInfoExtender|None = None,
                             resolver_macros:dict[str, str] = None, 
@@ -224,7 +228,8 @@ class IssuerFlaskAppFactory():
         if attribute_data:
             request_handler = AttributeServerRequestHandler(data_sources=attribute_data.data_sources, 
                                                             translation_data_sources= attribute_data.translation_data_sources, 
-                                                            default_language=attribute_data.default_language
+                                                            default_language=attribute_data.default_language,
+                                                            keep_duplicate_attributes=keep_duplicate_attributes
                                                             )
 
 

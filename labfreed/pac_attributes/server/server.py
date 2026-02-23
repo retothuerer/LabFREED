@@ -5,9 +5,11 @@ import warnings
 
 import rich
 from werkzeug.datastructures.accept import LanguageAccept
+from typing import Literal
+import logging
 
 from labfreed.pac_attributes.api_data_models.request import AttributeRequestData
-from labfreed.pac_attributes.api_data_models.response import AttributeResponsePayload, AttributesOfPACID, ReferenceAttributeItemsElement
+from labfreed.pac_attributes.api_data_models.response import AttributeResponsePayload, AttributesOfPACID, ReferenceAttributeItemsElement, AttributeGroup
 from labfreed.pac_attributes.api_data_models.server_capabilities_response import ServerCapabilities
 from labfreed.pac_attributes.server.attribute_data_sources import AttributeGroupDataSource
 from labfreed.pac_attributes.server.translation_data_sources import TranslationDataSource
@@ -20,13 +22,14 @@ class InvalidRequestError(ValueError):
 
     
 class AttributeServerRequestHandler():
-    def __init__(self, data_sources:list[AttributeGroupDataSource], translation_data_sources:list[TranslationDataSource], default_language:str):
+    def __init__(self, data_sources:list[AttributeGroupDataSource], translation_data_sources:list[TranslationDataSource], default_language:str, keep_duplicate_attributes:Literal["all","last", "first"]="all"):
         '''Initializes the AttributeServerRequestHandler.
         - does some validation on availability of translations. NOTE: if data_sources or translation_data_sources change, this validation might get outdated'''
         if isinstance(data_sources, AttributeGroupDataSource):
             data_sources = [data_sources]
         self._attribute_group_data_sources: list[AttributeGroupDataSource] = data_sources
         
+        self._keep_duplicate_attributes_config = keep_duplicate_attributes
         
         
         # find which languages the sources consistently know
@@ -92,7 +95,7 @@ class AttributeServerRequestHandler():
 
 
 
-    def _get_attributes_for_pac_id(self, pac_url:str, restrict_to_attribute_groups:list[str]|None=None ) -> AttributesOfPACID:
+    def _get_attributes_for_pac_id(self, pac_url:str, restrict_to_attribute_groups:list[str]|None=None) -> AttributesOfPACID:
         attribute_groups = []
         if restrict_to_attribute_groups:
             relevant_data_sources = [ds for ds in self._attribute_group_data_sources if ds.attribute_group_key in restrict_to_attribute_groups]
@@ -107,9 +110,35 @@ class AttributeServerRequestHandler():
                 e.add_note(f'Attribute Source {ds.attribute_group_key} encountered an error')
                 traceback.print_exc()
                 raise e
+        
+        self._remove_duplicate_attributes(attribute_groups)
                         
         return AttributesOfPACID(pac_id=pac_url, # return the pac_url as given, i.e. with the extension if there was one
                                  attribute_groups=attribute_groups)
+        
+            
+    def _remove_duplicate_attributes(self, attribute_groups:list[AttributeGroup]) -> list[AttributeGroup]:
+        keep_attributes = self._keep_duplicate_attributes_config
+        match keep_attributes:
+            case "last":
+                ags_tmp = list(reversed(attribute_groups))
+            case "first": 
+                ags_tmp = attribute_groups.copy()
+            case "all":
+                return attribute_groups
+            case _:
+                logging.warning(f"Invalid value for keep_duplicate_attributes: {keep_attributes}. Must be 'all', 'last' or 'first'. Returning attribute groups as is.")
+                return attribute_groups
+            
+        used_attribute_keys = set()
+        for ag_tmp in ags_tmp:
+            for ak, av in ag_tmp.attributes.copy().items():
+                if ak in used_attribute_keys:
+                    for ag in attribute_groups:
+                        if ag.group_key == ag_tmp.group_key:
+                            ag.attributes.pop(ak) 
+                else:
+                    used_attribute_keys.add(ak)
         
     
 
