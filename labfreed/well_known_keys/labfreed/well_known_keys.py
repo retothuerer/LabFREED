@@ -17,6 +17,8 @@ class WellKnownKeys(Enum):
     TIMESTAMP = 'TS'
     VERSION = 'V'
     
+    ISSUER_INDIRECTION = 'II'
+    
     MAXWEIGHT = "MAXWEIGHT"
     LASTCALIBRATION = "LASTCAL"
     NOMINALWEIGHT = "NOMINALWEIGHT"
