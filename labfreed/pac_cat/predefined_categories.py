@@ -265,7 +265,7 @@ class Processor_Misc(Processor_Abstract):
     
     
     
-class Misc(Category, ABC):
+class Misc(PredefinedCategory, ABC):
     '''@private'''
     key: str = Field(default='-X', frozen=True)
     id:str|None =                    Field(              alias='21')

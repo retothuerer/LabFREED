@@ -1,6 +1,9 @@
 ## Change Log
 
 ### v1.0.0
+PAC-ID
+- supporting PAC.LI issuer
+
 PAC-CAT
 - added new categories 
 - BREAKING: Renamed category MM to MX
