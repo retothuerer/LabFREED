@@ -95,13 +95,13 @@ class PAC_ID(LabFREED_BaseModel):
     
     @model_validator(mode="after")
     def _validate_issuer(self):
-        is_pac_li = self.issuer == 'LI' # check if issuer is "PAC.LI"
-        if not (re.fullmatch(_domain_name_pattern, self.issuer) or is_pac_li ):
+        is_pac_li_or_ninja = self.issuer in ['LI', 'NINJA'] # check if issuer is "PAC.LI" or "PAC.NINJA" 
+        if not (re.fullmatch(_domain_name_pattern, self.issuer) or is_pac_li_or_ninja ):
             self._add_validation_message(
                     source="PAC-ID",
                     level = ValidationMsgLevel.ERROR,
                     highlight_pattern=self.issuer,
-                    msg="Issuer must be a valid domain name or 'LI'. "
+                    msg="Issuer must be a valid domain name 'NINJA' or 'LI'. "
                 )
          
         # recommendation that A-Z, 0-9, -, and . should be used
