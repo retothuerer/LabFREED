@@ -460,15 +460,12 @@ class IssuerFlaskAppFactory():
         
         @bp.errorhandler(Exception)
         def not_found(error:Exception):
+            if current_app.debug:
+                raise  # ← critical: hand control back to Werkzeug
+            
             logging.error(msg=error)
             return render_from_bp(bp, "pac_issuer_error.jinja.html", msg=str(error)), 404
-
-        # @bp.errorhandler(500)
-        # def internal_error(error):
-        #     return render_from_bp("errors/pac_info_500.html"), 500
         
-        
-            
             
         return bp
     
