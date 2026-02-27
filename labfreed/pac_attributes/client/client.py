@@ -144,16 +144,19 @@ class AttributeClient():
         attribute_groups_out = []
         for ag_for_pac in r.data:
             pac_from_response = PAC_ID.from_url(ag_for_pac.pac_id)
-            ags = [
-                ClientAttributeGroup(
-                    group_key= ag.group_key, 
-                    attributes=ag.attributes, 
-                    origin=server_url, 
-                    language=r.language, 
-                    group_label=ag.group_label
-                    ) 
-                for ag in ag_for_pac.attribute_groups
-                ]
+            if not ag_for_pac.attribute_groups:
+                ags = []
+            else:
+                ags = [
+                    ClientAttributeGroup(
+                        group_key= ag.group_key, 
+                        attributes=ag.attributes, 
+                        origin=server_url, 
+                        language=r.language, 
+                        group_label=ag.group_label
+                        ) 
+                    for ag in ag_for_pac.attribute_groups
+                    ]
             
             # compare pac_id from response with pac_id we need attributes for.
             # if identical this is the part of the response we care about. other PAC-ID are just for the cache
