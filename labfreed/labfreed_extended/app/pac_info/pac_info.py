@@ -183,7 +183,8 @@ class PacInfo(BaseModel):
             
         if not display_name and self.main_category:
             seg_240 = [s for s in self.main_category.segments if s.key=="240"]
-            display_name = seg_240[0].value
+            if seg_240:
+                display_name = seg_240[0].value
             
         return display_name
     
