@@ -1,0 +1,35 @@
+{% extends "main.jinja.html" %}
+
+{% block head_extension%}
+<link rel="stylesheet" type="text/css" href="{{ url_for_within_issuer('static', filename='styles_pac_info.css') }}">
+{% endblock %}
+
+
+{# ========== Template  ==========  #}
+
+    {% block page_main_content  %}
+
+    <div
+        id="page-root"
+        hx-get="{{slow_content_url}}"   
+        hx-trigger="load"
+        hx-target="#page-root"
+        hx-swap="outerHTML"
+        hx-push-url="false"
+    >
+        {% block landing_page_placeholder %}
+        <div class="lf-content-container">
+            <h1>Loading</h1>
+            <marquee>Please Wait ...</marquee>
+        </div>
+        {% endblock %}   
+
+    {% endblock %}
+
+
+</div>
+
+
+
+
+

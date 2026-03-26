@@ -333,6 +333,14 @@ class IssuerFlaskAppFactory():
 
         @bp_landing_page.get('/<path:path>')
         def pac_issuer_landingpage(path):
+            slow_content_url = bp._base_url +'/slow_content/' + path 
+            return render_from_bp(bp,
+                        "pac_issuer_landing_page_skeleton.jinja.html",
+                        slow_content_url=slow_content_url
+                        ) 
+            
+        @bp_landing_page.get('/slow_content/<path:path>')
+        def pac_issuer_landing_page_slow_content(path):
             if issuer:
                 pac_id = f'HTTPS://PAC.{issuer}/{path}'.upper()
             else:
@@ -465,7 +473,13 @@ class IssuerFlaskAppFactory():
             
             logging.error(msg=error)
             return render_from_bp(bp, "pac_issuer_error.jinja.html", msg=str(error)), 404
+
+        # @bp.errorhandler(500)
+        # def internal_error(error):
+        #     return render_from_bp("errors/pac_info_500.html"), 500
         
+        
+            
             
         return bp
     
