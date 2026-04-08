@@ -113,7 +113,7 @@ class AttributeFlaskApp(Flask):
             doc_text = current_app.config.get('DOC_TEXT', "") 
             capabilities = request_handler.capabilities()
             authentication_required = bool(current_app.config.get('AUTHENTICATOR'))
-            example_request = AttributeRequestData(pac_id='HTTPS://PAC.METTORIUS.COM/EXAMPLE', language_preferences=['fr', 'de']).model_dump_json(indent=2, exclude_none=True, exclude_unset=True)
+            example_request:AttributeRequestData = AttributeRequestData(pac_id='HTTPS://PAC.METTORIUS.COM/EXAMPLE', language_preferences=['fr', 'de']).model_dump_json(indent=2, exclude_none=True, exclude_unset=True)
             server_address = request.url.replace('/capabilities','').rstrip('/')
             css_url = url_for("static", filename="style.css")
             response = f'''
@@ -132,7 +132,8 @@ class AttributeFlaskApp(Flask):
                         
 
                         <h2>How to use</h2>
-                        Make a <b>GET</b> request to <a href="{server_address}">{server_address}/<url encoded PAC-ID> </a> 
+                        Make a <b>GET</b> request to <a href="{server_address}/">{server_address}/<i> url encoded PAC-ID</i> </a> <br>
+                        example: <a href="{server_address}/HTTPS%3A%2F%2FPAC.METTORIUS.COM%2F-MD%2FBAL500%2F210263"> </a>
                         <br><br>
                         Query parameters (optional):<br>
                           attr_grps (optional): An comma separated list of attribute group keys. MUST be url-encoded.  <br>
