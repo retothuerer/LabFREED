@@ -15,3 +15,9 @@ class MetaAttributeKeys(Enum):
     COUNTRY = 'https://schema.org/addressCountry'
     
     
+
+class PhysoChemicalProperties(Enum):
+    BOILINGPOINT    = "https://labfreed.org/dummy/boilingpoint"
+    MELTINGPOINT    = "https://labfreed.org/dummy/meltinggpoint"
+    POLARITY        = "https://labfreed.org/dummy/polarity"
+    DENSITY         = "https://labfreed.org/dummy/density"
