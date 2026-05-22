@@ -41,7 +41,7 @@ class AttributeRequestData(LabFREED_BaseModel):
         if fwd_lkp is True:
             do_forward_lookup = True
         else:
-            do_fwd_lookup =  fwd_lkp.lower() not in ['false', 'no', '0', 'n', 'off']
+            do_forward_lookup =  fwd_lkp.lower() not in ['false', 'no', '0', 'n', 'off']
 
         lang_hdr = headers.get('Accept-Language')
         language_preferences: LanguageAccept = parse_accept_header(lang_hdr, LanguageAccept)
