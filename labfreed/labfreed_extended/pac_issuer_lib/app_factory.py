@@ -333,14 +333,17 @@ class IssuerFlaskAppFactory():
 
         @bp_landing_page.get('/<path:path>')
         def pac_issuer_landingpage(path):
-            slow_content_url = '/slow_content/' + path 
+            base = request.blueprint.replace('.landing_page','')
+            slow_content_url = base + '/slow_content/' + path 
+
             return render_from_bp(bp,
                         "pac_issuer_landing_page_skeleton.jinja.html",
                         slow_content_url=slow_content_url
                         ) 
             
+        @bp_landing_page.get('/<path:anything>/slow_content/<path:path>')
         @bp_landing_page.get('/slow_content/<path:path>')
-        def pac_issuer_landing_page_slow_content(path):
+        def pac_issuer_landing_page_slow_content(path, anything=None):
             if issuer:
                 pac_id = f'HTTPS://PAC.{issuer}/{path}'.upper()
             else:
