@@ -7,7 +7,7 @@ from labfreed.pac_cat.category_base import Category
 from labfreed.pac_id.id_segment import IDSegment
 
 class PredefinedCategory(Category, ABC):
-    '''@private 
+    '''@private
     Base for Predefined catergories
     '''
     additional_segments: list[IDSegment] = Field(default_factory=list, exclude=True)
@@ -17,7 +17,7 @@ class PredefinedCategory(Category, ABC):
     @property
     def segments(self) -> list[IDSegment]:
         return self._get_segments(use_short_notation=False)
-    
+
     @abstractproperty
     def is_serialized(self) -> bool:
         pass
@@ -41,9 +41,9 @@ class PredefinedCategory(Category, ABC):
         return segments
     
     model_config = {
-        "populate_by_name": True 
+        "populate_by_name": True
     }
-    ''' @private Pydantic tweak to allows model fields to be populated using their Python name, even if they have an alias defined. 
+    ''' @private Pydantic tweak to allows model fields to be populated using their Python name, even if they have an alias defined.
         The alias we need to use the GS1 code in serialization
     '''
 
