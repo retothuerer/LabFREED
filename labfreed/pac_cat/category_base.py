@@ -1,8 +1,12 @@
-               
+
+import re
 from typing import Any
 from pydantic import PrivateAttr, computed_field, model_validator
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel, ValidationMsgLevel
 from labfreed.pac_id.id_segment import IDSegment
+
+
+_category_key_pattern = r'-[A-Za-z]+'
 
 
 class Category(LabFREED_BaseModel):
@@ -35,6 +39,18 @@ class Category(LabFREED_BaseModel):
                         source=f"Category {self.key}",
                         level = ValidationMsgLevel.RECOMMENDATION,
                         msg=f'Category key {self.key} is not a well known key. It is recommended to use well known keys only',
+                        highlight_pattern = f"{self.key}"
+            )
+        return self
+
+    @model_validator(mode='after')
+    def _validate_key_format(self):
+        ''' PAC-CAT: "The category key MUST start with a -, followed by the at least one letter." '''
+        if not re.fullmatch(_category_key_pattern, self.key):
+            self._add_validation_message(
+                        source=f"Category {self.key}",
+                        level = ValidationMsgLevel.ERROR,
+                        msg=f"Category key '{self.key}' is invalid. It MUST start with '-' followed by at least one letter.",
                         highlight_pattern = f"{self.key}"
             )
         return self
