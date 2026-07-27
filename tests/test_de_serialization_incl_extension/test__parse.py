@@ -108,6 +108,34 @@ def test_stop_imply_extensions_after_explicit():
     assert ext.data == 'data2'
         
 
+def test_third_unnamed_extension_does_not_crash():
+    '''Short notation only assigns defaults to the first two extensions (Display
+    Name, Summary). A third bare extension has no default name/type, but parsing
+    it must not raise -- it simply gets name=type=None like any other unnamed,
+    unrecommended extension. extension_interpreters=None keeps this focused on
+    the parser itself, rather than on whether 'AAA'/'BBB' happen to be valid
+    TEXT/TREX payloads once the (default) interpreters try to cast them.'''
+    pac = PAC_ID.from_url(valid_base + valid_standard_segments + "*AAA*BBB*CCC",
+                           suppress_validation_errors=True, extension_interpreters=None)
+    ext: Extension = pac.extensions[2]
+    assert ext.name is None
+    assert ext.type is None
+    assert ext.data == 'CCC'
+
+
+def test_extension_data_must_not_contain_slash():
+    pac = from_url(valid_base + valid_standard_segments + "*N$TEXT/ABC*SUM$TREX/A$T.A:A*NO/SLASH/ALLOWED")
+    ext: Extension = pac.extensions[2]
+    assert ext.data == 'NO/SLASH/ALLOWED'
+    assert not pac.is_valid
+
+
+def test_extension_type_not_well_known_gives_recommendation():
+    pac = from_url(valid_base + valid_standard_segments + "*NAME$NOT_A_REAL_TYPE/DATA")
+    assert pac.is_valid  # not an error, just not recommended
+    assert len(pac.warnings()) > 0
+
+
 def test_extension_parsing():
     s = '*NAME$MYFORMAT/AUGDSJGTZFRDGJHDSFRTZGHJAAUTZSGADT*NAME$ANOTHERFORMAT/BLUBBER'
     extensions = from_url('HTTPS://PAC.METTORIUS.COM/A' + s).extensions  
