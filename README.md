@@ -35,6 +35,24 @@ You can install LabFREED from [PyPI](https://pypi.org/project/labfreed/) using p
 pip install labfreed
 ```
 
+Some parts of the package need extra dependencies that are not installed by default — see [Package Structure](#package-structure) below.
+
+## Package Structure
+
+The `labfreed` package is organized into three parts, reflecting how far the code strays from being a plain implementation of the building block specifications:
+
+- **`labfreed/`** (core) — the building blocks themselves (PAC-ID, PAC-CAT, T-REX, PAC-ID Resolver, PAC-Attributes), plus the Python-specific convenience code that goes with them (e.g. converting between spec types and native Python types). Only needs the base dependencies installed by `pip install labfreed`.
+- **`labfreed/labfreed_extended/`** — reference implementations built on top of the library that go beyond representing the specs in Python, such as a Flask-based attribute server and the PAC issuer landing page. Requires the `extended` extra:
+
+  ```bash
+  pip install labfreed[extended]
+  ```
+
+- **`labfreed/labfreed_experimental/`** — early-stage, unstable code with no compatibility guarantees (currently BLE-based PAC discovery). Requires the `experimental` extra:
+
+  ```bash
+  pip install labfreed[experimental]
+  ```
 
 ## Usage Examples
 > ⚠️ **Note:** These examples are building on each other. Imports and parsing are not repeated in each example.
@@ -71,32 +89,32 @@ There is a nice function to highlight problems
 pac.print_validation_messages()
 ```
 ```text
->> Validation Results                                                                                                     
->> ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
->> │ **RECOMMENDATION** in id segment value bal500                                                                       │
->> │ Characters 'a','l','b' should not be used., Characters SHOULD be limited to upper case letters (A-Z), numbers       │
->> │ (0-9), '-' and '+'                                                                                                  │
->> │                                                                                                                     │
->> │ HTTPS://PAC.METTORIUS.COM/-MD/👉bal👈500/@1234                                                                      │
->> ├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
->> │ **RECOMMENDATION** in id segment value @1234                                                                        │
->> │ Characters '@' should not be used., Characters SHOULD be limited to upper case letters (A-Z), numbers (0-9), '-'    │
->> │ and '+'                                                                                                             │
->> │                                                                                                                     │
->> │ HTTPS://PAC.METTORIUS.COM/-MD/bal500/👉@👈1234                                                                      │
->> ├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
->> │ **RECOMMENDATION** in id segment value bal500                                                                       │
->> │ Characters 'a','l','b' should not be used., Characters SHOULD be limited to upper case letters (A-Z), numbers       │
->> │ (0-9), '-' and '+'                                                                                                  │
->> │                                                                                                                     │
->> │ HTTPS://PAC.METTORIUS.COM/-MD/👉bal👈500/@1234                                                                      │
->> ├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
->> │ **RECOMMENDATION** in id segment value @1234                                                                        │
->> │ Characters '@' should not be used., Characters SHOULD be limited to upper case letters (A-Z), numbers (0-9), '-'    │
->> │ and '+'                                                                                                             │
->> │                                                                                                                     │
->> │ HTTPS://PAC.METTORIUS.COM/-MD/bal500/👉@👈1234                                                                      │
->> └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+>> Validation Results                                                              
+>> ┌──────────────────────────────────────────────────────────────────────────────┐
+>> │ **RECOMMENDATION** in id segment value bal500                                │
+>> │ Characters 'l','b','a' should not be used., Characters SHOULD be limited to  │
+>> │ upper case letters (A-Z), numbers (0-9), '-' and '+'                         │
+>> │                                                                              │
+>> │ HTTPS://PAC.METTORIUS.COM/-MD/👉bal👈500/@1234                               │
+>> ├──────────────────────────────────────────────────────────────────────────────┤
+>> │ **RECOMMENDATION** in id segment value @1234                                 │
+>> │ Characters '@' should not be used., Characters SHOULD be limited to upper    │
+>> │ case letters (A-Z), numbers (0-9), '-' and '+'                               │
+>> │                                                                              │
+>> │ HTTPS://PAC.METTORIUS.COM/-MD/bal500/👉@👈1234                               │
+>> ├──────────────────────────────────────────────────────────────────────────────┤
+>> │ **RECOMMENDATION** in id segment value bal500                                │
+>> │ Characters 'l','b','a' should not be used., Characters SHOULD be limited to  │
+>> │ upper case letters (A-Z), numbers (0-9), '-' and '+'                         │
+>> │                                                                              │
+>> │ HTTPS://PAC.METTORIUS.COM/-MD/👉bal👈500/@1234                               │
+>> ├──────────────────────────────────────────────────────────────────────────────┤
+>> │ **RECOMMENDATION** in id segment value @1234                                 │
+>> │ Characters '@' should not be used., Characters SHOULD be limited to upper    │
+>> │ case letters (A-Z), numbers (0-9), '-' and '+'                               │
+>> │                                                                              │
+>> │ HTTPS://PAC.METTORIUS.COM/-MD/bal500/👉@👈1234                               │
+>> └──────────────────────────────────────────────────────────────────────────────┘
 ```
 ### Save as QR Code
 
@@ -142,7 +160,7 @@ if isinstance(pac, PAC_CAT):
 PAC-ID can have extensions. Here we parse a PAC-ID with attached display names and summary.
 
 ```python
-pac_str = 'HTTPS://PAC.METTORIUS.COM/-MD/BAL500/1234*N$N/WM633OV3E5DGJW2BEG0PDM1EA7*SUM$TREX/WEIGHT$GRM:67.89'
+pac_str = 'HTTPS://PAC.METTORIUS.COM/-MD/BAL500/1234*N$TEXT/WM633OV3E5DGJW2BEG0PDM1EA7*SUM$TREX/WEIGHT$GRM:67.89'
 pac = PAC_ID.from_url(pac_str)
 ```
 #### Display Name
@@ -153,7 +171,7 @@ display_name = pac.get_extension('N') # display name has name 'N'
 print(display_name) 
 ```
 ```text
->> Display name: My Balance ❤️
+>> Text: My Balance ❤️
 ```
 #### TREX
 
@@ -188,9 +206,9 @@ Note that utility types for Quantity (number with unit) and table are needed
 
 ```python
 from datetime import datetime  
-from labfreed.trex.python_convenience import pyTREX  
-from labfreed.trex.python_convenience import DataTable  
-from labfreed.trex.python_convenience import Quantity  
+from labfreed.trex.pythonic import pyTREX  
+from labfreed.trex.pythonic import DataTable  
+from labfreed.trex.pythonic import Quantity  
 
 # Value segments of different type
 segments = {
@@ -218,21 +236,7 @@ trex = mydata.to_trex()
 trex.print_validation_messages()
 ```
 ```text
->> Validation Results                                            
->> ┌────────────────────────────────────────────────────────────┐
->> │ **ERROR** in TREX table column Date                        │
->> │ Column header key contains invalid characters: 'a','t','e' │
->> │                                                            │
->> │ STOP$T.D:20240505T1306                                     │
->> │ +TEMP$KEL:10.15                                            │
->> │ +OK$T.B:F                                                  │
->> │ +COMMENT$T.A:FOO                                           │
->> │ +COMMENT2$T.T:12G3                                         │
->> │ +TABLE$$DURATION$HUR:D👉ate👈$T.D:OK$T.B:COMMENT$T.A::     │
->> │  1:20250522T180101.575:T:FOO::                             │
->> │  1.1:20250522T180101.575:T:BAR::                           │
->> │  1.3:20250522T180101.575:F:BLUBB                           │
->> └────────────────────────────────────────────────────────────┘
+>> [Error during execution: unsupported operand type(s) for |: 'property' and 'type']
 ```
 #### Combine PAC-ID and TREX and serialize
 
@@ -243,7 +247,7 @@ pac_str = pac.to_url()
 print(pac_str)
 ```
 ```text
->> HTTPS://PAC.METTORIUS.COM/21:1234*MYTREX$TREX/STOP$T.D:20240505T1306+TEMP$KEL:10.15+OK$T.B:F+COMMENT$T.A:FOO+COMMENT2$T.T:12G3+TABLE$$DURATION$HUR:Date$T.D:OK$T.B:COMMENT$T.A::1:20250522T180101.575:T:FOO::1.1:20250522T180101.575:T:BAR::1.3:20250522T180101.575:F:BLUBB
+>> HTTPS://PAC.METTORIUS.COM/21:1234*MYTREX$TREX/WEIGHT$GRM:67.89
 ```
 ## PAC-ID Resolver
 
@@ -269,7 +273,7 @@ cit2.origin = 'MY_COMPANY'
 ```python
 # resolve a pac id
 pac_str = 'HTTPS://PAC.METTORIUS.COM/-MS/X3511/CAS:7732-18-5'
-service_groups = PAC_ID_Resolver(cits=[cit, cit2]).resolve(pac_str, check_service_status=False)
+service_groups = PAC_ID_Resolver(resolver_configs=[cit, cit2]).resolve(pac_str, check_service_status=False)
 cached_session = requests_cache.CachedSession(backend='memory', expire_after=60)
 for sg in service_groups:
     sg.update_states(cached_session)
@@ -277,26 +281,7 @@ for sg in service_groups:
     
 ```
 ```text
->> Services from origin 'PERSONAL                         
->> ┏━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┓
->> ┃ Service Name ┃ URL                                               ┃ Reachable ┃
->> ┡━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━┩
->> │ CAS Search   │ https://pubchem.ncbi.nlm.nih.gov/#query=7732-18-5 │ ACTIVE    │
->> └──────────────┴───────────────────────────────────────────────────┴───────────┘
->>                                   Services from origin 'MY_COMPANY                                  
->> ┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┓
->> ┃ Service Name        ┃ URL                                                            ┃ Reachable ┃
->> ┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━┩
->> │ Chemical Management │ https://chem-manager.com/METTORIUS.COM/-MS/X3511/CAS:7732-18-5 │ INACTIVE  │
->> └─────────────────────┴────────────────────────────────────────────────────────────────┴───────────┘
->>              Services from origin 'METTORIUS.COM              
->> ┏━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┓
->> ┃ Service Name ┃ URL                             ┃ Reachable ┃
->> ┡━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━┩
->> │ CoA          │ https://mettorius.com/CoA.pdf   │ ACTIVE    │
->> │ MSDS         │ https://mettorius.com/MSDS.pdf  │ ACTIVE    │
->> │ Shop         │ https://mettorius.com/shop.html │ ACTIVE    │
->> └──────────────┴─────────────────────────────────┴───────────┘
+>> [Error during execution: No Internet Connection]
 ```
 <!-- END EXAMPLES -->
 
@@ -304,6 +289,29 @@ for sg in service_groups:
 
 <!-- BEGIN CHANGELOG -->
 ## Change Log
+
+### v1.0.0
+PAC-ID
+- supporting PAC.LI issuer
+
+PAC-CAT
+- added new categories 
+- BREAKING: Renamed category MM to MX
+
+PAC-ID Resolver
+- Transition to improved resolver configuration ( replaces coupling information table )
+
+
+PAC-ID Attributes (Beta)
+- new building block
+
+
+General
+- Minor Bugfixes
+- BREAKING: reorganization of module structure > some import paths have changed
+
+
+
 ### v0.2.12
 - bugfix:no warning message if PAC-CAT has same segment key in two segments
 

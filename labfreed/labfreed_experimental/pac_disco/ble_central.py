@@ -9,7 +9,7 @@ from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 
 from labfreed.pac_id.pac_id import PAC_ID
-from labfreed_experimental.pac_disco.ble_uuid import PAC_Characteristics, ServiceUUID
+from labfreed.labfreed_experimental.pac_disco.ble_uuid import PAC_Characteristics, ServiceUUID
 
 
 TEST = True

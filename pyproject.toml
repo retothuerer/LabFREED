@@ -63,7 +63,6 @@ name = "labfreed"
 
 [tool.flit.sdist]
 exclude = [
-    "labfreed_experimental.py/",
     "tests/",
     "examples/",
     "docs/",

@@ -6,10 +6,10 @@ from bleak.backends.device import BLEDevice
 from labfreed.pac_id.pac_id import PAC_ID
 from labfreed.trex.pythonic import pyTREX
 from labfreed.trex.trex import TREX
-from labfreed_experimental.pac_disco.ble_uuid import PAC_Characteristics, ServiceUUID
+from labfreed.labfreed_experimental.pac_disco.ble_uuid import PAC_Characteristics, ServiceUUID
 
 
-from labfreed_experimental.pac_disco.ble_central import BlePacCentral
+from labfreed.labfreed_experimental.pac_disco.ble_central import BlePacCentral
 
 
 import logging
