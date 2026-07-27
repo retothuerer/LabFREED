@@ -51,18 +51,41 @@ class Extension(LabFREED_BaseModel,ExtensionBase):
         
     @model_validator(mode='after')
     def validate_model(self):
+        source = f"Extension '{self.data[0:10] if len(self.data) > 10 else self.data}'"
+
         if self.name and not self.type:
-            raise ValueError('Extension has a name, but no type. Either set both or none')
-        
+            self._add_validation_message(msg="Extension has a name, but no type. Either set both or none.",
+                                         level=ValidationMsgLevel.ERROR,
+                                         source=source,
+                                         highlight_pattern=self.name)
+
         if self.type and not self.name:
-            raise ValueError('Extension has a type, but no name. Either set both or none')
-        
+            self._add_validation_message(msg="Extension has a type, but no name. Either set both or none.",
+                                         level=ValidationMsgLevel.ERROR,
+                                         source=source,
+                                         highlight_pattern=self.type)
+
         if not self.type and not self.name:
             self._add_validation_message(msg="Extensions has no name and type. It is RECOMMENDED to specify name and type.",
-                                         level=ValidationMsgLevel.RECOMMENDATION, 
-                                         source=f"Extension '{self.data[0:10] if len(self.data)>10 else self.data}'",
+                                         level=ValidationMsgLevel.RECOMMENDATION,
+                                         source=source,
                                          highlight_pattern=self.data)
-        
+
+        if '/' in self.data:
+            self._add_validation_message(msg="Extension data must not contain the character '/'.",
+                                         level=ValidationMsgLevel.ERROR,
+                                         source=source,
+                                         highlight_pattern=self.data,
+                                         highlight_sub=['/'])
+
+        if self.type:
+            from labfreed.well_known_extensions import default_extension_interpreters
+            if self.type not in default_extension_interpreters:
+                self._add_validation_message(msg=f"'{self.type}' is not a well-known extension type. It is RECOMMENDED to use a well-known extension type.",
+                                             level=ValidationMsgLevel.RECOMMENDATION,
+                                             source=source,
+                                             highlight_pattern=self.type)
+
         return self
             
         
