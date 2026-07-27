@@ -37,7 +37,37 @@ class PAC_ID(LabFREED_BaseModel):
         if not out:
             return None
         return out[0]
-    
+
+
+    def has_derivation_segments(self) -> bool:
+        '''Whether the identifier contains one or more derivation namespace segments
+        (`+<namespace>`), i.e. whether this PAC-ID was (at least in part) derived by a
+        third party rather than issued in full by `issuer`. See PAC-ID spec,
+        "Issuing derived PAC-ID"s.'''
+        return any(s.is_derivation_namespace for s in self.identifier)
+
+
+    def get_derivation_namespaces(self) -> list[str]:
+        '''The derivation namespaces (`<namespace>` of each `+<namespace>` segment,
+        in order of appearance) introduced in this PAC-ID's identifier. Empty if
+        has_derivation_segments() is False.'''
+        return [s.value[1:] for s in self.identifier if s.is_derivation_namespace]
+
+
+    def get_non_derived_pac_id(self) -> "PAC_ID":
+        '''The original PAC-ID before any derivation: everything up to (but not
+        including) the first derivation namespace segment, without extensions.
+        Derivation produces a PAC-ID for a different (derived) entity, and
+        extensions describe the entity they're attached to -- not its parent --
+        so they're dropped along with the derivation segments.
+        If there is no derivation, this PAC-ID already *is* the non-derived one,
+        so self is returned unchanged, extensions included.'''
+        for i, s in enumerate(self.identifier):
+            if s.is_derivation_namespace:
+                return PAC_ID(issuer=self.issuer, identifier=self.identifier[:i])
+        return self
+
+
     @classmethod
     def from_url(cls, url, *, extension_interpreters='default', 
                  try_pac_cat=True,

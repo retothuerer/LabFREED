@@ -82,6 +82,53 @@ def test_empty_id_segment_value_is_invalid():
     assert not pac.is_valid
 
 
+def test_has_derivation_segments():
+    pac = from_url("HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/21:9876/+ACMELABS.COM/250:1")
+    assert pac.has_derivation_segments()
+
+
+def test_has_derivation_segments_is_false_without_one():
+    pac = from_url(valid_base + valid_standard_segments)
+    assert not pac.has_derivation_segments()
+
+
+def test_get_derivation_namespaces_single():
+    pac = from_url("HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/21:9876/+ACMELABS.COM/250:1")
+    assert pac.get_derivation_namespaces() == ['ACMELABS.COM']
+
+
+def test_get_derivation_namespaces_chained():
+    '''Chained derivation by multiple parties -- note each namespace segment needs
+    its own '/', unlike the spec's README example ('.../250:1+PARTNERLAB.ORG/...'),
+    which merges the second '+' into the previous segment's value instead of
+    starting a new one; that looks like a typo in the spec text.'''
+    pac = from_url("HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/21:9876/+ACMELABS.COM/250:1/+PARTNERLAB.ORG/TESTPORTION:A")
+    assert pac.get_derivation_namespaces() == ['ACMELABS.COM', 'PARTNERLAB.ORG']
+
+
+def test_get_derivation_namespaces_empty_without_derivation():
+    pac = from_url(valid_base + valid_standard_segments)
+    assert pac.get_derivation_namespaces() == []
+
+
+def test_get_non_derived_pac_id_strips_namespace_segments_and_extensions():
+    pac = from_url("HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/21:9876/+ACMELABS.COM/250:1*N$TEXT/ABC")
+    base = pac.get_non_derived_pac_id()
+    assert base.to_url() == "HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/21:9876"
+    assert base.extensions == []
+    assert not base.has_derivation_segments()
+
+
+def test_get_non_derived_pac_id_without_derivation_keeps_extensions():
+    '''Without derivation, this PAC-ID already *is* the non-derived one -- its
+    extensions describe this same entity and stay valid, so they must not be
+    dropped (unlike the derivation case, where they describe the child entity).'''
+    pac = from_url(valid_base + valid_standard_segments + "*N$TEXT/ABC")
+    base = pac.get_non_derived_pac_id()
+    assert base is pac
+    assert base.extensions == pac.extensions
+
+
 def test_combined_issuer_and_identifier_length_recommendation():
     '''Combined length of issuer and identifier SHOULD NOT exceed 100 characters,
     even if the 256 character MUST-limit on identifier alone isn't hit.'''
