@@ -73,8 +73,7 @@ class PAC_ID(LabFREED_BaseModel):
         return self
     
         
-    @model_validator(mode='after')
-    def _check_length(self) -> Self:
+    def _identifier_length(self) -> int:
         length = 0
         for s in self.identifier:
             s:IDSegment = s
@@ -83,12 +82,43 @@ class PAC_ID(LabFREED_BaseModel):
                 length += 1 # for ":"
             length += len(s.value)
         length += len(self.identifier) - 1 # account for "/" separating the segments
-        
+        return length
+
+    @model_validator(mode='after')
+    def _check_identifier_length(self) -> Self:
+        length = self._identifier_length()
+
         if length > 256:
             self._add_validation_message(
                         source="identifier",
                         level = ValidationMsgLevel.ERROR,
                         msg=f'Identifier is {length} characters long, Identifier must not exceed 256 characters.'
+                    )
+        return self
+
+
+    @model_validator(mode='after')
+    def _check_combined_length_recommendation(self) -> Self:
+        combined_length = len(self.issuer) + self._identifier_length()
+
+        if combined_length > 100:
+            self._add_validation_message(
+                        source="PAC-ID",
+                        level = ValidationMsgLevel.RECOMMENDATION,
+                        msg=f'Combined length of issuer and identifier is {combined_length} characters. It is RECOMMENDED not to exceed 100 characters.'
+                    )
+        return self
+
+
+    @model_validator(mode='after')
+    def _check_extensions_length_recommendation(self) -> Self:
+        extensions_length = sum(len(str(e)) + 1 for e in self.extensions) # +1 per '*' separator
+
+        if extensions_length > 4100:
+            self._add_validation_message(
+                        source="extensions",
+                        level = ValidationMsgLevel.RECOMMENDATION,
+                        msg=f'Combined length of extensions is {extensions_length} characters. It is RECOMMENDED not to exceed 4100 characters.'
                     )
         return self
        
