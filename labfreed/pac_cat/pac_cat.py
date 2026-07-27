@@ -65,11 +65,11 @@ class PAC_CAT(PAC_ID):
     @classmethod
     def _cat_from_cat_segments(cls, segments:list[IDSegment]) -> Category:
         segments = segments.copy()
-        category_key = segments[0].value         
+        category_key = segments[0].value
         segments.pop(0)
-        
+
         known_cat = category_key_to_class_map.get(category_key)
-        
+
         if not known_cat:
             return Category(key=category_key, segments=segments)
 
@@ -103,10 +103,10 @@ class PAC_CAT(PAC_ID):
                 category_segments.append(c)
             else:
                 c.append(s)
-                
+
         # first cat can be empty > remove
         category_segments = [c for c in category_segments if len(c) > 0]
-                            
+
         return category_segments
     
     
