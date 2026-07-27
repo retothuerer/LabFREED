@@ -1,0 +1,62 @@
+# Pinned spec-repo commits this implementation was last checked against.
+# Read/updated by the `check-spec-conformance` skill (.claude/skills/check-spec-conformance/).
+# `commit: null` means no conformance pass has been run yet for that building block.
+
+PAC-ID:
+  repo: https://github.com/ApiniLabs/PAC-ID
+  branch: main
+  commit: 9ed648499c57bfdf013fa793cc881e89574316a1  # PROVISIONAL, see note
+  checked_on: "2026-07-27"
+  notes: >
+    Full conformance pass. Fixed: colon-split crash in id segment parsing,
+    extension index-3+ AttributeError crash, Extension raise(ValueError) ->
+    non-throwing validation message, empty id segment value now flagged,
+    extension data '/' now flagged (MUST NOT), added combined-length
+    RECOMMENDATIONs (issuer+identifier <=100, extensions <=4100), added
+    well-known-extension-type RECOMMENDATION. Known gap intentionally not
+    addressed: derivation namespace segments (+<namespace>) are not modeled
+    yet (needs its own design, tracked separately) -- the "-" prefix
+    PAC-CAT-context recommendation is also not implemented (IDSegment can't
+    see its parent PAC_ID/PAC_CAT context).
+
+    Follow-up (same session): spec amended to change `id segment
+    key`/`id segment value` from SHOULD-limited-to-A-Z-0-9-+- to an explicit
+    MUST NOT contain `:`, since a second colon makes the key/value split
+    ambiguous. Implementation's colon-in-key/colon-in-value checks in
+    id_segment.py escalated from RECOMMENDATION to ERROR to match.
+
+    PROVISIONAL PIN: commit 9ed6484 is the head of PR branch
+    `update-precisation-with-id-segment-key-and-value` (PR opened, not yet
+    confirmed merged from here -- no GitHub access in this environment).
+    Treated as merged per explicit instruction. If GitHub squashes/rebases on
+    merge, the commit actually landing on `main` will have a different SHA --
+    next check-spec-conformance run should fetch origin/main and correct this
+    pin to the real merge commit rather than trusting this hash long-term.
+
+PAC-CAT:
+  repo: https://github.com/ApiniLabs/PAC-CAT
+  branch: main
+  commit: null
+  checked_on: null
+  notes: null
+
+PAC-ID-Resolver:
+  repo: https://github.com/ApiniLabs/PAC-ID-Resolver
+  branch: main
+  commit: null
+  checked_on: null
+  notes: null
+
+PAC-Attributes:
+  repo: https://github.com/ApiniLabs/PAC-Attributes
+  branch: main
+  commit: null
+  checked_on: null
+  notes: null
+
+T-REX:
+  repo: https://github.com/ApiniLabs/T-REX
+  branch: main
+  commit: null
+  checked_on: null
+  notes: null
