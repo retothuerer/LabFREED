@@ -12,7 +12,7 @@ PAC-ID Resolver
 - Transition to improved resolver configuration ( replaces coupling information table )
 
 
-PAC-ID Attributes (Beta)
+PAC-ID Attributes
 - new building block
 
 
