@@ -106,15 +106,13 @@ class PAC_Parser():
         if len(identifier) > 0 and identifier[0] == '/':
             identifier = identifier[1:]
         for s in identifier.split('/'):
-            tmp = s.split(':')
-            
+            tmp = s.split(':', 1)
+
             if len(tmp) == 1:
                 segment = IDSegment(value=tmp[0])
-            elif len(tmp) == 2:
-                segment = IDSegment(key=tmp[0], value=tmp[1])
             else:
-                raise ValueError(f'invalid segment: {s}')
-                
+                segment = IDSegment(key=tmp[0], value=tmp[1])
+
             id_segments.append(segment)
         return id_segments
     
@@ -145,9 +143,10 @@ class PAC_Parser():
             if name:
                 defaults = None # once a name was specified no longer assign defaults
             else:
-                if defaults:
-                    name = defaults.get(i).get('name')
-                    type = defaults.get(i).get('type')
+                default_for_index = defaults.get(i) if defaults else None
+                if default_for_index:
+                    name = default_for_index.get('name')
+                    type = default_for_index.get('type')
             
             #convert to subtype if they were given
             e = Extension.create(name=name, type=type, data=data)
