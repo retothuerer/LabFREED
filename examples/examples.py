@@ -146,7 +146,7 @@ cit.print_validation_messages(target=target)
 
 ''''''
 # get a second cit
-p = os.path.join(dir, 'coupling-information-table')       
+p = os.path.join(dir, 'coupling-information-table')
 cit2 = load_cit(p)
 cit2.origin = 'MY_COMPANY'
 
@@ -158,4 +158,57 @@ cached_session = requests_cache.CachedSession(backend='memory', expire_after=60)
 for sg in service_groups:
     sg.update_states(cached_session)
     sg.print()
-    
+
+
+'''
+## PAC-ID Attributes
+Attributes attach lightweight metadata -- e.g. a display name, an image, a calibration due date -- to a PAC-ID,
+without baking it into the identifier itself.
+
+This shows the core data model only: an in-memory data source, served in-process with no Flask/network involved.
+For an actual deployable server and a PAC-ID landing page built on the same classes, see
+[Setting up a PAC-ID Landing Page](examples/pac_mettorius_com/README.md).
+'''
+from labfreed.pac_attributes.pythonic.py_attributes import pyAttribute, pyAttributes, pyResource  # noqa: E402
+from labfreed.pac_attributes.pythonic.py_dict_data_source import pyDict_DataSource  # noqa: E402
+from labfreed.pac_attributes.well_knonw_attribute_keys import MetaAttributeKeys  # noqa: E402
+from labfreed.pac_attributes.server.translation_data_sources import DictTranslationDataSource  # noqa: E402
+from labfreed.pac_attributes.server.server import AttributeServerRequestHandler  # noqa: E402
+from labfreed.pac_attributes.client.client import AttributeClient, local_attribute_request_callback_factory  # noqa: E402
+from labfreed.utilities.translations import Terms, Term  # noqa: E402
+
+# Attributes for one PAC-ID. A data source could just as well read this from a database, an Excel sheet, or anywhere else.
+pac_str = 'HTTPS://PAC.METTORIUS.COM/-MD/BAL500/000001'
+data_source = pyDict_DataSource(
+    attribute_group_key=MetaAttributeKeys.GROUPKEY.value,
+    data={
+        pac_str: pyAttributes([
+            pyAttribute(key=MetaAttributeKeys.DISPLAYNAME.value, value="My Balance"),
+            pyAttribute(key=MetaAttributeKeys.IMAGE.value, value=pyResource("https://picsum.photos/id/82/200")),
+        ])
+    }
+)
+
+# Attribute keys need a translation, so the server can label them for a UI
+translations = DictTranslationDataSource(
+    supported_languages={'en'},
+    data=Terms(terms=[
+        Term.create(MetaAttributeKeys.GROUPKEY.value, [('en', 'Meta Data')]),
+        Term.create(MetaAttributeKeys.DISPLAYNAME.value, [('en', 'Display Name')]),
+        Term.create(MetaAttributeKeys.IMAGE.value, [('en', 'Image')]),
+    ])
+)
+
+# The request handler is the framework-agnostic core of an attribute server
+handler = AttributeServerRequestHandler(data_sources=[data_source], translation_data_sources=[translations], default_language='en')
+
+'''
+Querying works the same whether the handler above is embedded in a Flask app or, as here, called in-process.
+'''
+client = AttributeClient(http_post_callback=local_attribute_request_callback_factory(handler))
+attribute_groups = client.get_attributes(server_url='', pac_id=pac_str)
+for group in attribute_groups:
+    for attr in pyAttributes.from_payload_attributes(group.attributes):
+        values = ', '.join(str(v) for v in attr.value_list)
+        print(f'{attr.label}: {values}')
+

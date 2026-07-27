@@ -42,7 +42,7 @@ Some parts of the package need extra dependencies that are not installed by defa
 The `labfreed` package is organized into three parts, reflecting how far the code strays from being a plain implementation of the building block specifications:
 
 - **`labfreed/`** (core) — the building blocks themselves (PAC-ID, PAC-CAT, T-REX, PAC-ID Resolver, PAC-Attributes), plus the Python-specific convenience code that goes with them (e.g. converting between spec types and native Python types). Only needs the base dependencies installed by `pip install labfreed`.
-- **`labfreed/labfreed_extended/`** — reference implementations built on top of the library that go beyond representing the specs in Python, such as a Flask-based attribute server and the PAC issuer landing page. Requires the `extended` extra:
+- **`labfreed/labfreed_extended/`** — reference implementations built on top of the library that go beyond representing the specs in Python, such as a Flask-based attribute server and the PAC issuer landing page (see [Setting up a PAC-ID Landing Page](examples/pac_mettorius_com/README.md)). Requires the `extended` extra:
 
   ```bash
   pip install labfreed[extended]
@@ -92,7 +92,7 @@ pac.print_validation_messages()
 >> Validation Results                                                              
 >> ┌──────────────────────────────────────────────────────────────────────────────┐
 >> │ **RECOMMENDATION** in id segment value bal500                                │
->> │ Characters 'l','b','a' should not be used., Characters SHOULD be limited to  │
+>> │ Characters 'b','a','l' should not be used., Characters SHOULD be limited to  │
 >> │ upper case letters (A-Z), numbers (0-9), '-' and '+'                         │
 >> │                                                                              │
 >> │ HTTPS://PAC.METTORIUS.COM/-MD/👉bal👈500/@1234                               │
@@ -104,7 +104,7 @@ pac.print_validation_messages()
 >> │ HTTPS://PAC.METTORIUS.COM/-MD/bal500/👉@👈1234                               │
 >> ├──────────────────────────────────────────────────────────────────────────────┤
 >> │ **RECOMMENDATION** in id segment value bal500                                │
->> │ Characters 'l','b','a' should not be used., Characters SHOULD be limited to  │
+>> │ Characters 'b','a','l' should not be used., Characters SHOULD be limited to  │
 >> │ upper case letters (A-Z), numbers (0-9), '-' and '+'                         │
 >> │                                                                              │
 >> │ HTTPS://PAC.METTORIUS.COM/-MD/👉bal👈500/@1234                               │
@@ -266,7 +266,7 @@ cit.print_validation_messages()
 ```
 ```python
 # get a second cit
-p = os.path.join(dir, 'coupling-information-table')       
+p = os.path.join(dir, 'coupling-information-table')
 cit2 = load_cit(p)
 cit2.origin = 'MY_COMPANY'
 ```
@@ -278,10 +278,67 @@ cached_session = requests_cache.CachedSession(backend='memory', expire_after=60)
 for sg in service_groups:
     sg.update_states(cached_session)
     sg.print()
-    
 ```
 ```text
 >> [Error during execution: No Internet Connection]
+```
+## PAC-ID Attributes
+Attributes attach lightweight metadata -- e.g. a display name, an image, a calibration due date -- to a PAC-ID,
+without baking it into the identifier itself.
+
+This shows the core data model only: an in-memory data source, served in-process with no Flask/network involved.
+For an actual deployable server and a PAC-ID landing page built on the same classes, see
+[Setting up a PAC-ID Landing Page](examples/pac_mettorius_com/README.md).
+
+```python
+from labfreed.pac_attributes.pythonic.py_attributes import pyAttribute, pyAttributes, pyResource  
+from labfreed.pac_attributes.pythonic.py_dict_data_source import pyDict_DataSource  
+from labfreed.pac_attributes.well_knonw_attribute_keys import MetaAttributeKeys  
+from labfreed.pac_attributes.server.translation_data_sources import DictTranslationDataSource  
+from labfreed.pac_attributes.server.server import AttributeServerRequestHandler  
+from labfreed.pac_attributes.client.client import AttributeClient, local_attribute_request_callback_factory  
+from labfreed.utilities.translations import Terms, Term  
+
+# Attributes for one PAC-ID. A data source could just as well read this from a database, an Excel sheet, or anywhere else.
+pac_str = 'HTTPS://PAC.METTORIUS.COM/-MD/BAL500/000001'
+data_source = pyDict_DataSource(
+    attribute_group_key=MetaAttributeKeys.GROUPKEY.value,
+    data={
+        pac_str: pyAttributes([
+            pyAttribute(key=MetaAttributeKeys.DISPLAYNAME.value, value="My Balance"),
+            pyAttribute(key=MetaAttributeKeys.IMAGE.value, value=pyResource("https://picsum.photos/id/82/200")),
+        ])
+    }
+)
+
+# Attribute keys need a translation, so the server can label them for a UI
+translations = DictTranslationDataSource(
+    supported_languages={'en'},
+    data=Terms(terms=[
+        Term.create(MetaAttributeKeys.GROUPKEY.value, [('en', 'Meta Data')]),
+        Term.create(MetaAttributeKeys.DISPLAYNAME.value, [('en', 'Display Name')]),
+        Term.create(MetaAttributeKeys.IMAGE.value, [('en', 'Image')]),
+    ])
+)
+
+# The request handler is the framework-agnostic core of an attribute server
+handler = AttributeServerRequestHandler(data_sources=[data_source], translation_data_sources=[translations], default_language='en')
+```
+```text
+>> [Error during execution: unsupported operand type(s) for |: 'property' and 'type']
+```
+Querying works the same whether the handler above is embedded in a Flask app or, as here, called in-process.
+
+```python
+client = AttributeClient(http_post_callback=local_attribute_request_callback_factory(handler))
+attribute_groups = client.get_attributes(server_url='', pac_id=pac_str)
+for group in attribute_groups:
+    for attr in pyAttributes.from_payload_attributes(group.attributes):
+        values = ', '.join(str(v) for v in attr.value_list)
+        print(f'{attr.label}: {values}')
+```
+```text
+>> [Error during execution: name 'AttributeClient' is not defined]
 ```
 <!-- END EXAMPLES -->
 
@@ -302,7 +359,7 @@ PAC-ID Resolver
 - Transition to improved resolver configuration ( replaces coupling information table )
 
 
-PAC-ID Attributes (Beta)
+PAC-ID Attributes
 - new building block
 
 
