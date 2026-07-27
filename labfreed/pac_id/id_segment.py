@@ -14,10 +14,25 @@ class IDSegment(LabFREED_BaseModel):
     value:str
     ''' The value of the segment. (mandatory)'''
 
+    @property
+    def is_derivation_namespace(self) -> bool:
+        ''' Whether this segment is a derivation namespace segment (`+<namespace>`),
+        introduced by a third party extending a PAC-ID. See PAC-ID spec, "Issuing derived PAC-ID"s.'''
+        return self.key is None and self.value.startswith('+')
+
     @model_validator(mode="after")
     def _validate_segment(self):
         key = self.key or ""
         value = self.value
+
+        # An id segment carries no information if its value is empty. This also catches
+        # segments accidentally produced by a double or trailing '/' in the identifier.
+        if not value:
+            self._add_validation_message(
+                    source="id segment",
+                    level = ValidationMsgLevel.ERROR,
+                    msg="id segment value must not be empty."
+            )
 
         # MUST be a valid hsegment according to RFC 1738, but without * (see PAC-ID Extension)
         # This means it must be true for both, key and value
@@ -40,7 +55,7 @@ class IDSegment(LabFREED_BaseModel):
             )
 
         # Segment key SHOULD be limited to A-Z, 0-9, and -+..
-        if not_recommended_chars := set(re.sub(r'[A-Z0-9-:+]', '', key)):
+        if not_recommended_chars := set(re.sub(r'[A-Z0-9+-]', '', key)):
             self._add_validation_message(
                     source=f"id segment key {key}",
                     level = ValidationMsgLevel.RECOMMENDATION,
@@ -61,7 +76,7 @@ class IDSegment(LabFREED_BaseModel):
 
 
         # Segment value SHOULD be limited to A-Z, 0-9, and -+..
-        if not_recommended_chars := set(re.sub(r'[A-Z0-9-:+]', '', value)):
+        if not_recommended_chars := set(re.sub(r'[A-Z0-9+-]', '', value)):
             self._add_validation_message(
                     source=f"id segment value {value}",
                     level = ValidationMsgLevel.RECOMMENDATION,
@@ -70,20 +85,19 @@ class IDSegment(LabFREED_BaseModel):
                     highlight_sub = not_recommended_chars
                 )
 
-        # Segment value SHOULD be limited to A-Z, 0-9, and :-+ for new designs.
-        # this means that ":" in key or value is problematic
+        # id segment key/value MUST NOT contain ':', since it is used to separate them.
         if ':' in key:
             self._add_validation_message(
                     source=f"id segment key {key}",
-                    level = ValidationMsgLevel.RECOMMENDATION,
-                    msg="Character ':' should not be used in segment key, since this character is used to separate key and value this can lead to undefined behaviour.",
+                    level = ValidationMsgLevel.ERROR,
+                    msg="Character ':' must not be used in segment key, since this character is used to separate key and value.",
                     highlight_pattern = key
                 )
         if ':' in value:
             self._add_validation_message(
                     source=f"id segment value {value}",
-                    level = ValidationMsgLevel.RECOMMENDATION,
-                    msg="Character ':' should not be used in segment value, since this character is used to separate key and value this can lead to undefined behaviour.",
+                    level = ValidationMsgLevel.ERROR,
+                    msg="Character ':' must not be used in segment value, since this character is used to separate key and value.",
                     highlight_pattern = value
                 )
 
