@@ -3,7 +3,7 @@ from abc import ABC, abstractproperty
 from pydantic import Field, computed_field, model_validator
 
 from labfreed.labfreed_infrastructure import ValidationMsgLevel
-from labfreed.pac_cat.category_base import Category
+from labfreed.pac_cat.category_base import Category, CategorySegment
 from labfreed.pac_id.id_segment import IDSegment
 
 class PredefinedCategory(Category, ABC):
@@ -15,7 +15,7 @@ class PredefinedCategory(Category, ABC):
     
     @computed_field
     @property
-    def segments(self) -> list[IDSegment]:
+    def segments(self) -> list[CategorySegment]:
         return self._get_segments(use_short_notation=False)
 
     @abstractproperty
@@ -33,7 +33,7 @@ class PredefinedCategory(Category, ABC):
                     key = None
                 else:
                     key = field_info.alias
-                segments.append(IDSegment(key= key, value= value)  )
+                segments.append(CategorySegment(key= key, value= value)  )
             else:
                 can_omit_keys = False
         if self.additional_segments:

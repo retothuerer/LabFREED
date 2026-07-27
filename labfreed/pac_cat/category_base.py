@@ -9,19 +9,30 @@ from labfreed.pac_id.id_segment import IDSegment
 _category_key_pattern = r'-[A-Za-z]+'
 
 
+class CategorySegment(IDSegment):
+    ''' An id segment as it appears within a PAC-CAT category, tagged with which
+    derivation namespace (if any) contributed it - see PAC-CAT "Segments added via
+    a derivation namespace" section. '''
+    derivation_namespace: str | None = None
+    ''' The namespace that added this segment via a `+<namespace>` marker (without the
+    leading `+`), or None if it was part of the identifier as issued by the primary
+    issuer. The marker segment itself never appears as its own entry in a category's
+    `.segments` - once every segment is tagged, it would just be redundant noise. '''
+
+
 class Category(LabFREED_BaseModel):
     '''
     Represents a category. \n
     This is the base class for categories. If possible a more specific category should be used.
-    '''    
+    '''
     key:str
     '''The category key, e.g. "-MD"'''
-    _segments: list[IDSegment] = PrivateAttr(default_factory=list)
-    
-        
+    _segments: list[CategorySegment] = PrivateAttr(default_factory=list)
+
+
     @computed_field
     @property
-    def segments(self) -> list[IDSegment]:
+    def segments(self) -> list[CategorySegment]:
         return self._segments
     
     def __init__(self, **data: Any):
