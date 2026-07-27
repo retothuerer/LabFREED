@@ -148,6 +148,48 @@ def test_keys_can_repeat_accross_categories():
 def test_keys_should_not_repeat_within_categories():
     pac = from_url(valid_base + "-MS/21:A/21:B")
     assert not pac.is_valid
-    
 
-    
+
+def test_implicit_numbering_continues_after_an_explicit_key_matching_the_expected_order():
+    ''' "Explicit keys MAY be used along implicit ones, as long as the order of segments
+    is matched": an explicit key that matches the *next expected* field does not stop
+    implicit assignment of subsequent unkeyed segments. '''
+    pac = from_url(valid_base + "-MD/240:BAL500/210263")
+    md = pac.get_category('-MD')
+    assert md.model_number == 'BAL500'
+    assert md.serial_number == '210263'
+
+
+def test_implicit_numbering_continues_after_multiple_matching_explicit_keys():
+    pac = from_url(valid_base + "-MS/240:AMYLASE/10:AB9876/500ML/9876/2")
+    ms = pac.get_category('-MS')
+    assert ms.product_number == 'AMYLASE'
+    assert ms.batch_number == 'AB9876'
+    assert ms.container_size == '500ML'
+    assert ms.container_number == '9876'
+    assert ms.aliquot == '2'
+
+
+def test_implicit_numbering_continues_with_intermixed_explicit_keys():
+    ''' explicit and implicit keys alternating, not just a leading explicit run
+    followed by a trailing implicit one - each explicit key still matches the field
+    the implicit pointer expects at that point, so numbering never stops. '''
+    pac = from_url(valid_base + "-MS/240:AMYLASE/10:AB9876/500ML/21:9876/2")
+    ms = pac.get_category('-MS')
+    assert ms.product_number == 'AMYLASE'
+    assert ms.batch_number == 'AB9876'
+    assert ms.container_size == '500ML'
+    assert ms.container_number == '9876'
+    assert ms.aliquot == '2'
+
+
+def test_category_key_must_start_with_dash_and_letter():
+    pac = from_url(valid_base + "-1/21:VAL")
+    assert not pac.is_valid
+
+
+def test_well_formed_category_key_is_valid():
+    pac = from_url(valid_base + "-DM/21:VAL")
+    assert pac.is_valid
+
+
