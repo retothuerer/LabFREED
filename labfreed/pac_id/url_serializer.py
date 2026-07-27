@@ -1,5 +1,4 @@
 from labfreed.pac_cat.pac_cat import PAC_CAT
-from labfreed.pac_cat.predefined_categories import PredefinedCategory
 from labfreed.pac_id.id_segment import IDSegment
 from labfreed.pac_id.extension import Extension
 from labfreed.pac_id import PAC_ID  
@@ -41,13 +40,7 @@ class PACID_Serializer():
         ''' Serializes the PAC-ID'''
         
         if isinstance(pac, PAC_CAT) and use_short_notation is not None:
-            segments = []
-            for c in pac.categories:
-                segments.append(IDSegment(value=c.key))
-                if isinstance(c, PredefinedCategory):
-                    segments += c._get_segments(use_short_notation=use_short_notation)
-                else:
-                    segments += c.segments
+            segments = pac._resolve_identifier_for_notation(use_short_notation)
         else:
             segments = pac.identifier
         
