@@ -128,7 +128,7 @@ class SessionLocalDirectCall(requests.Session):
         
         r = Response()
         if rh:
-            request_data = AttributeRequestData.from_http_request(pac_id = pac,
+            request_data = AttributeRequestData.from_http_request(id = pac,
                                                                 params = kwargs.get('params'),
                                                                  headers = kwargs.get('headers'))
             body = rh.handle_attribute_request(request_data=request_data)

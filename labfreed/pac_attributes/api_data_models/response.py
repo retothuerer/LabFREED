@@ -5,6 +5,8 @@ import re
 from typing import  Annotated, Any,  Literal, Union, get_args
 from urllib.parse import urlparse
 
+from deprecated import deprecated
+
 from labfreed.utilities.ensure_utc_time import ensure_utc
 from labfreed.labfreed_infrastructure import  LabFREED_BaseModel, ValidationMsgLevel, _quote_texts
 from pydantic import   BaseModel, Field, field_validator, model_validator
@@ -221,10 +223,32 @@ class AttributeGroup(LabFREED_BaseModel):
        
 
 
-class AttributesOfPACID(LabFREED_BaseModel):
-    pac_id: str
+
+
+class AttributesOfItem(LabFREED_BaseModel):
+    id: str
+    attribute_groups: list[AttributeGroup]
+      
+    
+@deprecated("Class AttributesOfPAC_ID is deprecated. Use it's base class instead.")
+class AttributesOfPAC_ID(AttributesOfItem):
+    id: str
     attribute_groups: list[AttributeGroup]
     
+
+    @model_validator(mode="before")
+    @classmethod
+    # field pac-id was renamed to subject-id. This is for backward compatibility.
+    def _rename_to_subject_id(cls, d):
+        if pac_id := d.pop('pac_id', None):
+            d['id'] = pac_id
+        return d
+       
+    @property
+    @deprecated(" field pac_id was renamed to id.")
+    def pac_id(self):
+        # field pac-id was renamed to subject-id. This is for backward compatibility.
+        return self.id
     
     
 IMPORT_URL = "https://vocab.labfreed.org/attributes/v1.jsonld"
@@ -232,7 +256,7 @@ IMPORT_URL = "https://vocab.labfreed.org/attributes/v1.jsonld"
 class AttributeResponsePayload(LabFREED_BaseModel):
     schema_version: str = Field(default='1.0')
     language:str 
-    data: list[AttributesOfPACID]    
+    data: list[AttributesOfItem]    
     
     context: str = Field(alias='@context', default=IMPORT_URL)
       

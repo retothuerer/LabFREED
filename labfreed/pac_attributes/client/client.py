@@ -54,7 +54,7 @@ def http_attribute_request_default_callback_factory(session: requests.Session = 
 
     def callback(url: str, attribute_request_data: AttributeRequestData) -> tuple[int, str]:
         try:
-            url = url + '/' + quote(attribute_request_data.pac_id, safe='')
+            url = url + '/' + quote(attribute_request_data.subject_id, safe='')
             params = attribute_request_data.request_params()           
             resp = session.get(url, 
                                params = params,
@@ -116,7 +116,7 @@ class AttributeClient():
                    
     def get_attributes(self, 
                        server_url:str, 
-                       pac_id:PAC_ID|str, 
+                       pac_id:PAC_ID|str , 
                        restrict_to_attribute_groups:list[str]|None=None, 
                        language_preferences:list[str]|None=None
                        ) -> list[AttributeGroup]:
@@ -141,7 +141,7 @@ class AttributeClient():
             pac_id = PAC_ID.from_url(pac_id)
                 
         # no valid data found in cache > request to server
-        attribute_request_body = AttributeRequestData(pac_id=pac_id.to_url(), 
+        attribute_request_body = AttributeRequestData(subject_id=pac_id.to_url(), 
                                                         restrict_to_attribute_groups=restrict_to_attribute_groups,
                                                         language_preferences=language_preferences
                                 )
@@ -165,7 +165,7 @@ class AttributeClient():
         
         attribute_groups_out = []
         for ag_for_pac in r.data:
-            pac_from_response = PAC_ID.from_url(ag_for_pac.pac_id)
+            pac_from_response = PAC_ID.from_url(ag_for_pac.id)
             if not ag_for_pac.attribute_groups:
                 ags = []
             else:

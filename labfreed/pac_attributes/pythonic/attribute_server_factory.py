@@ -84,7 +84,7 @@ class AttributeFlaskApp(Flask):
                     {"WWW-Authenticate": 'Basic realm="Login required"'}
                 )
             try:
-                request_data = AttributeRequestData.from_http_request(pac_id = pac_id_url_encoded,
+                request_data = AttributeRequestData.from_http_request(id = pac_id_url_encoded,
                                                                       params = request.args,
                                                                      headers = request.headers)
                 response_body = request_handler.handle_attribute_request(request_data)

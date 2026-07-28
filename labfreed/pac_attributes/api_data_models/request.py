@@ -1,9 +1,10 @@
 import re
 from typing import   Any, Self
 from urllib.parse import unquote
+from deprecated import deprecated
 from werkzeug.datastructures import LanguageAccept
 from werkzeug.http import parse_accept_header
-from pydantic import ConfigDict, field_validator, model_validator
+from pydantic import AnyUrl, ConfigDict, TypeAdapter, field_validator, model_validator
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel, LabFREED_ValidationError, ValidationMsgLevel
 from labfreed.pac_id.pac_id import PAC_ID
 
@@ -14,7 +15,7 @@ ATTR_GROUPS_FWD_LKP= 'attr_fwd_lkp'
 class AttributeRequestData(LabFREED_BaseModel):  
     model_config = ConfigDict(arbitrary_types_allowed=True)  
     
-    pac_id: str
+    subject_id: str
     language_preferences: LanguageAccept|None = None
     restrict_to_attribute_groups: list[str]|None = None
     do_forward_lookup: bool = True
@@ -27,9 +28,9 @@ class AttributeRequestData(LabFREED_BaseModel):
         return cls.model_validate_json(json)
     
     @classmethod
-    def from_http_request(cls, pac_id:str, params:dict, headers:dict):
+    def from_http_request(cls, id:str, params:dict, headers:dict):
         # Azure seems to meddle with double slashes in a path, even if url encoded. This is to rectify this behaviour and add back a second slash if necessary
-        pac_id = re.sub('HTTPS:/{1,2}', 'HTTPS://', pac_id, re.IGNORECASE)
+        id = re.sub('HTTPS:/{1,2}', 'HTTPS://', id, re.IGNORECASE)
         
         restrict_to_attribute_groups = params.get(ATTR_GROUPS)
         if restrict_to_attribute_groups == '':
@@ -45,14 +46,28 @@ class AttributeRequestData(LabFREED_BaseModel):
 
         lang_hdr = headers.get('Accept-Language')
         language_preferences: LanguageAccept = parse_accept_header(lang_hdr, LanguageAccept)
-        out = cls(pac_id=pac_id, 
-                            restrict_to_attribute_groups = restrict_to_attribute_groups,
-                            do_forward_lookup = do_forward_lookup,
-                            language_preferences=language_preferences
-                            )   
+        out = cls(  subject_id=id, 
+                    restrict_to_attribute_groups = restrict_to_attribute_groups,
+                    do_forward_lookup = do_forward_lookup,
+                    language_preferences=language_preferences
+                    )   
         return out
         
 
+    @model_validator(mode="before")
+    @classmethod
+    # field pac-id was renamed to subject-id. This is for backward compatibility.
+    def _rename_to_subject_id(cls, d):
+        if pac_id := d.pop('pac_id', None):
+            d['subject_id'] = pac_id
+        return d
+    
+    #@deprecated(" field pac_id was renamed to subject_id.")
+    @property
+    def pac_id(self):
+        # field pac_id was renamed to subject_id. This is for backward compatibility.
+        return self.subject_id
+        
     
     @model_validator(mode="before")
     @classmethod
@@ -75,21 +90,34 @@ class AttributeRequestData(LabFREED_BaseModel):
     
     @model_validator(mode="after")
     def _revert_url_encoding(self):
-        self.pac_id = unquote(self.pac_id)
+        self.subject_id = unquote(self.subject_id)
         if self.restrict_to_attribute_groups:
             self.restrict_to_attribute_groups = [unquote(g) for g in self.restrict_to_attribute_groups]
         return self
            
     @model_validator(mode="after")
-    def _validate_pacs(self) -> Self:           
+    def _validate_subject_id(self) -> Self: 
+         # validate if subject_id is un url. this approximates the requirement for it to be an IRI
         try:
-            PAC_ID.from_url(self.pac_id)
+            TypeAdapter(AnyUrl).validate_python(self.subject_id)
+        except Exception:
+            self._add_validation_message(
+                    source="subject_id",
+                    level = ValidationMsgLevel.ERROR,
+                    msg=f'{self.subject_id} is not a valid IRI'
+                )
+            
+        # validate the recommendation for subject_id to be a pac-id            
+        try:
+            PAC_ID.from_url(self.subject_id)
         except LabFREED_ValidationError:
             self._add_validation_message(
-                    source="pac_id",
-                    level = ValidationMsgLevel.ERROR,
-                    msg=f'{self.pac_id} is not a valid PAC-ID'
+                    source="subject_id",
+                    level = ValidationMsgLevel.WARNING,
+                    msg=f'{self.subject_id} is not a valid PAC-ID'
                 )
+            
+       
                 
         if not self.is_valid:
             raise LabFREED_ValidationError(message='Invalid request', validation_msgs=self.validation_messages())

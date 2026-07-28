@@ -1,2 +1,3 @@
 .\publish.ps1 test
 .\publish.ps1 
+.\build_tools/publish.ps1 prod
