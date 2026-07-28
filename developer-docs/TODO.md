@@ -125,3 +125,22 @@ Still open: `bp_instrument_demo.py` itself now strips the trailing `/` before ca
 `PAC_ID.from_url()` (see `rstrip('/')` in the PAC-Ninja conversion path) - callers
 elsewhere that build `identifier` strings from external input should do the same,
 since the library deliberately won't do it for them.
+
+---
+
+## Every `dev` version bump needs a deliberate `labfreed-webtools` requirements.txt bump
+
+`labfreed-webtools/requirements.txt` pinned `labfreed[extended]` with an open-ended
+floor (`>=1.0.0b44`, no upper bound) while `dev` is only a release away from PyPI -
+meaning any future pre-release cut from `dev` could reach the deployed landing page on
+its next redeploy with zero gate. Tightened to an exact pin (`==1.0.0b44`) on
+2026-07-28 as part of the [[project_labfreed_pac_attributes_improvement_plan]] Phase 0
+work, but that only freezes the *current* risk - it doesn't stop it recurring.
+
+This is a process gap, not a one-time fix: whoever next bumps `labfreed/__init__.py`'s
+`__version__` and cuts a PyPI release should also deliberately review and bump this
+exact-pin line in `labfreed-webtools/requirements.txt`, rather than leaving it stale
+(which is safe but eventually blocks a legitimate upgrade) or reverting to an
+open floor (which reintroduces the original risk). Consider whether the `release`
+skill should gain a step for this once labfreed-webtools' own repo conventions are
+better established here.
