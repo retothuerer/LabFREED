@@ -1,6 +1,6 @@
 ## Materials
 from abc import ABC, abstractproperty
-from pydantic import Field, computed_field, model_validator
+from pydantic import Field, PrivateAttr, computed_field, model_validator
 
 from labfreed.labfreed_infrastructure import ValidationMsgLevel
 from labfreed.pac_cat.category_base import Category, CategorySegment
@@ -10,19 +10,41 @@ class PredefinedCategory(Category, ABC):
     '''@private
     Base for Predefined catergories
     '''
-    additional_segments: list[IDSegment] = Field(default_factory=list, exclude=True)
+    additional_segments: list[CategorySegment] = Field(default_factory=list, exclude=True)
     ''' Category segments, which are not defined in the specification'''
-    
+
+    _segment_bindings: list[tuple[CategorySegment, str | None]] | None = PrivateAttr(default=None)
+    ''' @private (segment, field_alias) pairs in original parse order, set whenever parsed
+    from an existing PAC-ID (regardless of whether a derivation marker is present).
+    `PAC_CAT._resolve_identifier_for_notation` uses this - across *all* categories - to
+    rebuild forced-notation output by walking `PAC_CAT.identifier` directly instead of
+    concatenating each category's own segments, which would risk moving a category
+    relative to another one. See `_use_position_preserving_segments` for the (separate)
+    decision of whether `.segments` itself presents in this order or canonically.'''
+
+    _use_position_preserving_segments: bool = PrivateAttr(default=False)
+    ''' @private Whether the public `.segments` view preserves original order (only
+    needed when a derivation marker is involved - see `PAC_CAT._cat_from_cat_segments`)
+    instead of the long-standing canonical ordering (known fields in schema order, then
+    custom segments) that existing consumers rely on when there's no marker to protect.'''
+
     @computed_field
     @property
     def segments(self) -> list[CategorySegment]:
-        return self._get_segments(use_short_notation=False)
+        if self._use_position_preserving_segments:
+            # The marker segment itself is hidden from this public view - once every
+            # segment is tagged with `derivation_namespace`, it's redundant.
+            return [s for s in self._get_segments_from_bindings(use_short_notation=False) if not s.is_derivation_namespace]
+        return self._get_segments_canonical(use_short_notation=False)
 
     @abstractproperty
     def is_serialized(self) -> bool:
         pass
-    
-    def _get_segments(self, use_short_notation=False) -> list[IDSegment]:
+
+    def _get_segments_canonical(self, use_short_notation=False) -> list[CategorySegment]:
+        ''' Known fields in schema order, then any custom segments - the long-standing
+        reconstruction used when no derivation marker is involved (see
+        `_use_position_preserving_segments`).'''
         segments = []
         can_omit_keys = use_short_notation # keeps track of whether keys can still be omitted. That is the case when the segment recommendation is followed
         for field_name, field_info in self.model_fields.items():
@@ -39,7 +61,41 @@ class PredefinedCategory(Category, ABC):
         if self.additional_segments:
             segments.extend(self.additional_segments)
         return segments
-    
+
+    def _get_segments_from_bindings(self, use_short_notation) -> list[CategorySegment]:
+        ''' Re-emits the originally parsed segments in their original order, only
+        adjusting whether known fields carry an explicit key - so custom segments and
+        derivation namespace markers stay exactly where they were, instead of being
+        moved after all known fields.'''
+        omit_key_for_alias = self._omit_key_for_alias(use_short_notation)
+
+        segments = []
+        for seg, alias in self._segment_bindings:
+            if alias is None:
+                segments.append(seg)
+            else:
+                key = None if omit_key_for_alias.get(alias) else alias
+                segments.append(CategorySegment(key=key, value=seg.value, derivation_namespace=seg.derivation_namespace))
+        return segments
+
+    def _omit_key_for_alias(self, use_short_notation) -> dict:
+        ''' @private For each known field (by its GS1 alias), whether its key can be
+        omitted under `use_short_notation` - true only while every preceding field in
+        schema order is also present, per the "short notation" rule in the PAC-CAT spec.
+        Used both for `.segments`/`_get_segments_from_bindings` and for resolving
+        forced-notation key presence directly on `PAC_CAT.identifier`
+        (`PAC_CAT._resolve_identifier_for_notation`). '''
+        can_omit_keys = use_short_notation
+        omit_key_for_alias = {}
+        for field_name, field_info in self.model_fields.items():
+            if field_name in ['key', 'additional_segments']:
+                continue
+            if getattr(self, field_name):
+                omit_key_for_alias[field_info.alias] = can_omit_keys
+            else:
+                can_omit_keys = False
+        return omit_key_for_alias
+
     model_config = {
         "populate_by_name": True
     }

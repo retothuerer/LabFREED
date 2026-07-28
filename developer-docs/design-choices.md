@@ -121,3 +121,43 @@ depend back on something in `pac_id` beyond what they already do - that would cr
 import cycle, not just an awkward layering.
 
 *Investigated 2026-07-27 (documenting a pre-existing, already self-explained decision).*
+
+---
+
+## Empty T-REX values decode to Python `None` in the pythonic layer
+
+**Decision:** In `pyTREX._trex_value_to_python_type` (`labfreed/trex/pythonic/pyTREX.py`),
+a T-REX value that's empty decodes to Python `None`, via a single check at the top of
+the function (`if not v.value: return None`) rather than a per-type default. This
+applies uniformly across every value type - `NumericSegment`/`Quantity`, `DateValue`,
+`BoolValue`, `AlphanumericValue`, `TextValue`, `BinaryValue`, `ErrorValue` - and to
+individual `DataTable` cells.
+
+**Why:** The T-REX spec's `nullable-empty-values` branch defines an empty `value` as
+"not defined," regardless of `type` - so the most faithful, least-surprising Python
+representation is Python's own null value, not a type's zero-ish default (`0`, `False`,
+`''`) which would look like real data, and not raising, which would make legitimately
+empty, spec-compliant T-REX unrepresentable in the pythonic layer at all.
+`DataTable.data`'s type (`Union[Quantity | ... | None]`) and `get_row_template` already
+treated `None` cells as first-class before this change existed - the table-cell
+decoding path (which used to construct `Quantity(value=e.value, ...)` directly from an
+empty string) was the one place actually broken until this fix landed. See
+[`TODO.md`](TODO.md#to_trex-doesnt-write-none-back-as-an-empty-value-of-the-right-type)
+for the write-direction (`to_trex()`) counterpart, which this change does not cover.
+
+**Alternatives considered / why not:**
+
+- Returning each type's zero-ish default - this was already happening by accident for
+  two types, not by design: an empty `T.D` silently became midnight (`time()` with no
+  args, since the date/time regex's groups are all optional and matched empty), and an
+  empty `T.B` silently fell through to an implicit `None` return only because a
+  pre-existing bug in the bool branch constructed but never raised its `Exception`.
+  Neither behavior was intentional and neither survives round-tripping distinctly from
+  an actual midnight timestamp or a real boolean.
+- Raising on decode - would make a spec-legal T-REX string (empty value for any type)
+  impossible to convert via `pyTREX.from_trex`, defeating the point of adding
+  nullability to the spec.
+
+*Introduced 2026-07-28 on branch `trex-nullable-empty-values`, alongside the T-REX
+grammar/parsing side of the same change (see the "table row parsing" entry in
+[`TODO.md`](TODO.md)).*
