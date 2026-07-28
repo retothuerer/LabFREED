@@ -67,7 +67,7 @@ class AttributeRequestData(LabFREED_BaseModel):
     @field_validator('language_preferences', mode='before')
     @classmethod
     def convert_language_preferences(cls,lp):
-        if isinstance(lp, LanguageAccept):
+        if lp is None or isinstance(lp, LanguageAccept):
             return lp
         lq = [(lng, 1-i/len(lp)) for i, lng in enumerate(lp)]
         return LanguageAccept(lq)
