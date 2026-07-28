@@ -12,6 +12,7 @@ from pydantic import ValidationError
 
 from labfreed.pac_attributes.api_data_models.request import AttributeRequestData
 from labfreed.pac_attributes.api_data_models.response import AttributeGroup, AttributeResponsePayload
+from labfreed.pac_attributes.client.auth import AuthRule, PatternMatchedAuth
 from labfreed.pac_attributes.client.client_attribute_group import ClientAttributeGroup
 from labfreed.pac_attributes.server.server import AttributeServerRequestHandler
 from labfreed.pac_id.pac_id import PAC_ID
@@ -63,6 +64,27 @@ def http_attribute_request_default_callback_factory(session: requests.Session = 
         except requests.exceptions.RequestException as e:
             return 500, str(e)
     return callback
+
+
+def authenticated_http_attribute_request_callback_factory(
+    rules: list[AuthRule], session: requests.Session = None
+) -> AttributeRequestCallback:
+    """ Returns a default implementation of AttributeRequestCallback using `requests` package,
+    with per-request authentication headers injected based on which URL pattern the request matches.
+
+    Args:
+        rules: which requests get which credential/header, see PatternMatchedAuth and AuthRule.
+        session (requests.Session, optional): A requests.Session object. If omitted a default Session is used.
+            Its `auth` is set to a PatternMatchedAuth built from `rules`, overwriting any auth
+            already set on it.
+
+    Returns:
+        AttributeRequestCallback: a callback following the AttributeRequestCallback protocol.
+    """
+    if session is None:
+        session = requests.Session()
+    session.auth = PatternMatchedAuth(rules)
+    return http_attribute_request_default_callback_factory(session=session)
 
 
 def local_attribute_request_callback_factory(request_handler:AttributeServerRequestHandler) -> AttributeRequestCallback:
