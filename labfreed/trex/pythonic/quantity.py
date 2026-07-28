@@ -42,7 +42,7 @@ class Quantity(BaseModel):
         return self
         
     @property
-    def float(self) -> float:
+    def as_float(self) -> float:
         ''' for clarity returns the value'''
         return self.value
     
