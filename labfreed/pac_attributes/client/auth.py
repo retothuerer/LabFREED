@@ -14,9 +14,30 @@ import requests
 CredentialProvider = Callable[[], "str | None"]
 
 
+class MissingEnvCredentialError(RuntimeError):
+    """Raised when an env_credential's environment variable isn't set at request time.
+
+    Declaring an AuthRule with env_credential is a promise that the variable will be
+    set wherever the client runs. A missing variable means the deployment forgot to
+    set it - not a legitimate "send this request unauthenticated" case - so this
+    fails loudly instead of silently sending the request without the header.
+    """
+
+
 def env_credential(var_name: str) -> CredentialProvider:
-    """CredentialProvider that reads an environment variable on every call."""
-    return lambda: os.environ.get(var_name)
+    """CredentialProvider that reads an environment variable on every call.
+
+    Raises MissingEnvCredentialError if the variable isn't set.
+    """
+    def read() -> str:
+        try:
+            return os.environ[var_name]
+        except KeyError:
+            raise MissingEnvCredentialError(
+                f"Environment variable '{var_name}' is not set. "
+                "This AuthRule requires it to be set at request time."
+            ) from None
+    return read
 
 
 def static_credential(value: str | None) -> CredentialProvider:
