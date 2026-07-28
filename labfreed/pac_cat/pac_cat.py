@@ -68,6 +68,24 @@ class PAC_CAT(PAC_ID):
         category_key = segments[0].value
         segments.pop(0)
 
+        # Tag every segment with the derivation namespace that contributed it, so
+        # consumers can tell who added a segment without scanning back for the
+        # nearest marker themselves. Everything after a marker inherits its tag until
+        # the next one. The marker itself is kept in the stream (tagged with the
+        # namespace it declares) so re-serialization can reconstruct it in its exact
+        # original position - it's only hidden from the public `.segments` view
+        # (see `PredefinedCategory.segments`), since that information now lives on
+        # `derivation_namespace` and showing both would be redundant.
+        current_namespace = None
+        has_marker = False
+        tagged_segments = []
+        for seg in segments:
+            if seg.is_derivation_namespace:
+                current_namespace = seg.value[1:]
+                has_marker = True
+            tagged_segments.append(CategorySegment(key=seg.key, value=seg.value, derivation_namespace=current_namespace))
+        segments = tagged_segments
+
         known_cat = category_key_to_class_map.get(category_key)
 
         if not known_cat:

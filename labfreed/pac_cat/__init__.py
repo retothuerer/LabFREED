@@ -1,5 +1,5 @@
 from .pac_cat import PAC_CAT
-from .category_base import Category
+from .category_base import Category, CategorySegment
 from .predefined_categories import (
     Material_Device, Material_Substance, Material_Consumable, Material_Misc, Data_Method, Data_Result, Data_Progress,
     Data_Calibration, Data_Static, Data_Misc, Processor_Software, Processor_Misc, Misc,
@@ -9,6 +9,7 @@ from .predefined_categories import (
 __all__ = [
     "PAC_CAT",
     "Category",
+    "CategorySegment",
     "Material_Device",
     "Material_Substance",
     "Material_Consumable",
