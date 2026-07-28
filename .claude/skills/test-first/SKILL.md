@@ -85,3 +85,9 @@ signal about the code underneath.
   don't narrate every run.
 - To reconstruct where a review session left off: `git status`/`git diff` on the test
   file, plus a grep for the marker. That's the whole state - nothing else to track.
+- If a test imports a third-party package that isn't already a dependency anywhere in
+  pyproject.toml, add it to the `dev` group there. GitHub Actions runs the test suite
+  when publishing a release of labfreed, so a test-only dependency missing from
+  pyproject.toml passes locally (if the package happens to be installed) but breaks the
+  release build. Fixtures/helpers that ship inside a package already listed (e.g.
+  `monkeypatch`, bundled with `pytest`) don't need a separate entry.
