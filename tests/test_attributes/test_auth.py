@@ -1,8 +1,15 @@
 import re
 
+import pytest
 import requests
 
-from labfreed.pac_attributes.client.auth import AuthRule, PatternMatchedAuth, static_credential
+from labfreed.pac_attributes.client.auth import (
+    AuthRule,
+    MissingEnvCredentialError,
+    PatternMatchedAuth,
+    env_credential,
+    static_credential,
+)
 
 
 def _prepared_request(url: str) -> requests.PreparedRequest:
@@ -86,3 +93,25 @@ def test_compiled_regex_pattern_non_match():
     ])
     request = auth(_prepared_request("https://api-abc.example.com/attributes"))
     assert "Authorization" not in request.headers
+
+
+def test_env_credential_reads_environment_variable(monkeypatch):
+    monkeypatch.setenv("TEST_CREDENTIAL", "ABC")
+    auth = PatternMatchedAuth([
+        AuthRule(pattern="https://api.example.com/*",
+                 credential=env_credential("TEST_CREDENTIAL"),
+                 header="X-Api-Key", scheme=""),
+    ])
+    request = auth(_prepared_request("https://api.example.com/attributes"))
+    assert request.headers["X-Api-Key"] == "ABC"
+
+
+def test_env_credential_missing_variable_raises(monkeypatch):
+    monkeypatch.delenv("TEST_CREDENTIAL", raising=False)
+    auth = PatternMatchedAuth([
+        AuthRule(pattern="https://api.example.com/*",
+                 credential=env_credential("TEST_CREDENTIAL"),
+                 header="X-Api-Key", scheme=""),
+    ])
+    with pytest.raises(MissingEnvCredentialError):
+        auth(_prepared_request("https://api.example.com/attributes"))
