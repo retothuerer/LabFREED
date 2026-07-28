@@ -19,6 +19,7 @@ PAC-ID Attributes
 General
 - Minor Bugfixes
 - BREAKING: reorganization of module structure > some import paths have changed
+- BREAKING: renamed Quantity.float property to Quantity.as_float (the name collided with the float type used in Quantity's own annotations, breaking model construction on Python 3.14)
 
 
 
