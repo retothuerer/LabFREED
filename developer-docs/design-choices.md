@@ -161,3 +161,50 @@ for the write-direction (`to_trex()`) counterpart, which this change does not co
 *Introduced 2026-07-28 on branch `trex-nullable-empty-values`, alongside the T-REX
 grammar/parsing side of the same change (see the "table row parsing" entry in
 [`TODO.md`](TODO.md)).*
+
+---
+
+## Empty `id segment`s (trailing/double `/`) are rejected, not normalized
+
+**Decision:** `IDSegment._validate_segment` (`labfreed/pac_id/id_segment.py`) flags
+*any* empty `id segment` value as an ERROR-level validation message - including the
+empty segment produced by a trailing or repeated `/` in an `identifier` (e.g.
+`-MD/240:BAL500/21:12345/` splits into a final empty segment). `PAC_Parser` does not
+normalize a trailing/double `/` away before this check runs, so such an `identifier`
+fails validation (or raises, unless `suppress_validation_errors=True`) rather than
+silently succeeding as if the extra `/` weren't there.
+
+**Why:** an `id segment` is defined (PAC-ID spec) as "a part of an `identifier` that
+can stand on its own... used to organize `identifier`s." An empty value can't stand on
+its own or organize anything - it's indistinguishable from "no segment at all," except
+that it costs an extra `/`. Nothing in PAC-ID or PAC-CAT ever gives an empty segment
+meaning: PAC-CAT's short notation infers keys from segment *position*, and an omitted
+optional `category segment` is described as skipped outright, never represented as an
+empty placeholder to preserve alignment. So an empty segment can only ever be an
+accident - most commonly a trailing `/` a caller forgot to strip - and treating it as
+a hard error surfaces that mistake immediately instead of silently accepting a
+malformed identifier. (Confirmed even the PAC-CAT spec's own example table had one:
+the "Instrument by Mettorius" row carried a stray trailing `/` until this was found
+and fixed alongside this decision.)
+
+**Alternatives considered / why not:**
+
+- Silently strip a trailing/double `/` before parsing (mirroring the leading-`/` strip
+  `_parse_id_segments` already does) - rejected because it would hide a caller bug
+  (e.g. a URL-building mistake upstream) behind seemingly-successful parsing, with no
+  trace that anything was off.
+- Accept but downgrade to a WARNING/RECOMMENDATION-level message instead of ERROR -
+  rejected for the same reason as above: an empty segment never carries legitimate
+  meaning, so there's no "acceptable but non-ideal" middle ground the way there is for,
+  say, a non-well-known `id segment key`.
+
+**Impact:** callers that build `identifier` strings themselves (e.g. proxying a
+third-party conversion service, as in `labfreed-webtools/instrument_demo/`) are
+responsible for stripping any trailing/double `/` before calling `PAC_ID.from_url()` -
+the library will not do it for them. The PAC-ID spec wording was also tightened from
+"At least one `id segment` MUST be non-empty" (ambiguous - arguably permitted some
+empty segments) to "No `id segment` may be empty," to match this implementation
+behavior exactly.
+
+*Investigated 2026-07-28, prompted by a real trailing-`/` failure surfaced via
+`bp_instrument_demo.py`'s PAC-Ninja conversion path.*

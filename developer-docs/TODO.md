@@ -83,3 +83,45 @@ uses for parsing. The scalar (non-table) `None` case is murkier: a bare top-leve
 value has no type annotation to infer a segment `type` from, so keeping the
 `ErrorValue('-')` placeholder there may still be the least-bad option — flag this for
 discussion rather than assuming the table fix generalizes.
+
+---
+
+## Add a PAC-ID conversion stub for non-PAC-ID scanned identifiers
+
+Not every scanned/typed identifier is a valid PAC-ID (e.g. Carl Roth's own internal
+format, `roth503341590!7029.2!1!` — no PAC-ID has been issued for it, see
+`CARL_ROTH_HAS_PAC_ID` in
+`labfreed-webtools/instrument_demo/bp_instrument_demo.py`). Neither `PAC_ID.from_url()`
+nor `AttributeClient.get_attributes()` has a path for this today —
+`PAC_Parser._parse_pac_id` (`labfreed/pac_id/url_parser.py`) raises unconditionally when
+the string doesn't match the `issuer/identifier` pattern, regardless of
+`suppress_validation_errors` (that flag only gates the later `is_valid` check, not the
+regex-mismatch raise).
+
+There's no LabFREED spec yet for "convert an arbitrary scanned string into a PAC-ID," so
+for now this can be a thin stub that just proxies to the Apini cloud attribute service's
+undocumented `/pac-id/<raw string>` endpoint in the background (GET, falling back to a
+POST with a `{"input": ...}` body on 404/405 — see
+`labfreed-webtools/scripts/test_apini_attribute_api.py` for the reference calls this
+would mirror). Revisit once/if a real conversion mechanism gets specified.
+
+Auth still needs to be sorted out before this leaves stub status: the existing
+`ATTRIBUTE_SERVER_AUTH` / `PatternMatchedAuth` credential wiring in
+`bp_instrument_demo.py` covers the `/attributes` endpoint on that same deployment;
+confirm whether `/pac-id` expects the same header/key or something else.
+
+---
+
+## ~~Clarify whether a trailing (or double) `/` in an `identifier` is spec-legal~~ (resolved)
+
+Resolved: empty `id segment`s (from a trailing/double `/`) stay rejected as an ERROR -
+see ["Empty `id segment`s (trailing/double `/`) are rejected, not
+normalized"](design-choices.md#empty-id-segments-trailingdouble--are-rejected-not-normalized)
+for the reasoning. The PAC-ID spec wording was tightened to match ("No `id segment`
+may be empty"), and a stray trailing `/` found in the PAC-CAT spec's own example table
+was fixed alongside this.
+
+Still open: `bp_instrument_demo.py` itself now strips the trailing `/` before calling
+`PAC_ID.from_url()` (see `rstrip('/')` in the PAC-Ninja conversion path) - callers
+elsewhere that build `identifier` strings from external input should do the same,
+since the library deliberately won't do it for them.
