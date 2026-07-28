@@ -58,6 +58,23 @@ Available project skills, in `.claude/skills/`:
   `build_tools/update_readme.py`. Needs network access to `mettorius.com` for one example
   (resolver) - if that example errors with "No Internet Connection" in a devcontainer,
   it's usually stale DNS from container start, not a real outage; restart the container.
+- **`design-choices`** - documents non-obvious architectural/API decisions (with the
+  rejected alternatives and why) in [`design-choices.md`](design-choices.md). Use it
+  whenever a decision at that level gets made or investigated, not for routine
+  implementation notes.
+
+## Design choices
+
+[`design-choices.md`](design-choices.md) is the log of non-obvious architectural/API
+decisions in this codebase - why something is built a certain way, when that reasoning
+isn't obvious from reading the code alone. See the `design-choices` skill above for
+when/how to add to it.
+
+## TODO
+
+[`TODO.md`](TODO.md) is the general developer backlog - not limited to design-choice
+follow-ups, though those cross-link into `design-choices.md` when relevant. Anything
+worth not losing track of goes here rather than only living in chat history.
 
 ## Spec conformance
 
