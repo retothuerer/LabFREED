@@ -1,6 +1,5 @@
-       
-    
 from collections import Counter
+from itertools import batched
 import logging
 import re
 
@@ -198,30 +197,67 @@ class TableSegment(TREX_Segment):
 
  
 
+def _split_table_rows(body: str, n_cols: int) -> list[list[str]]:
+    '''
+    Split a table segment's body into rows of n_cols values each.
+
+    A run of 3+ consecutive colons is ambiguous read left to right without
+    context: an empty value next to a row boundary looks identical whichever
+    side of the boundary it's on (e.g. in "A::B" the "::" could just as well
+    be a row separator preceded by an empty last value of the same row). So
+    rather than searching for the literal "::" row separator up front, this
+    splits on a single ':' throughout and re-groups the flat token list into
+    fixed-size (n_cols + 1) strides - n_cols real values plus the token
+    produced by the row separator's second colon, which carries no value of
+    its own and so must always be empty. Appending one extra colon before
+    splitting stands in for the last row's missing separator, so every
+    stride - including the final, real one - has the same shape and can be
+    validated the same way.
+
+    Raises ValueError if the body doesn't fit that shape (n_cols mismatch
+    somewhere) so the caller can fall back to a best-effort split; downstream
+    size/type validation is what actually reports the mismatch to the user.
+    '''
+    stride = n_cols + 1
+    body_uniform = body + ':'  # pretend a separator follows the last row too, so every row looks the same
+    tokens = body_uniform.split(':')  # ('A:B::C:D' + ':').split(':') -> ['A', 'B', '', 'C', 'D', '']
+    if len(tokens) % stride:
+        raise ValueError(f"Table body does not split evenly into rows of {n_cols} values: {body!r}")
+    rows = list(batched(tokens, stride))
+    if any(s[-1] != '' for s in rows):  # last slot of each stride must be the empty separator artifact
+        raise ValueError(f"Table body does not split evenly into rows of {n_cols} values: {body!r}")
+    return [list(s[:-1]) for s in rows]
+
+
 def _deserialize_table_segment_from_trex_segment_str(trex_segment_str) -> TableSegment:
     # re_table_pattern = re.compile(f"(?P<tablename>[\w\.-]*?)\$\$(?P<header>[\w\.,\$:]*?)::(?P<body>.*)")
     # re_col_head_pattern = re.compile(f"(?P<name>[\w\.-]*?)\$(?P<unit>[\w\.]*)")
-    re_table_pattern = re.compile(r"(?P<tablename>.+?)\$\$(?P<header>.+?)::(?P<body>.+)")
-    
-    matches = re_table_pattern.match(trex_segment_str) 
+    re_table_pattern = re.compile(r"(?P<tablename>.+?)\$\$(?P<header>.+?)::(?P<body>.*)")
+
+    matches = re_table_pattern.match(trex_segment_str)
     if not matches:
         return None
     name, header, body = matches.groups()
-    
+
     column_headers_str = header.split(':')
-    
+
     headers = []
     for colum_header in column_headers_str:
          ch = colum_header.split('$')
          col_key = ch[0]
          col_type = ch[1] if len(ch) > 1 else ''
          headers.append(ColumnHeader(key=col_key, type=col_type))
-    
-    data = [row.split(':') for row in body.split('::') ]
+
+    try:
+        data = _split_table_rows(body, len(headers))
+    except ValueError:
+        # malformed - not n_cols values per row anywhere consistently. Fall
+        # back to a naive split so size/type validation can still flag it.
+        data = [row.split(':') for row in body.split('::')]
     # convert to correct value types
     data_with_types = [[_str_to_value_type(h.type, cv) for cv, h in zip(r, headers)] for r in data]
     data = [ TableRow(r) for r in data_with_types]
-             
+
     out = TableSegment(column_headers=headers, data=data, key=name)
     return out
 

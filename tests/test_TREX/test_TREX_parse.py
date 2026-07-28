@@ -1,3 +1,4 @@
+import pytest
 
 from labfreed.trex import TREX, TableSegment
 
@@ -291,8 +292,132 @@ def test_size_mismatch():
     assert not trex.is_valid
         
 def test_type_mismatch():
-    tab = 'TAB$$C0$T.A:C1$T.B::TRUE:TRUE::FALSE:T' #element (0,1) has wrong type. should be boolean (T or F) but is text 
+    tab = 'TAB$$C0$T.A:C1$T.B::TRUE:TRUE::FALSE:T' #element (0,1) has wrong type. should be boolean (T or F) but is text
     trex = trex_deserialization_helper(tab)
     assert not trex.is_valid
-        
-            
+
+
+# Empty (Null) Values - a segment's value MAY be empty regardless of type
+def test_empty_value_valid_for_every_type():
+    types = ['HUR', 'C62', 'T.D', 'T.B', 'T.A', 'T.T', 'T.X', 'E']
+    for type_ in types:
+        trex_str = f'A${type_}:'
+        trex = trex_deserialization_helper(trex_str)
+        assert trex.is_valid, f"empty value should be valid for type {type_}"
+        seg = trex.get_segment('A')
+        assert seg.value == ''
+        assert trex.serialize() == trex_str
+
+
+def test_empty_date_value_does_not_default_to_midnight():
+    # an empty T.D value means "not defined", not "00:00:00"
+    trex = trex_deserialization_helper('A$T.D:')
+    assert trex.is_valid
+    seg = trex.get_segment('A')
+    assert seg._date_time_dict is None
+
+
+def test_empty_value_segment_ignored_by_other_types_validation():
+    # an empty value must not accidentally trip a type's normal character-set/format checks
+    trex_str = 'A$T.A:+B$T.B:+C$HUR:'
+    trex = trex_deserialization_helper(trex_str)
+    assert trex.is_valid
+    assert trex.serialize() == trex_str
+
+
+# Table empty cells
+def test_table_empty_cell_first_element():
+    # exact example from the T-REX spec: pH could not be measured for the middle row
+    tab = 'TIT$$VOL$MLT:PH$C62:::2.44::4.0:1.00::8.0:4.33'
+    trex = trex_deserialization_helper(tab)
+    assert trex.is_valid
+    t = trex.segments[0]
+    assert len(t.data) == 3
+    assert [e.value for e in t.data[0]] == ['', '2.44']
+    assert [e.value for e in t.data[1]] == ['4.0', '1.00']
+    assert [e.value for e in t.data[2]] == ['8.0', '4.33']
+    assert trex.serialize() == tab
+    
+def test_table_empty_cell_last_column():
+    # exact example from the T-REX spec: pH could not be measured for the middle row
+    tab = 'TIT$$VOL$MLT:PH$C62::0.0:2.44::4.0:::8.0:4.33'
+    trex = trex_deserialization_helper(tab)
+    assert trex.is_valid
+    t = trex.segments[0]
+    assert len(t.data) == 3
+    assert [e.value for e in t.data[0]] == ['0.0', '2.44']
+    assert [e.value for e in t.data[1]] == ['4.0', '']
+    assert [e.value for e in t.data[2]] == ['8.0', '4.33']
+    assert trex.serialize() == tab
+
+
+def test_table_empty_cell_first_column():
+    tab = 'TIT$$VOL$MLT:PH$C62::0.0:2.44:::4.33'
+    trex = trex_deserialization_helper(tab)
+    assert trex.is_valid
+    t = trex.segments[0]
+    assert len(t.data) == 2
+    assert [e.value for e in t.data[0]] == ['0.0', '2.44']
+    assert [e.value for e in t.data[1]] == ['', '4.33']
+    assert trex.serialize() == tab
+    
+    
+def test_table_empty_cell_llast_element():
+    # exact example from the T-REX spec: pH could not be measured for the middle row
+    tab = 'TIT$$VOL$MLT:PH$C62::0.0:2.44::4.0:1.00::8.0:'
+    trex = trex_deserialization_helper(tab)
+    assert trex.is_valid
+    t = trex.segments[0]
+    assert len(t.data) == 3
+    assert [e.value for e in t.data[0]] == ['0.0', '2.44']
+    assert [e.value for e in t.data[1]] == ['4.0', '1.00']
+    assert [e.value for e in t.data[2]] == ['8.0', '']
+    assert trex.serialize() == tab
+
+
+def test_table_malformed_row_size_not_masked_by_empty_values():
+    # row 0 has 3 cells against a 2-column header - the token counts happen
+    # to still divide evenly into 2-cell rows, so this must not be silently
+    # reinterpreted as a well-formed table with values shifted around.
+    tab = 'TAB$$C0$T.A:C1$T.A::A:B:C::D'
+    trex = trex_deserialization_helper(tab)
+    assert not trex.is_valid
+
+
+def test_table_roundtrip_with_empty_cells_in_various_positions():
+    # stress the row/boundary splitting: empty last cell, empty first cell, both cells
+    # empty, and several such rows back to back - constructed programmatically and
+    # round-tripped through serialize/deserialize rather than hand-counted colons.
+    from labfreed.trex.table_segment import ColumnHeader, TableRow
+    from labfreed.trex.trex_base_models import NumericValue
+
+    headers = [ColumnHeader(key='A', type='C62'), ColumnHeader(key='B', type='C62')]
+    row_values = [
+        ['1', '2'],
+        ['3', ''],
+        ['', '4'],
+        ['', ''],
+        ['5', '6'],
+        ['', ''],
+        ['7', ''],
+        ['', '8'],
+    ]
+    rows = [TableRow([NumericValue(value=v) for v in r]) for r in row_values]
+    table = TableSegment(key='TAB', column_headers=headers, data=rows)
+
+    trex_str = table.serialize()
+    reparsed = trex_deserialization_helper(trex_str)
+    assert reparsed.is_valid
+    t = reparsed.segments[0]
+    assert [[c.value for c in row] for row in t.data] == row_values
+    assert reparsed.serialize() == trex_str
+
+
+def test_table_single_row_single_column_all_empty():
+    tab = 'TAB$$A$T.A::'
+    trex = trex_deserialization_helper(tab)
+    assert trex.is_valid
+    t = trex.segments[0]
+    assert len(t.data) == 1
+    assert [e.value for e in t.data[0]] == ['']
+    assert trex.serialize() == tab

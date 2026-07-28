@@ -181,6 +181,8 @@ def _trex_segment_to_python_type(v):
     '''Converts a TREX segment to a python value. Note the segment key must be handles outside.'''
     if isinstance(v, NumericSegment):
         num_val = _trex_value_to_python_type(v)
+        if num_val is None:
+            return None
         u = unece_unit(v.type)
         unit = u.get('symbol')
         return Quantity(value=num_val, unit=unit)
@@ -194,7 +196,7 @@ def _trex_segment_to_python_type(v):
         for row in v.data:
             r = []
             for e, h in zip(row, v.column_headers):
-                if isinstance(e, NumericValue):
+                if isinstance(e, NumericValue) and e.value:
                     u = unece_unit(h.type)
                     unit = u.get('symbol')
                     r.append(Quantity(value=e.value, unit=unit))
@@ -207,6 +209,9 @@ def _trex_segment_to_python_type(v):
 
 def _trex_value_to_python_type(v):
     '''Converts a TREX value to the corresponding python type'''
+    if not v.value:  # empty value is valid regardless of type - means "not defined"
+        return None
+
     if isinstance(v, NumericValue):
         if '.' not in v.value and 'E' not in v.value: 
             return int(v.value)

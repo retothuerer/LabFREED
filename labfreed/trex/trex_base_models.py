@@ -33,10 +33,12 @@ class Value(LabFREED_BaseModel, ABC):
         
         
 class NumericValue(Value):
-        
+
     @model_validator(mode='after')
     def _validate(self):
         value = self.value
+        if not value:  # empty value is valid regardless of type - means "not defined"
+            return self
         if not_allowed_chars := set(re.sub(r'[0-9\.\-E]', '', value)):
             self._add_validation_message(
                 source=f"TREX numeric value {value}",
@@ -59,6 +61,8 @@ class DateValue(Value):
     
     @model_validator(mode='after')
     def _validate(self):
+        if not self.value:  # empty value is valid regardless of type - means "not defined"
+            return self
         pattern:str = r'((?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2}))?(T(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2})?(\.(?P<millisecond>\d{3}))?)?'
         value=self.value
         if not re.fullmatch(pattern, value):
@@ -97,6 +101,8 @@ class BoolValue(Value):
 
     @model_validator(mode='after')
     def _validate(self):
+        if not self.value:  # empty value is valid regardless of type - means "not defined"
+            return self
         if self.value not in ['T', 'F']:
             self._add_validation_message(
                 source=f"TREX boolean value {self.value}",
@@ -112,6 +118,8 @@ class AlphanumericValue(Value):
         
     @model_validator(mode='after')
     def _validate(self):
+        if not self.value:  # empty value is valid regardless of type - means "not defined"
+            return self
         if re.match(r'[a-z]', self.value):
             self._add_validation_message(
                     source=f"TREX value {self.value}",
@@ -132,9 +140,11 @@ class AlphanumericValue(Value):
              
     
 class TextValue(Value):
-        
+
     @model_validator(mode='after')
     def _validate(self):
+        if not self.value:  # empty value is valid regardless of type - means "not defined"
+            return self
         if not_allowed_chars := set(re.sub(r'[A-Z0-9]', '', self.value)):
             self._add_validation_message(
                     source=f"TREX value {self.value}",
@@ -144,12 +154,14 @@ class TextValue(Value):
                     highlight_sub=not_allowed_chars
             )
         return self
-                
-    
+
+
 class BinaryValue(Value):
-        
+
     @model_validator(mode='after')
     def _validate(self):
+        if not self.value:  # empty value is valid regardless of type - means "not defined"
+            return self
         if not_allowed_chars := set(re.sub(r'[A-Z0-9]', '', self.value)):
            self._add_validation_message(
                     source=f"TREX value {self.value}",
@@ -162,9 +174,11 @@ class BinaryValue(Value):
                  
     
 class ErrorValue(Value):
-    
+
     @model_validator(mode='after')
     def _validate(self):
+        if not self.value:  # empty value is valid regardless of type - means "not defined"
+            return self
         if not_allowed_chars := set(re.sub(r'[A-Z0-9\.-]', '', self.value)):
             self._add_validation_message(
                     source=f"TREX value {self.value}",

@@ -72,7 +72,7 @@ class ErrorSegment(ValueSegment, ErrorValue):
 
 def _deserialize_value_segment_from_trex_segment_str(trex_segment_str) -> ValueSegment:
     #re_scalar_pattern = re.compile(f"(?P<name>[\w\.-]*?)\$(?P<unit>[\w\.]*?):(?P<value>.*)")
-    re_scalar_pattern = re.compile("(?P<name>.+?)\$(?P<unit>.+?):(?P<value>.+)")
+    re_scalar_pattern = re.compile(r"(?P<name>.+?)\$(?P<unit>.+?):(?P<value>.*)")
     matches = re_scalar_pattern.match(trex_segment_str)
     if not matches:
         return None
