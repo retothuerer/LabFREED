@@ -17,32 +17,33 @@ import threading
 from werkzeug.serving import make_server
 
 
-
-
+MfgDate = "https://labfreed.org/terms/example/MfgDate"
+MaxWeight = "https://labfreed.org/terms/example/MaxWeight"
+CalWeight = "https://labfreed.org/terms/example/CalWeight"
+NominalWeight = "https://labfreed.org/terms/example/NominalWeight"
 
 data_source = pyDict_DataSource(attribute_group_key='ProductionData', 
                             data = {
                                 "HTTPS://PAC.METTORIUS.COM/-MD/BAL500/12340": pyAttributes([
-                                    pyAttribute(key="MfgDate", value=datetime(year=2015, month=10, day=1, hour=10, minute=12)),
-                                    pyAttribute(key="MaxWeight", values=Quantity(value=100.00, unit='g', log_least_significant_digit=-2)),
-                                    pyAttribute(key="CalWeight", values=pyReference('HTTPS://PAC.METTORIUS.COM/-MD/CALWEIGH/A00002')),
-                                    pyAttribute(key="multitext", values=["foo", "bar"])
+                                    pyAttribute(key=MfgDate, value=datetime(year=2015, month=10, day=1, hour=10, minute=12)),
+                                    pyAttribute(key=MaxWeight, values=Quantity(value=100.00, unit='g', log_least_significant_digit=-2)),
+                                    pyAttribute(key=CalWeight, values=pyReference('HTTPS://PAC.METTORIUS.COM/-MD/CALWEIGH/A00002'))
                                 ]),
                                 "HTTPS://PAC.METTORIUS.COM/-MD/BAL500/000001": pyAttributes([
-                                    pyAttribute(key="MfgDate", value=datetime(year=2015, month=10, day=1, hour=10, minute=12)),
-                                    pyAttribute(key="MaxWeight", values=Quantity(value=100.00, unit='g', log_least_significant_digit=-2)),
-                                    pyAttribute(key="CalWeight", values=pyReference('HTTPS://PAC.METTORIUS.COM/-MD/CALWEIGH/A00002'))
+                                    pyAttribute(key=MfgDate, value=datetime(year=2015, month=10, day=1, hour=10, minute=12)),
+                                    pyAttribute(key=MaxWeight, values=Quantity(value=100.00, unit='g', log_least_significant_digit=-2)),
+                                    pyAttribute(key=CalWeight, values=pyReference('HTTPS://PAC.METTORIUS.COM/-MD/CALWEIGH/A00002'))
                                 ]),
                                 "HTTPS://PAC.METTORIUS.COM/-MD/BAL500/12341": pyAttributes([
-                                    pyAttribute(key="MfgDate", values=datetime(year=2015, month=10, day=1, hour=10, minute=12)),
-                                    pyAttribute(key="MaxWeight", values=Quantity(value=111.00, unit='g', log_least_significant_digit=2))
+                                    pyAttribute(key=MfgDate, values=datetime(year=2015, month=10, day=1, hour=10, minute=12)),
+                                    pyAttribute(key=MaxWeight, values=Quantity(value=111.00, unit='g', log_least_significant_digit=2))
                                 ]),
                                 "HTTPS://PAC.METTORIUS.COM/-MD/BAL500/12342": pyAttributes([
-                                    pyAttribute(key="MfgDate", values=datetime(year=2015, month=10, day=1, hour=10, minute=12)),
-                                    pyAttribute(key="MaxWeight", values=Quantity(value=100.00, unit='g'))
+                                    pyAttribute(key=MfgDate, values=datetime(year=2015, month=10, day=1, hour=10, minute=12)),
+                                    pyAttribute(key=MaxWeight, values=Quantity(value=100.00, unit='g'))
                                 ]),
                                 "HTTPS://PAC.METTORIUS.COM/-MD/CALWEIGH/A00002": pyAttributes([
-                                    pyAttribute(key="NominalWeight", values=Quantity(value=50.00, unit='g'))
+                                    pyAttribute(key=NominalWeight, values=Quantity(value=50.00, unit='g'))
                                 ])
                                 }
                 )

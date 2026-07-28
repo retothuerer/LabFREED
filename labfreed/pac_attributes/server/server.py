@@ -9,7 +9,7 @@ from typing import Literal
 import logging
 
 from labfreed.pac_attributes.api_data_models.request import AttributeRequestData
-from labfreed.pac_attributes.api_data_models.response import AttributeResponsePayload, AttributesOfPACID, ReferenceAttributeItemsElement, AttributeGroup
+from labfreed.pac_attributes.api_data_models.response import AttributeResponsePayload, AttributesOfItem, ReferenceAttributeItemsElement, AttributeGroup
 from labfreed.pac_attributes.api_data_models.server_capabilities_response import ServerCapabilities
 from labfreed.pac_attributes.server.attribute_data_sources import AttributeGroupDataSource
 from labfreed.pac_attributes.server.translation_data_sources import TranslationDataSource
@@ -69,7 +69,7 @@ class AttributeServerRequestHandler():
             raise InvalidRequestError
         attributes_for_pac_id = []
         referenced_pac_ids = set()
-        attributes_for_pac = self._get_attributes_for_pac_id(pac_url=r.pac_id, 
+        attributes_for_pac = self._get_attributes_for_pac_id(pac_url=r.subject_id, 
                                                             restrict_to_attribute_groups = r.restrict_to_attribute_groups)
         attributes_for_pac_id.append(attributes_for_pac)
         ref = self._get_referenced_pac_ids(attributes_for_pac)
@@ -95,7 +95,7 @@ class AttributeServerRequestHandler():
 
 
 
-    def _get_attributes_for_pac_id(self, pac_url:str, restrict_to_attribute_groups:list[str]|None=None) -> AttributesOfPACID:
+    def _get_attributes_for_pac_id(self, pac_url:str, restrict_to_attribute_groups:list[str]|None=None) -> AttributesOfItem:
         attribute_groups = []
         if restrict_to_attribute_groups:
             relevant_data_sources = [ds for ds in self._attribute_group_data_sources if ds.attribute_group_key in restrict_to_attribute_groups]
@@ -113,7 +113,7 @@ class AttributeServerRequestHandler():
         
         self._remove_duplicate_attributes(attribute_groups)
                         
-        return AttributesOfPACID(pac_id=pac_url, # return the pac_url as given, i.e. with the extension if there was one
+        return AttributesOfItem(id=pac_url, # return the pac_url as given, i.e. with the extension if there was one
                                  attribute_groups=attribute_groups)
         
             
@@ -142,7 +142,7 @@ class AttributeServerRequestHandler():
         
     
 
-    def _get_referenced_pac_ids(self, attributes_for_pac:AttributesOfPACID):
+    def _get_referenced_pac_ids(self, attributes_for_pac:AttributesOfItem):
         referenced_pacs = []
         for ag in attributes_for_pac.attribute_groups:
             for a in ag.attributes.values() :
@@ -156,7 +156,7 @@ class AttributeServerRequestHandler():
         return referenced_pacs
             
     
-    def _add_display_names(self, attributes_of_pac:AttributesOfPACID, language:str) -> str:
+    def _add_display_names(self, attributes_of_pac:AttributesOfItem, language:str) -> str:
         ''' 
         adds the display names in the requested language to attribute group and attributes.
         if no translation can be found in this language it IMMEDIATELY falls back to some - probably inappropriate- magic.
