@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "labfreed-plugins",
+  "version": "1.0.0",
+  "description": "Claude Code plugins for working with LabFREED (PAC-ID, PAC-CAT, T-REX, PAC-ID Resolver, PAC-ID Attributes) and its Python reference implementation.",
+  "owner": {
+    "name": "Reto Thürer",
+    "email": "thuerer.r@buchi.com"
+  },
+  "plugins": [
+    {
+      "name": "labfreed",
+      "description": "Reference knowledge and a code quickstart for writing Python against the labfreed package -- PAC-ID, PAC-CAT, T-REX, PAC-ID Resolver, PAC-ID Attributes.",
+      "version": "1.0.0",
+      "source": "./plugins/labfreed",
+      "category": "development"
+    }
+  ]
+}

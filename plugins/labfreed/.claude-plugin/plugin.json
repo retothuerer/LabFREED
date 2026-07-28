@@ -1,0 +1,13 @@
+{
+  "name": "labfreed",
+  "version": "1.0.0",
+  "description": "Reference knowledge and code quickstart for writing Python against the labfreed package (LabFREED building blocks: PAC-ID, PAC-CAT, T-REX, PAC-ID Resolver, PAC-ID Attributes).",
+  "author": {
+    "name": "Reto Thürer",
+    "email": "thuerer.r@buchi.com"
+  },
+  "homepage": "https://labfreed.org",
+  "repository": "https://github.com/retothuerer/LabFREED",
+  "license": "MIT",
+  "keywords": ["labfreed", "pac-id", "pac-cat", "t-rex", "lab-digitalization"]
+}

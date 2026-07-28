@@ -39,6 +39,41 @@ pip install labfreed
 
 Some parts of the package need extra dependencies that are not installed by default — see [Package Structure](#package-structure) below.
 
+## Using with Claude Code
+
+If you're writing Python against this package with [Claude Code](https://claude.com/claude-code), install the bundled skill so Claude already knows the building blocks and has working code examples for every core operation, without you having to explain the ecosystem or paste in examples first.
+
+**Prerequisites:** the [Claude Code CLI](https://claude.com/claude-code) installed (`claude --version` to check).
+
+**Install:**
+
+```bash
+/plugin marketplace add retothuerer/LabFREED
+/plugin install labfreed@labfreed-plugins
+```
+
+`retothuerer/LabFREED` (no `@ref`) resolves to this repo's default branch. If you want
+the plugin content tied to a released version rather than whatever's currently in
+active development, pin it explicitly instead:
+
+```bash
+/plugin marketplace add retothuerer/LabFREED@main
+```
+
+**Verify it's working:** run `/plugin` and check `labfreed` shows up under Installed —
+or just ask Claude something like "what is a PAC-CAT?" or "write Python to parse this
+PAC-ID" in any project; the skill should kick in on its own, without you mentioning it
+by name.
+
+**Keeping it up to date:** `/plugin marketplace update` refreshes the marketplace
+listing from this repo, then `/plugin update labfreed` updates the installed plugin
+itself. Plugin content is refreshed as part of every labfreed release (see
+[Versioning](#versioning)).
+
+**Uninstall:** `/plugin uninstall labfreed`.
+
+See [plugins/labfreed/README.md](plugins/labfreed/README.md) for exactly what the skill covers.
+
 ## Package Structure
 
 The `labfreed` package is organized into three parts, reflecting how far the code strays from being a plain implementation of the building block specifications:
@@ -344,7 +379,32 @@ for group in attribute_groups:
 ```
 <!-- END EXAMPLES -->
 
+## Versioning
 
+This package follows [Semantic Versioning](https://semver.org): `MAJOR.MINOR.PATCH`.
+
+- **MAJOR** -- may introduce breaking changes. A major bump doesn't have to break
+  anything, but it's where we reserve the right to.
+- **MINOR** -- adds functionality. We aim for backward compatibility here too, but
+  reserve the right to break edge cases where keeping compatibility isn't practical
+  (e.g. tightening validation on input that was already spec-invalid). Any such case is
+  called out explicitly in the changelog as `BREAKING`.
+- **PATCH** -- bugfixes only, no intentional API changes.
+
+**Deprecation policy:** when a public API needs to change or go away, we deprecate it
+first -- it keeps working, but raises a `DeprecationWarning` pointing at its
+replacement -- and keep that deprecated path working for at least one more major
+version before actually removing it.
+
+**Pre-releases:** in-progress work toward the next version is published straight to
+[PyPI](https://pypi.org/project/labfreed/) as an alpha/beta pre-release (e.g.
+`1.0.0b44`). A plain `pip install labfreed` always resolves to the latest stable release
+and skips these automatically -- opt in explicitly with `pip install --pre labfreed`, or
+pin an exact pre-release (`pip install labfreed==1.0.0b44`). Since the LabFREED
+building-block specs and this implementation are co-developed, a pre-release can be
+ahead of the currently *published* spec -- it may reflect a spec that's still being
+drafted. Treat pre-release behavior as experimental and subject to change before the
+real release ships.
 
 <!-- BEGIN CHANGELOG -->
 ## Change Log

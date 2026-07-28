@@ -208,3 +208,59 @@ behavior exactly.
 
 *Investigated 2026-07-28, prompted by a real trailing-`/` failure surfaced via
 `bp_instrument_demo.py`'s PAC-Ninja conversion path.*
+
+---
+
+## PAC-ID-Attributes' `subject_id` accepts any IRI; the client never reserializes a string one through `PAC_ID`
+
+**Decision:** `AttributeRequestData._validate_subject_id` (`api_data_models/request.py`)
+treats `subject_id` as valid whenever it's a syntactically valid IRI (approximated via
+`pydantic.AnyUrl`), and only downgrades "not a valid PAC-ID" to a WARNING - it no longer
+requires a strict PAC-ID. Correspondingly, `AttributeClient.get_attributes()`
+(`client/client.py`) stopped routing every `subject_id` through
+`PAC_ID.from_url(...).to_url()`: a `PAC_ID` instance is still canonicalized via
+`.to_url()` as before, but a plain `str` is sent to the server and compared against the
+response's `id` completely as-is, with no PAC_ID parsing in between.
+
+**Why:** this closes a real gap between the reference implementation and the
+already-published PAC-ID-Attributes spec change (`ApiniLabs/PAC-Attributes` commit
+`699e26e`, "iri instead of pac-id"), which says the id only has to be an IRI,
+"preferably" a PAC-ID. Two concrete bugs were found while implementing this:
+
+- `PAC_CAT._split_segments_by_category` and `_resolve_identifier_for_notation`
+  (`pac_cat/pac_cat.py`) both did `segment.value[0] == '-'`, which raises an unhandled
+  `IndexError` on an empty segment (e.g. from a trailing `/`) instead of the clean,
+  catchable `LabFREED_ValidationError` the "empty id segments" decision above assumes.
+  Fixed by switching to `segment.value.startswith('-')`, which handles an empty string
+  correctly (`''.startswith('-')` is simply `False`) without changing behavior for any
+  non-empty segment.
+- Routing a plain string through `PAC_ID.from_url(subject_id).to_url()` before sending
+  it is actively harmful for a non-PAC-ID IRI: confirmed empirically that
+  `PAC_ID.from_url("https://example.com/thing?x=1", suppress_validation_errors=True).to_url()`
+  returns `"HTTPS://PAC.example.com/thing?x=1"` - the serializer unconditionally injects
+  a `PAC.` issuer prefix and uppercases the scheme, silently corrupting any id that
+  isn't already in that exact canonical form. Sending that corrupted id to the server
+  instead of the real one is a data-integrity bug, not just a cosmetic mismatch.
+
+**Alternatives considered / why not:**
+
+- Keep parsing every `subject_id` string via `PAC_ID.from_url(..., suppress_validation_errors=True)`
+  and use `.to_url()` on both sides for the response-identity comparison - rejected
+  because of the corruption issue above, and because it's unnecessary: the server
+  already echoes the `subject_id` it received back verbatim as the response `id`
+  (`AttributeServerRequestHandler._get_attributes_for_pac_id` passes `pac_url` through
+  unmodified), so a plain string comparison on both sides is both simpler and more
+  faithful than reconstructing and re-canonicalizing a `PAC_ID` object neither side
+  actually needs.
+- Attempt a "round-trip check" (parse, reserialize, only trust the canonical form if it
+  matches the original) - rejected as unnecessary complexity once the string-passthrough
+  approach above sidesteps the corruption risk entirely.
+
+**Impact:** a real PAC-ID passed as a `PAC_ID` object is still normalized as before
+(case, extension formatting); a real PAC-ID passed as a `str` is no longer
+canonicalized before being sent - this is intentional and matches how the server treats
+it already (verbatim passthrough), not a regression, but worth knowing if some other
+caller relied on the client silently uppercasing/reformatting a lowercase PAC-ID string.
+
+*Investigated 2026-07-28, alongside implementing the IRI migration on branch
+`iri-instead-of-pac-id`.*
