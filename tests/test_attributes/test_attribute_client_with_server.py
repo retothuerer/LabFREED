@@ -1,91 +1,94 @@
-
-
-
-
 from datetime import datetime
-import json
-from labfreed.pac_attributes.client.attribute_cache import MemoryAttributeCache
+
 from labfreed.pac_attributes.client.client import AttributeClient
-from labfreed.pac_attributes.pythonic.attribute_server_factory import AttributeServerFactory
 from labfreed.pac_attributes.pythonic.py_attributes import pyAttribute, pyAttributes, pyReference
-from labfreed.pac_attributes.server.attribute_data_sources import Dict_DataSource
+from labfreed.pac_attributes.pythonic.py_dict_data_source import pyDict_DataSource
 from labfreed.pac_attributes.server.server import AttributeServerRequestHandler
 from labfreed.pac_attributes.server.translation_data_sources import DictTranslationDataSource
-from labfreed.pac_id.pac_id import PAC_ID
-from labfreed.trex.pythonic.quantity import Quantity
+from labfreed.utilities.translations import Term, Terms
+
+NORMAL_PAC_ID = "HTTPS://PAC.METTORIUS.COM/-MD/BAL500/12340"
+CAL_PAC_ID = "HTTPS://PAC.METTORIUS.COM/-MD/CALWEIGH/A00002"
+TRAILING_SLASH_PAC_ID = "HTTPS://PAC.METTORIUS.COM/-MD/BAL500/12345/"
+GENERIC_IRI = "https://example.com/thing?x=1"
 
 
+def _build_client():
+    data_source = pyDict_DataSource(
+        attribute_group_key="ProductionData",
+        data={
+            NORMAL_PAC_ID: pyAttributes([
+                pyAttribute(key="MfgDate", value=datetime(2015, 10, 1, 10, 12)),
+                pyAttribute(key="CalWeight", value=pyReference(CAL_PAC_ID)),
+            ]),
+            CAL_PAC_ID: pyAttributes([
+                pyAttribute(key="NominalWeight", value="50 g"),
+            ]),
+            TRAILING_SLASH_PAC_ID: pyAttributes([
+                pyAttribute(key="MfgDate", value=datetime(2020, 1, 1)),
+            ]),
+            GENERIC_IRI: pyAttributes([
+                pyAttribute(key="MfgDate", value=datetime(2021, 1, 1)),
+            ]),
+        },
+    )
+    translations = Terms(terms=[
+        Term.create("MfgDate", [("en", "Manufacturing date")]),
+        Term.create("CalWeight", [("en", "Calibration weight")]),
+        Term.create("NominalWeight", [("en", "Nominal weight")]),
+    ])
+    translation_data_source = DictTranslationDataSource(data=translations, supported_languages=["en"])
+    handler = AttributeServerRequestHandler(
+        data_sources=[data_source],
+        translation_data_sources=[translation_data_source],
+        default_language="en",
+    )
 
-# def in_memory_callback(url: str, attribute_request_body: str) -> tuple[int, str]:
-#     try:
-#         resp = request_handler.handle_attribute_request(attribute_request_body)
-#         return 200, resp
-#     except Exception as e:
-#         return 500, str(e)
+    def local_callback(url, attribute_request_data):
+        try:
+            return 200, handler.handle_attribute_request(attribute_request_data)
+        except Exception as e:
+            return 500, str(e)
 
-
-# attribute_client = AttributeClient(http_post_callback=in_memory_callback, cache_store=MemoryAttributeCache())
-
-
-
-
-data_source = Dict_DataSource(attribute_group_key='ProductionData', 
-                            data = {
-                                "HTTPS://PAC.METTORIUS.COM/-MD/BAL500/12340": pyAttributes([
-                                    pyAttribute(key="MfgDate", value=datetime(year=2015, month=10, day=1, hour=10, minute=12), valid_until='forever'),
-                                    pyAttribute(key="MaxWeight", value=Quantity(value=100.00, unit='g', log_least_significant_digit=-2)),
-                                    pyAttribute(key="CalWeight", value=pyReference('HTTPS://PAC.METTORIUS.COM/-MD/CALWEIGH/A00002'))
-                                ]),
-                                "HTTPS://PAC.METTORIUS.COM/-MD/BAL500/12341": pyAttributes([
-                                    pyAttribute(key="MfgDate", value=datetime(year=2015, month=10, day=1, hour=10, minute=12), valid_until='forever'),
-                                    pyAttribute(key="MaxWeight", value=Quantity(value=111.00, unit='g', log_least_significant_digit=2))
-                                ]),
-                                "HTTPS://PAC.METTORIUS.COM/-MD/BAL500/12342": pyAttributes([
-                                    pyAttribute(key="MfgDate", value=datetime(year=2015, month=10, day=1, hour=10, minute=12), valid_until='forever'),
-                                    pyAttribute(key="MaxWeight", value=Quantity(value=100.00, unit='g'))
-                                ]),
-                                "HTTPS://PAC.METTORIUS.COM/-MD/CALWEIGH/A00002": pyAttributes([
-                                    pyAttribute(key="NominalWeight", value=Quantity(value=50.00, unit='g'), valid_until='forever')
-                                ])
-                                }
-                )
-
-# data_source2 = RandomAttributeGroupDataSource(attribute_group_key="Random", attribute_keys=["Foo", "Bar", "Deadmeat", "Abc"])
-
-
-# data_source3 = PACAnalyzerAttributeDataSource(attribute_group_key="PACAnalyzer")
-
-
-translation_data_source = DictTranslationDataSource(data=
-                                                    {
-                                                        "MfgDate": {
-                                                                        "en": "Manufactoring date",
-                                                                        "en-US": "Manufactoring date",
-                                                                        "fr": "Date de fabrication"
-                                                                    },
-                                                        "MaxWeight": {
-                                                                        "en": "Maximum weight",
-                                                                        "fr": "Poids maximal"
-                                                                    },
-                                                        "CalWeight": {
-                                                                        "en": "Calibration weight",
-                                                                        "fr": "Poids calibration"
-                                                                    }
-                                                        
-                                                    }
-                                                )
-
-test_handler = AttributeServerRequestHandler(data_sources=[data_source], translation_data_source=translation_data_source)
-def local_no_network_callback(url:str, attribute_request_body=str, params:dict=None):
-    return test_handler.handle_attribute_request(attribute_request_body)
-
-client = AttributeClient(http_post_callback=local_no_network_callback)
+    return AttributeClient(http_post_callback=local_callback)
 
 
-pac_id = PAC_ID.from_url("HTTPS://PAC.METTORIUS.COM/-MD/BAL500/12340")
-pac_id2 = PAC_ID.from_url("HTTPS://PAC.METTORIUS.COM/-MD/BAL500/12341*ABC$TREX/A$T.A:BLUBB")
+def test_client_gets_attributes_for_a_normal_pac_id():
+    client = _build_client()
+    groups = client.get_attributes(server_url="", pac_id=NORMAL_PAC_ID)
+    assert len(groups) == 1
+    assert groups[0].group_key == "ProductionData"
+    assert set(groups[0].attributes.keys()) == {"MfgDate", "CalWeight"}
 
-  
-def test_():
-    attribute_groups = client.get_attributes(server_url="", pac_id=pac_id)
-    ...
+
+def test_referenced_pac_id_is_forward_looked_up_but_not_returned_directly():
+    # CalWeight on NORMAL_PAC_ID is a reference to CAL_PAC_ID - the server does a forward
+    # lookup and includes CAL_PAC_ID's own attributes in the response (for the client's
+    # cache), but get_attributes() should only return the attribute groups for the id
+    # actually requested, not the referenced one.
+    client = _build_client()
+    groups = client.get_attributes(server_url="", pac_id=NORMAL_PAC_ID)
+    assert len(groups) == 1
+    assert "NominalWeight" not in groups[0].attributes
+
+
+def test_client_gets_attributes_for_a_trailing_slash_pac_id():
+    # the original bug: a PAC-ID-shaped id with an empty (trailing-slash) segment isn't
+    # a strictly valid PAC-ID, but the attribute service only requires it to be an IRI.
+    client = _build_client()
+    groups = client.get_attributes(server_url="", pac_id=TRAILING_SLASH_PAC_ID)
+    assert len(groups) == 1
+    assert groups[0].attributes["MfgDate"].items[0].value == datetime(2020, 1, 1).date()
+
+
+def test_client_gets_attributes_for_a_generic_non_pac_id_iri():
+    client = _build_client()
+    groups = client.get_attributes(server_url="", pac_id=GENERIC_IRI)
+    assert len(groups) == 1
+    assert groups[0].attributes["MfgDate"].items[0].value == datetime(2021, 1, 1).date()
+
+
+def test_no_attributes_found_returns_empty_list_not_a_crash():
+    client = _build_client()
+    groups = client.get_attributes(server_url="", pac_id="HTTPS://PAC.METTORIUS.COM/-MD/UNKNOWN/000")
+    assert groups == []

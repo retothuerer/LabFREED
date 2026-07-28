@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod, abstractproperty
+from labfreed.labfreed_infrastructure import LabFREED_ValidationError
 from labfreed.pac_attributes.api_data_models.response import Attribute, AttributeGroup
 from labfreed.pac_cat.pac_cat import PAC_CAT
 
@@ -47,9 +48,14 @@ class Dict_DataSource(AttributeGroupDataSource):
            
     def attributes(self, pac_url: str) -> AttributeGroup:
         try:
-            p = PAC_CAT.from_url(pac_url)
-            pac_url = p.to_url(use_short_notation=self.uses_pac_cat_short_form, include_extensions=self._include_extensions)
-        except:
+            # suppress_validation_errors=True: pac_url only has to be an IRI here, not a
+            # strictly valid PAC-ID (e.g. a trailing-slash id, or a generic non-PAC-ID
+            # IRI) - falling back to the raw input below is the expected, routine case,
+            # not something worth logging as an error.
+            p = PAC_CAT.from_url(pac_url, suppress_validation_errors=True)
+            if p.is_valid:
+                pac_url = p.to_url(use_short_notation=self.uses_pac_cat_short_form, include_extensions=self._include_extensions)
+        except LabFREED_ValidationError:
             ... # might as well try to match the original input
             
         

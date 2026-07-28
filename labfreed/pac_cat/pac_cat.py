@@ -73,7 +73,7 @@ class PAC_CAT(PAC_ID):
         for i, seg in enumerate(self.identifier):
             if derivation_idx is not None and i >= derivation_idx:
                 owner = 0 if categories else -1
-            elif seg.value[0] == '-':
+            elif seg.value.startswith('-'):
                 owner += 1
                 out.append(seg)
                 continue
@@ -224,7 +224,7 @@ class PAC_CAT(PAC_ID):
                 category_segments[0].append(s)
                 continue
             # new category starts with "-"
-            if s.value[0] == '-':
+            if s.value.startswith('-'):
                 c = [s]
                 category_segments.append(c)
             else:

@@ -230,11 +230,8 @@ class AttributesOfItem(LabFREED_BaseModel):
     attribute_groups: list[AttributeGroup]
 
 
-@deprecated("Class AttributesOfPAC_ID is deprecated. Use it's base class instead.")
-class AttributesOfPAC_ID(AttributesOfItem):
-    id: str
-    attribute_groups: list[AttributeGroup]
-
+@deprecated("Class AttributesOfPACID is deprecated. Use it's base class instead.")
+class AttributesOfPACID(AttributesOfItem):
 
     @model_validator(mode="before")
     @classmethod

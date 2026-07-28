@@ -137,11 +137,15 @@ class AttributeClient():
         Returns:
             list[CacheableAttributeGroup]: attribute groups for the PAC-ID
         """
-        if isinstance(pac_id, str):
-            pac_id = PAC_ID.from_url(pac_id)
-                
+        # per PAC-ID-Attributes spec, subject_id only has to be an IRI - preferably, but not
+        # necessarily, a PAC-ID. A PAC_ID instance is still canonicalized via to_url() (as
+        # before); a plain string is sent through as-is. Routing an arbitrary IRI through
+        # PAC_ID.from_url().to_url() would mangle it (e.g. injects a "PAC." issuer prefix),
+        # so we deliberately don't parse/reserialize string input here.
+        subject_id = pac_id.to_url() if isinstance(pac_id, PAC_ID) else pac_id
+
         # no valid data found in cache > request to server
-        attribute_request_body = AttributeRequestData(subject_id=pac_id.to_url(), 
+        attribute_request_body = AttributeRequestData(subject_id=subject_id,
                                                         restrict_to_attribute_groups=restrict_to_attribute_groups,
                                                         language_preferences=language_preferences
                                 )
@@ -152,39 +156,39 @@ class AttributeClient():
         if response_code == 401:
             raise AuthenticationError(f"Failed to authorize at the server. Server message: {response_body_str}")
         if response_code == 404:
-            print(f'No atributes found for {pac_id.to_url()}')
+            print(f'No atributes found for {subject_id}')
             return []
         if response_code == 500:
             raise AttributeServerError(f"The server accepted the request, but encountered an internal error. Contact the server admin. Server message: {response_body_str}")
-        try: 
+        try:
             r = AttributeResponsePayload.model_validate_json(response_body_str)
         except ValidationError as e:
             print(e)
             raise AttributeServerError("The server accepted the request, and sent a reponse. However, the response is not adhering to the PAC Attributes specifications. Contact the server admin.")
 
-        
+
         attribute_groups_out = []
         for ag_for_pac in r.data:
-            pac_from_response = PAC_ID.from_url(ag_for_pac.id)
             if not ag_for_pac.attribute_groups:
                 ags = []
             else:
                 ags = [
                     ClientAttributeGroup(
-                        group_key= ag.group_key, 
-                        attributes=ag.attributes, 
-                        origin=server_url, 
-                        language=r.language, 
+                        group_key= ag.group_key,
+                        attributes=ag.attributes,
+                        origin=server_url,
+                        language=r.language,
                         group_label=ag.group_label
-                        ) 
+                        )
                     for ag in ag_for_pac.attribute_groups
                     ]
-            
-            # compare pac_id from response with pac_id we need attributes for.
-            # if identical this is the part of the response we care about. other PAC-ID are just for the cache
-            if pac_id.to_url() == pac_from_response.to_url():
+
+            # compare the id from the response with the subject_id we requested attributes for
+            # (the server echoes it back verbatim - see AttributeServerRequestHandler._get_attributes_for_pac_id).
+            # if identical this is the part of the response we care about. other ids are just for the cache
+            if subject_id == ag_for_pac.id:
                 attribute_groups_out = ags
-        
+
         return attribute_groups_out
 
             

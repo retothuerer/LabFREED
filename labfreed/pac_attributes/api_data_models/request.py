@@ -30,7 +30,7 @@ class AttributeRequestData(LabFREED_BaseModel):
     @classmethod
     def from_http_request(cls, id:str, params:dict, headers:dict):
         # Azure seems to meddle with double slashes in a path, even if url encoded. This is to rectify this behaviour and add back a second slash if necessary
-        id = re.sub('HTTPS:/{1,2}', 'HTTPS://', id, re.IGNORECASE)
+        id = re.sub('HTTPS:/{1,2}', 'HTTPS://', id, flags=re.IGNORECASE)
         
         restrict_to_attribute_groups = params.get(ATTR_GROUPS)
         if restrict_to_attribute_groups == '':
@@ -107,10 +107,18 @@ class AttributeRequestData(LabFREED_BaseModel):
                     msg=f'{self.subject_id} is not a valid IRI'
                 )
             
-        # validate the recommendation for subject_id to be a pac-id            
+        # validate the recommendation for subject_id to be a pac-id.
+        # suppress_validation_errors=True so this doesn't also log an ERROR - not being a
+        # valid PAC-ID is only a WARNING here, and is the expected, routine case for a
+        # subject_id that's a generic IRI rather than a PAC-ID. Still need the try/except
+        # around it: a subject_id that doesn't even match the "issuer/identifier" shape
+        # (e.g. no '/' at all) makes PAC_ID.from_url() raise unconditionally, regardless
+        # of suppress_validation_errors.
         try:
-            PAC_ID.from_url(self.subject_id)
+            pac_id_is_valid = PAC_ID.from_url(self.subject_id, suppress_validation_errors=True).is_valid
         except LabFREED_ValidationError:
+            pac_id_is_valid = False
+        if not pac_id_is_valid:
             self._add_validation_message(
                     source="subject_id",
                     level = ValidationMsgLevel.WARNING,
