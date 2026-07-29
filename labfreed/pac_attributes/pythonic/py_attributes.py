@@ -2,7 +2,6 @@
 from datetime import UTC, date, datetime, time
 import json
 import logging
-from typing import  Literal
 from enum import Enum
 import warnings
 from deprecated import deprecated
@@ -181,6 +180,6 @@ class pyAttributeGroup(ClientAttributeGroup):
     
     @staticmethod
     def from_attribute_group(attribute_group:AttributeGroup):
-        data = vars(attribute_group).copy()
+        data = attribute_group.model_dump()
         data["attributes"] = {a.key: a for a in pyAttributes.from_payload_attributes(attribute_group.attributes)}
         return pyAttributeGroup(**data)

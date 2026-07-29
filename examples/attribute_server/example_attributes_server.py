@@ -10,7 +10,7 @@ from labfreed.pac_cat.pac_cat import PAC_CAT
 from labfreed.pac_cat.predefined_categories import Material_Device
 from labfreed.utilities.translations import Terms, Term
 from labfreed.pac_attributes.api_data_models.response import AttributeGroup
-from labfreed.pac_attributes.well_knonw_attribute_keys import MetaAttributeKeys
+from labfreed.pac_attributes.well_known_attribute_keys import MetaAttributeKeys
 
 from labfreed.pac_attributes.server.attribute_data_sources import AttributeGroupDataSource
 from labfreed.pac_attributes.server.translation_data_sources import DictTranslationDataSource
@@ -46,13 +46,13 @@ data_sources.append(
             # first entry of a balance
             "HTTPS://PAC.METTORIUS.COM/-MD/BAL500/000001/K:V": pyAttributes([
                 pyAttribute(key=MetaAttributeKeys.DISPLAYNAME.value, value="My Balance"),
-                pyAttribute(key=MetaAttributeKeys.IMAGE, value=pyResource("https://picsum.photos/id/82/200")),
+                pyAttribute(key=MetaAttributeKeys.IMAGE.value, value=pyResource("https://picsum.photos/id/82/200")),
             ]),
-            
+
             # this is for a calibration weight, which is referenced by attributes of the balances
             "HTTPS://PAC.METTORIUS.COM/-MD/CALWEIGH/A00002": pyAttributes([
                 pyAttribute(key=MetaAttributeKeys.DISPLAYNAME.value, value="Calibration Weight PRN003"),
-                pyAttribute(key=MetaAttributeKeys.IMAGE, value=pyResource("https://picsum.photos/id/86/200")),
+                pyAttribute(key=MetaAttributeKeys.IMAGE.value, value=pyResource("https://picsum.photos/id/86/200")),
             ])
         } 
     )
@@ -64,7 +64,7 @@ transation_data_sources.append(
         supported_languages={'en', 'fr'},
         data=Terms(
                 terms=[
-                    Term.create(MetaAttributeKeys.GROUPKEY, [('en', 'Meta Data'), ('fr', 'Métadonnées')]),
+                    Term.create(MetaAttributeKeys.GROUPKEY.value, [('en', 'Meta Data'), ('fr', 'Métadonnées')]),
                     Term.create(MetaAttributeKeys.DISPLAYNAME.value, [('en', 'Display Name'), ('fr', 'Nom visuel')]),
                     Term.create(MetaAttributeKeys.IMAGE.value, [('en', 'Image'), ('fr', 'Image')]),
                 ]

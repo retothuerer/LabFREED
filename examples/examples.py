@@ -171,7 +171,7 @@ For an actual deployable server and a PAC-ID landing page built on the same clas
 '''
 from labfreed.pac_attributes.pythonic.py_attributes import pyAttribute, pyAttributes, pyResource  # noqa: E402
 from labfreed.pac_attributes.pythonic.py_dict_data_source import pyDict_DataSource  # noqa: E402
-from labfreed.pac_attributes.well_knonw_attribute_keys import MetaAttributeKeys  # noqa: E402
+from labfreed.pac_attributes.well_known_attribute_keys import MetaAttributeKeys  # noqa: E402
 from labfreed.pac_attributes.server.translation_data_sources import DictTranslationDataSource  # noqa: E402
 from labfreed.pac_attributes.server.server import AttributeServerRequestHandler  # noqa: E402
 from labfreed.pac_attributes.client.client import AttributeClient, local_attribute_request_callback_factory  # noqa: E402

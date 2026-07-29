@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 import os
 import random
 
-from labfreed.pac_attributes.well_knonw_attribute_keys import MetaAttributeKeys
+from labfreed.pac_attributes.well_known_attribute_keys import MetaAttributeKeys
 from labfreed.pac_cat.pac_cat import PAC_CAT
 from labfreed.pac_cat.predefined_categories import Material_Device
 

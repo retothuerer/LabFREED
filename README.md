@@ -129,7 +129,7 @@ pac.print_validation_messages()
 >> Validation Results                                                              
 >> ┌──────────────────────────────────────────────────────────────────────────────┐
 >> │ **RECOMMENDATION** in id segment value bal500                                │
->> │ Characters 'b','a','l' should not be used., Characters SHOULD be limited to  │
+>> │ Characters 'l','a','b' should not be used., Characters SHOULD be limited to  │
 >> │ upper case letters (A-Z), numbers (0-9), '-' and '+'                         │
 >> │                                                                              │
 >> │ HTTPS://PAC.METTORIUS.COM/-MD/👉bal👈500/@1234                               │
@@ -141,7 +141,7 @@ pac.print_validation_messages()
 >> │ HTTPS://PAC.METTORIUS.COM/-MD/bal500/👉@👈1234                               │
 >> ├──────────────────────────────────────────────────────────────────────────────┤
 >> │ **RECOMMENDATION** in id segment value bal500                                │
->> │ Characters 'b','a','l' should not be used., Characters SHOULD be limited to  │
+>> │ Characters 'l','a','b' should not be used., Characters SHOULD be limited to  │
 >> │ upper case letters (A-Z), numbers (0-9), '-' and '+'                         │
 >> │                                                                              │
 >> │ HTTPS://PAC.METTORIUS.COM/-MD/👉bal👈500/@1234                               │
@@ -273,7 +273,21 @@ trex = mydata.to_trex()
 trex.print_validation_messages()
 ```
 ```text
->> [Error during execution: unsupported operand type(s) for |: 'property' and 'type']
+>> Validation Results                                            
+>> ┌────────────────────────────────────────────────────────────┐
+>> │ **ERROR** in TREX table column Date                        │
+>> │ Column header key contains invalid characters: 'e','a','t' │
+>> │                                                            │
+>> │ STOP$T.D:20240505T1306                                     │
+>> │ +TEMP$KEL:10.15                                            │
+>> │ +OK$T.B:F                                                  │
+>> │ +COMMENT$T.A:FOO                                           │
+>> │ +COMMENT2$T.T:12G3                                         │
+>> │ +TABLE$$DURATION$HUR:D👉ate👈$T.D:OK$T.B:COMMENT$T.A::     │
+>> │  1:20260729T025139.639:T:FOO::                             │
+>> │  1.1:20260729T025139.639:T:BAR::                           │
+>> │  1.3:20260729T025139.639:F:BLUBB                           │
+>> └────────────────────────────────────────────────────────────┘
 ```
 #### Combine PAC-ID and TREX and serialize
 
@@ -284,7 +298,7 @@ pac_str = pac.to_url()
 print(pac_str)
 ```
 ```text
->> HTTPS://PAC.METTORIUS.COM/21:1234*MYTREX$TREX/WEIGHT$GRM:67.89
+>> HTTPS://PAC.METTORIUS.COM/21:1234*MYTREX$TREX/STOP$T.D:20240505T1306+TEMP$KEL:10.15+OK$T.B:F+COMMENT$T.A:FOO+COMMENT2$T.T:12G3+TABLE$$DURATION$HUR:Date$T.D:OK$T.B:COMMENT$T.A::1:20260729T025139.639:T:FOO::1.1:20260729T025139.639:T:BAR::1.3:20260729T025139.639:F:BLUBB
 ```
 ## PAC-ID Resolver
 
@@ -330,7 +344,7 @@ For an actual deployable server and a PAC-ID landing page built on the same clas
 ```python
 from labfreed.pac_attributes.pythonic.py_attributes import pyAttribute, pyAttributes, pyResource  
 from labfreed.pac_attributes.pythonic.py_dict_data_source import pyDict_DataSource  
-from labfreed.pac_attributes.well_knonw_attribute_keys import MetaAttributeKeys  
+from labfreed.pac_attributes.well_known_attribute_keys import MetaAttributeKeys  
 from labfreed.pac_attributes.server.translation_data_sources import DictTranslationDataSource  
 from labfreed.pac_attributes.server.server import AttributeServerRequestHandler  
 from labfreed.pac_attributes.client.client import AttributeClient, local_attribute_request_callback_factory  
@@ -361,9 +375,6 @@ translations = DictTranslationDataSource(
 # The request handler is the framework-agnostic core of an attribute server
 handler = AttributeServerRequestHandler(data_sources=[data_source], translation_data_sources=[translations], default_language='en')
 ```
-```text
->> [Error during execution: unsupported operand type(s) for |: 'property' and 'type']
-```
 Querying works the same whether the handler above is embedded in a Flask app or, as here, called in-process.
 
 ```python
@@ -375,7 +386,8 @@ for group in attribute_groups:
         print(f'{attr.label}: {values}')
 ```
 ```text
->> [Error during execution: name 'AttributeClient' is not defined]
+>> Display Name: My Balance
+>> Image: https://picsum.photos/id/82/200
 ```
 <!-- END EXAMPLES -->
 
@@ -428,6 +440,7 @@ PAC-ID Attributes
 General
 - Minor Bugfixes
 - BREAKING: reorganization of module structure > some import paths have changed
+- BREAKING: renamed Quantity.float property to Quantity.as_float (the name collided with the float type used in Quantity's own annotations, breaking model construction on Python 3.14)
 
 
 

@@ -4,7 +4,7 @@ from urllib.parse import urlparse
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pydantic import BaseModel, Field
 from labfreed.pac_attributes.pythonic.py_attributes import pyAttribute, pyAttributeGroup, pyAttributes, pyReference, pyResource
-from labfreed.pac_attributes.well_knonw_attribute_keys import MetaAttributeKeys
+from labfreed.pac_attributes.well_known_attribute_keys import MetaAttributeKeys
 from labfreed.pac_cat.pac_cat import PAC_CAT
 from labfreed.pac_cat.predefined_categories import PredefinedCategory
 from labfreed.pac_id.pac_id import PAC_ID

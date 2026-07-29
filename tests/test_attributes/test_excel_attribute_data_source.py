@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pytest
 from openpyxl import Workbook
 
@@ -51,3 +53,33 @@ def test_local_excel_data_source_does_not_crash_on_a_non_pac_id(tmp_path):
 
     assert group is not None
     assert "MfgDate" in group.attributes
+
+
+def test_two_instances_with_different_ttls_dont_stomp_each_others_cache(tmp_path):
+    # regression test: _BaseExcelAttributeDataSource used to mutate one shared,
+    # module-level TTLCache's .ttl in __init__, so constructing a second instance
+    # with a different cache_duration_seconds silently changed the *first*
+    # instance's caching too, since they shared the exact same cache object.
+    file_a = tmp_path / "a.xlsx"
+    _write_workbook(file_a, "KEY_A")
+
+    source_a = LocalExcelAttributeDataSource(
+        file_path=str(file_a),
+        attribute_group_key="a",
+        cache_duration_seconds=1000,
+    )
+    source_a.attributes("KEY_A")  # populate source_a's cache
+
+    # constructing a second instance with a short TTL must not shorten source_a's
+    # own, already-populated cache.
+    LocalExcelAttributeDataSource(
+        file_path=str(tmp_path / "b.xlsx"),
+        attribute_group_key="b",
+        cache_duration_seconds=0,
+    )
+
+    with patch(
+        "labfreed.pac_attributes.pythonic.excel_attribute_data_source.load_workbook"
+    ) as mock_load:
+        source_a.attributes("KEY_A")
+    mock_load.assert_not_called()  # still within source_a's own long TTL, no re-read

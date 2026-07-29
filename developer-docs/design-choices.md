@@ -225,9 +225,12 @@ the core parsing layer - see `PAC-ID-Attributes' subject_id...` entry below for 
 adjacent decision this narrows the gap with (that entry already tolerated this same
 case one layer up, at the attribute-service boundary rather than in `PAC_ID` itself).
 Downstream code that canonicalizes a valid id before using it as a lookup key (e.g.
-`Dict_DataSource.attributes()`) needs to account for the canonical form no longer
-matching a raw, as-stored key that still carries the stripped slash - fixed there by
-falling back to a raw-string lookup when the canonical-key lookup misses.
+`Dict_DataSource.attributes()`, and `_BaseExcelAttributeDataSource.attributes()` fixed
+the same way in Phase 2 of [[project_labfreed_pac_attributes_improvement_plan]]) needs
+to account for the canonical form no longer matching a raw, as-stored key that still
+carries the stripped slash - fixed by falling back to a raw-string lookup when the
+canonical-key lookup misses. The fallback logic itself is duplicated between the two
+data sources - see TODO.md, "Pull the shared... lookup out of the data sources".
 
 *Investigated 2026-07-28 (double `/`), revised 2026-07-29 (single trailing `/`) -
 originally prompted by a real trailing-`/` failure surfaced via
@@ -318,3 +321,165 @@ representation changes, not any public API shape or type.
 
 *Investigated 2026-07-29, while reviewing the IRI migration for other core bugs in the
 same area.*
+
+---
+
+## Each Excel data source instance gets its own `TTLCache`
+
+**Decision:** `_BaseExcelAttributeDataSource` (`pythonic/excel_attribute_data_source.py`)
+now creates its own `TTLCache(maxsize=128, ttl=cache_duration_seconds)` per instance in
+`__init__`, and `LocalExcelAttributeDataSource._read_rows_and_last_changed` uses
+`@cachedmethod(lambda self: self._cache)` instead of a plain `@cached(_cache)` bound to
+one module-level cache object.
+
+**Why:** the previous code had a single `_cache = TTLCache(...)` shared by every
+instance, and each `__init__` mutated that same object's `.ttl` to its own
+`cache_duration_seconds`. Since `.ttl` is one scalar property of the whole cache, the
+*last-constructed* instance's TTL silently applied to every other instance too - two
+data sources configured with different cache lifetimes (e.g. one long-lived static
+sheet, one short-lived frequently-changing one) would both end up using whichever TTL
+was set most recently. Confirmed empirically: constructing a long-TTL instance, priming
+its cache, then constructing a second short-TTL instance caused the first instance's
+next read to still be a cache hit only because of decorator-level per-instance key
+separation, not because its own TTL was respected - proving the *setting* was shared
+even though cache *entries* happened to already be keyed per-instance via `self`.
+
+**Alternatives considered / why not:**
+
+- Keep one shared `TTLCache` but namespace keys by `(self, ...)` and track each
+  instance's TTL separately outside the cache - rejected as needless complexity; a
+  `TTLCache` already exists as a per-instance construct in `cachetools`, no need to
+  simulate one on top of a shared object.
+
+**Impact:** none observable for a single-instance-per-process usage pattern (the common
+case); fixes real cross-instance interference for anyone constructing multiple data
+sources with different `cache_duration_seconds` in the same process. See TODO.md,
+"Pull the shared... lookup out of the data sources" for a related, still-open
+duplication between this data source and `Dict_DataSource`.
+
+*Investigated 2026-07-29, as Phase 3 item 2 of
+[[project_labfreed_pac_attributes_improvement_plan]].*
+
+---
+
+## Two typo fixes in `well_knonw_attribute_keys` kept as deprecated shims, not silent renames
+
+**Decision:** `labfreed/pac_attributes/well_knonw_attribute_keys.py` (the module name
+itself has a typo - missing the "n" in "known") is now a thin shim: the real content
+moved to `labfreed/pac_attributes/well_known_attribute_keys.py`, and the old module
+re-exports from the new one plus emits a `DeprecationWarning` on import. Within that
+module, `PhysoChemicalProperties` (also a typo - missing "ic") was renamed to
+`PhysicoChemicalProperties` in the new module; the old module keeps
+`PhysoChemicalProperties = PhysicoChemicalProperties` as a plain alias (no separate
+warning - importing the old module already warns once).
+
+**Why:** both are confirmed imported directly by `labfreed-webtools` (not purely
+internal), so a straight rename would break an external consumer with no warning.
+Per this package's `versioning` skill, a public rename gets a deprecation window, not
+an instant break, while the package is still pre-1.0.
+
+**Alternatives considered / why not:**
+
+- Wrap the re-exported symbols with the `deprecated` package's `@deprecated` decorator
+  instead of a module-level `warnings.warn` - rejected after confirming empirically that
+  `@deprecated` on an `Enum` class does not fire when accessing a member
+  (`SomeEnum.MEMBER`), only on constructing an instance via `__call__`/`__new__`, which
+  enum member access never does. A module-level `warnings.warn(DeprecationWarning)` at
+  import time is the only one of the two that actually fires for this usage pattern.
+- Rename `MELTINGPOINT`'s *value* (`"meltinggpoint"` -> `"meltingpoint"`) at the same
+  time, folded into this same decision rather than a separate one: this is a wire-format
+  string change, not just an import path, but `MELTINGPOINT` has zero confirmed usages
+  in `labfreed-webtools` and the whole enum is still an explicit `.../dummy/...`
+  placeholder namespace (not yet a real spec-blessed key) - so unlike the class/module
+  renames, there's no deprecation window that would even mean anything here; fixed
+  directly instead. Tagged `BREAKING:` in `CHANGELOG.md` per the `versioning` skill's
+  "ambiguous, decide deliberately" guidance, since it's a value change even though the
+  practical blast radius is zero.
+
+**Impact:** `labfreed-webtools/instrument_demo/bp_instrument_demo.py` and
+`pac_issuer_demo/carlroth/attribute_datasources.py` still import the old module/class
+names today and keep working unchanged via the shim; updating them to the new names is
+tracked as Phase 3 item 8 of [[project_labfreed_pac_attributes_improvement_plan]].
+
+*Investigated 2026-07-29, as Phase 3 items 3 and 5 of
+[[project_labfreed_pac_attributes_improvement_plan]].*
+
+---
+
+## Resolver config's expression evaluation split out of the data model; `eval()` replaced with a direct token evaluator
+
+**Decision:** `ResolverConfig`/`ResolverConfigBlock`/`ResolverConfigEntry`
+(`labfreed/pac_id_resolver/resolver_config.py`) are now pure data models - field shapes
+and structural validators only (`service_name`/`application_intents`/`service_type`
+char/length rules, `applicable_if` defaulting). Everything behavioral - tokenizing
+`applicable_if`, the bracket-key convenience substitution, jsonpath lookups, url
+templating, and the `evaluate_pac_id` walk itself - moved to a new
+`resolver_config_evaluator.py`, behind `ResolverConfigEvaluator(config).evaluate(pac)`.
+`ResolverConfig.evaluate_pac_id()` is now a one-line delegating shim using a lazy import,
+the same trick `PAC_ID.from_url()`/`to_url()` already use to avoid a circular import back
+into `resolver_config.py`.
+
+Folded into the same change: `_evaluate_applicable_if` used to reassemble the token
+stream into a Python source string and call `eval()` on it - matched PAC-ID content
+reached that string via unescaped f-string interpolation
+(`f'"{res[0].upper()}"'`). Replaced with `_TokenEvaluator`, a small recursive-descent
+walker over the same tokens that compares real Python values directly
+(`operator.eq`/`lt`/etc.) and never builds or executes code.
+
+**Why:**
+
+- *Separation:* the model class had three unrelated jobs at once (data shape,
+  expression grammar, execution), so a bug in the expression evaluator lived inside
+  what's nominally a Pydantic schema, and testing the logic meant reaching into private
+  methods on the model.
+- *`eval()` removal:* a security review found `res[0].upper()` wrapped in an f-string
+  was the only thing between attacker-controlled PAC-ID content and `eval()` - since
+  anyone can mint a PAC-ID, this is untrusted input by design. Confirmed exploitable for
+  an unhandled crash (a stray `"`/`(` in a matched field, or a non-string jsonpath match
+  raising `AttributeError` on `.upper()`) and for structural injection (chained
+  comparisons splicing extra literal syntax into the evaluated expression). Also
+  confirmed `eval(expr, {}, {})` is not a sandbox regardless: Python auto-populates
+  `__builtins__` into a bare `{}` globals dict, and even with `__builtins__` explicitly
+  stripped, `().__class__.__bases__[0].__subclasses__()` alone still reaches ~170 live
+  classes via the object graph.
+
+**Alternatives considered / why not:**
+
+- Keep `eval()` but escape the interpolated value properly (`json.dumps()`/`repr()`) -
+  rejected: still a code-generation-from-untrusted-input design, and `eval()` isn't
+  sandboxable in CPython regardless of escaping (see the subclass-graph proof above).
+- `simpleeval` or another AST-whitelisting library - rejected in favor of a hand-rolled
+  evaluator: the grammar here is tiny and already fully tokenized (AND/OR/NOT + 6
+  comparison operators), so a ~90-line direct walker is less code and one fewer
+  dependency than integrating a general-purpose safe-eval library correctly.
+
+**Impact:** three more bugs surfaced by tests written against this area and fixed in the
+same pass:
+
+- Literal `True`/`False` conditions: the old eval-string builder quoted *any* bare-word
+  literal (including the text `"False"`) into a non-empty, therefore truthy, string - so
+  `applicable_if: "false"` could never actually evaluate falsy. `_TokenEvaluator` treats
+  bare `TRUE`/`FALSE` as real Python booleans instead.
+- Quoted string literals (e.g. `$.identifier[1].value == 'THOMAS'`) previously crashed
+  the tokenizer with an unhandled `SyntaxError` on the quote character (reported
+  upstream against github.com/ApiniLabs/PAC-ID-Resolver) - added a `STRING` token type
+  so single- or double-quoted literals (spaces allowed) are valid syntax, compared as
+  inert data.
+- A malformed `applicable_if` (bad syntax, bad jsonpath) no longer crashes resolution of
+  the whole PAC-ID - `ResolverConfigEvaluator.evaluate()` now catches
+  `SyntaxError`/`JSONPathError` per block and treats that block as not-applicable, the
+  same "stable against errors in the resolver config" contract invalid entries already
+  had.
+- `_apply_convenience_substitutions`'s bracket-key shorthand only rewrote
+  double-quoted keys (`["key"]`); single-quoted (`['key']`) silently matched nothing.
+  Confirmed this left real blocks permanently dead in two real-world configs used by
+  `labfreed-webtools` (a `-MD`/`-MC` category gate, a macro-based service entry) - fixed
+  by accepting either quote style.
+
+Existing call sites (`resolver.py`, `labfreed-webtools/resolver_tester/bp_resolver_tester.py`)
+are unaffected since `evaluate_pac_id`'s signature and behavior are unchanged; only the
+private test hooks in `tests/test_resolver/test_resolver_config_v2.py` needed updating to
+instantiate `ResolverConfigEvaluator` directly instead of calling private methods on
+`ResolverConfig`.
+
+*Investigated 2026-07-29.*

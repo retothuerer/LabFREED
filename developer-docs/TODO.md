@@ -150,3 +150,56 @@ exact-pin line in `labfreed-webtools/requirements.txt`, rather than leaving it s
 open floor (which reintroduces the original risk). Consider whether the `release`
 skill should gain a step for this once labfreed-webtools' own repo conventions are
 better established here.
+
+---
+
+## Pull the shared "canonicalize, then fall back to raw string" lookup out of the data sources
+
+`Dict_DataSource.attributes()` (`server/attribute_data_sources.py`) and
+`_BaseExcelAttributeDataSource.attributes()` (`pythonic/excel_attribute_data_source.py`)
+both do the same sequence: try `PAC_CAT.from_url(subject_id, suppress_validation_errors=True)`,
+canonicalize via `.to_url(...)` if valid, look up by the canonical key, and fall back to
+the raw, as-given `subject_id` if that misses - see design-choices.md, "Empty id
+segments... revision 2026-07-29" for why the fallback exists (a tolerated trailing `/`
+canonicalizes differently from a raw stored key). Currently duplicated near-verbatim in
+both places. Worth extracting into one shared helper (e.g. a small function or mixin
+both data sources call) so the fallback logic - and any future fix to it - only has to
+exist once. Not done as part of the Phase 2 fixes that introduced this duplication,
+since it's a pure refactor with no behavior change; flagged for a later pass.
+
+---
+
+## Separate service-availability network checks out of `Service`/`ServiceGroup`
+
+Related to: ["Resolver config's expression evaluation split out of the data
+model"](design-choices.md#resolver-configs-expression-evaluation-split-out-of-the-data-model-eval-replaced-with-a-direct-token-evaluator),
+the same kind of coupling one layer over.
+
+`Service.check_service_status()` and `ServiceGroup.update_states()` (plus the
+free-floating `_has_internet_connection()`), all in
+`labfreed/pac_id_resolver/services.py`, do real HTTP I/O (a `HEAD` request per service,
+a `ThreadPoolExecutor` fan-out, an internet-connectivity pre-check) from inside what's
+otherwise a plain Pydantic data model - `status` is just a field, but the logic that
+decides its value lives on the model itself.
+
+Proposed split (not yet implemented, awaiting go-ahead): pull the HTTP-checking logic
+into a new `service_availability.py` with a `ServiceAvailabilityChecker` that takes a
+`Service`/`ServiceGroup` (+ optional `requests.Session`) and does the actual checking,
+mutating `.status` as its output same as today. `check_service_status()`/
+`update_states()` become one-line delegating shims (same lazy-import pattern used for
+`ResolverConfig.evaluate_pac_id()`), so `resolver.py`, `test_sanity_check.py`, and
+`labfreed-webtools/resolver_tester/bp_resolver_tester.py` don't need to change.
+
+---
+
+## `client/auth.py` shipped to PyPI with no `CHANGELOG.md` entry
+
+`AuthRule`/`PatternMatchedAuth`/`env_credential` (`labfreed/pac_attributes/client/auth.py`)
+are already live in production PyPI builds past `1.0.0b44` - confirmed by grep, the
+module exists and is imported directly by `labfreed-webtools` (`bp_instrument_demo.py`,
+`bp_attribute_server.py`) - but `CHANGELOG.md` has zero mentions of authentication.
+A process gap found while auditing the client/server area during
+[[project_labfreed_pac_attributes_improvement_plan]] Phase 3, unrelated to that plan's
+actual fixes. Add a retroactive `CHANGELOG.md` entry under the pending `v1.0.0` heading
+(new public API, not breaking) so the release history isn't silently missing a real
+feature.

@@ -1,23 +1,16 @@
-from enum import Enum
+import warnings
 
+from labfreed.pac_attributes.well_known_attribute_keys import MetaAttributeKeys, PhysicoChemicalProperties
 
-class MetaAttributeKeys(Enum):
-    DISPLAYNAME = "https://schema.org/name"
-    IMAGE = "https://schema.org/image"
-    ALIAS = "https://schema.org/alternateName"
-    DESCRIPTION = "https://schema.org/description"
-    GROUPKEY = "https://labfreed.org/terms/attribute_group_metadata"
-    
-    NAME = "https://schema.org/name"
-    PHONE = 'https://schema.org/telephone'
-    EMAIL = 'https://schema.org/email'
-    ADDRESS = 'https://schema.org/address'
-    COUNTRY = 'https://schema.org/addressCountry'
-    
-    
+warnings.warn(
+    "labfreed.pac_attributes.well_knonw_attribute_keys is deprecated (typo in the "
+    "module name) - use labfreed.pac_attributes.well_known_attribute_keys instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
-class PhysoChemicalProperties(Enum):
-    BOILINGPOINT    = "https://labfreed.org/dummy/boilingpoint"
-    MELTINGPOINT    = "https://labfreed.org/dummy/meltinggpoint"
-    POLARITY        = "https://labfreed.org/dummy/polarity"
-    DENSITY         = "https://labfreed.org/dummy/density"
+# PhysoChemicalProperties was also a typo (missing "ic") - kept as an alias here for
+# anyone still importing it under the old name from this old module path.
+PhysoChemicalProperties = PhysicoChemicalProperties
+
+__all__ = ["MetaAttributeKeys", "PhysoChemicalProperties"]

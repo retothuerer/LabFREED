@@ -140,7 +140,7 @@ Flask/network involved. For a real deployable server built on the same classes, 
 ```python
 from labfreed.pac_attributes.pythonic.py_attributes import pyAttribute, pyAttributes, pyResource
 from labfreed.pac_attributes.pythonic.py_dict_data_source import pyDict_DataSource
-from labfreed.pac_attributes.well_knonw_attribute_keys import MetaAttributeKeys
+from labfreed.pac_attributes.well_known_attribute_keys import MetaAttributeKeys
 from labfreed.pac_attributes.server.translation_data_sources import DictTranslationDataSource
 from labfreed.pac_attributes.server.server import AttributeServerRequestHandler
 from labfreed.pac_attributes.client.client import AttributeClient, local_attribute_request_callback_factory
