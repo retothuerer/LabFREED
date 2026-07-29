@@ -40,12 +40,18 @@ dev = [
     "pytest>=8.3.5",
     "pdoc>=15.0.1",
     "flit>=3.12.0",
-    "ruff>=0.11.5"
+    "ruff>=0.11.5",
+    "pint>=0.25.0",
+    "ucumvert>=0.3.2"
 ]
 extended = [
     "Flask>=3.1.1",
     "Flask-Cors>=6.0.2",
     "openpyxl>=3.1.5"
+]
+units = [
+    "pint>=0.25.0",
+    "ucumvert>=0.3.2"
 ]
 experimental = [
     "bleak>=2.0.0"
