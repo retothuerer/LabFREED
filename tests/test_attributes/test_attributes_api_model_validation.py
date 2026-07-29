@@ -57,6 +57,17 @@ def test_legacy_pac_id_property_still_readable_and_warns():
         assert r.pac_id == dummy_pac
 
 
+def test_request_params_serializes_do_forward_lookup_as_lowercase_string():
+    # request_params() puts do_forward_lookup straight into a dict that `requests` turns
+    # into a query string; a raw Python bool serializes as 'True'/'False' (capitalized),
+    # but the spec requires the lowercase 'true'/'false' string form.
+    r = AttributeRequestData(subject_id=dummy_pac, do_forward_lookup=False)
+    assert r.request_params()['attr_fwd_lkp'] == 'false'
+
+    r2 = AttributeRequestData(subject_id=dummy_pac, do_forward_lookup=True)
+    assert r2.request_params()['attr_fwd_lkp'] == 'true'
+
+
 def test_from_http_request_fixes_azure_double_slash_case_insensitively():
     # Azure meddles with double slashes in a path even when url-encoded; from_http_request
     # patches it back. This must work regardless of case - re.sub's 4th positional arg

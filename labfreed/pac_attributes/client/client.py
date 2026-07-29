@@ -108,34 +108,38 @@ def local_attribute_request_callback_factory(request_handler:AttributeServerRequ
         
     
 
-@dataclass 
+@dataclass
 class AttributeClient():
-    """ Client handling attribute requests and caching thereof.
+    """ Client handling attribute requests over a caller-supplied HTTP callback.
     """
     http_post_callback:AttributeRequestCallback
-                   
-    def get_attributes(self, 
-                       server_url:str, 
-                       pac_id:PAC_ID|str , 
-                       restrict_to_attribute_groups:list[str]|None=None, 
+
+    def get_attributes(self,
+                       server_url:str,
+                       pac_id:PAC_ID|str ,
+                       restrict_to_attribute_groups:list[str]|None=None,
                        language_preferences:list[str]|None=None
                        ) -> list[AttributeGroup]:
-        """gets the attributes from one attribute server for one PAC-ID. Uses a cached version if possible, otherwise requests from the server again.
+        """Requests the attributes for one subject id from one attribute server. Always
+        makes a fresh request via http_post_callback - there is no caching here.
 
         Args:
-            server_url (str): _description_
-            pac_id (PAC_ID | str): _description_
-            restrict_to_attribute_groups (list[str] | None, optional): _description_. Defaults to None.
-            language_preferences (list[str] | None, optional): _description_. Defaults to None.
-            force_server_request (bool, optional): _description_. Defaults to False.
+            server_url (str): the attribute server's base URL.
+            pac_id (PAC_ID | str): the subject id to request attributes for. A PAC_ID
+                instance is canonicalized via to_url(); a plain string is sent as-is.
+            restrict_to_attribute_groups (list[str] | None, optional): if given, only
+                request these attribute group keys. Defaults to None (all groups).
+            language_preferences (list[str] | None, optional): preferred languages for
+                translated attribute display names, most preferred first. Defaults to
+                None (server default language).
 
         Raises:
-            AuthenticationError: 
-            AttributeClientInternalError: 
-            AttributeServerError: 
+            AuthenticationError:
+            AttributeClientInternalError:
+            AttributeServerError:
 
         Returns:
-            list[CacheableAttributeGroup]: attribute groups for the PAC-ID
+            list[ClientAttributeGroup]: attribute groups for the subject id
         """
         # per PAC-ID-Attributes spec, subject_id only has to be an IRI - preferably, but not
         # necessarily, a PAC-ID. A PAC_ID instance is still canonicalized via to_url() (as

@@ -290,3 +290,31 @@ caller relied on the client silently uppercasing/reformatting a lowercase PAC-ID
 
 *Investigated 2026-07-28, alongside implementing the IRI migration on branch
 `iri-instead-of-pac-id`.*
+
+---
+
+## `do_forward_lookup` serializes as a lowercase string, not a Python bool
+
+**Decision:** `AttributeRequestData.request_params()` (`api_data_models/request.py`)
+sends `do_forward_lookup` as `str(self.do_forward_lookup).lower()` (`'true'`/`'false'`)
+rather than the raw Python `bool`.
+
+**Why:** `request_params()`'s output goes straight into a dict that `requests` turns
+into an HTTP query string; a raw Python `bool` serializes as `attr_fwd_lkp=True` or
+`attr_fwd_lkp=False` (capitalized, Python `repr` style), but the PAC-ID-Attributes spec
+defines this as a string parameter and expects the conventional lowercase
+`'true'`/`'false'`. This only worked before because the bundled reference server
+happens to lowercase the incoming value before comparing it - a real third-party server
+implemented strictly to spec could reject or misread the capitalized form.
+
+**Alternatives considered / why not:**
+
+- Leave it as a Python `bool` and rely on every server implementation lowercasing before
+  comparing - rejected as fragile: it depends on undocumented server-side leniency that
+  only this repo's own bundled server happens to provide.
+
+**Impact:** none for callers going through `AttributeClient` - only the wire
+representation changes, not any public API shape or type.
+
+*Investigated 2026-07-29, while reviewing the IRI migration for other core bugs in the
+same area.*

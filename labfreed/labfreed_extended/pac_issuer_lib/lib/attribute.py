@@ -71,8 +71,8 @@ class DynamicDemoAttributeGroup(AttributeGroupDataSource):
         )
 
     
-    def attributes(self, pac_url: str) -> AttributeGroup:
-        if not self._pac_filter_predicate(pac_url):
+    def attributes(self, subject_id: str) -> AttributeGroup:
+        if not self._pac_filter_predicate(subject_id):
             return None
         
         attributes = pyAttributes( [pyAttribute(key=d[0], value=d[1]) for d in self._data] ).to_payload_attributes()

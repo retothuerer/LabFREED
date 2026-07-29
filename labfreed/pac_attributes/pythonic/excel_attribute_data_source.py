@@ -8,6 +8,7 @@ from urllib.parse import urlparse, urlsplit, urlunsplit, parse_qsl, urlencode
 
 from cachetools import TTLCache, cached
 
+from labfreed.labfreed_infrastructure import LabFREED_ValidationError
 from labfreed.pac_attributes.api_data_models.response import AttributeGroup
 from labfreed.pac_attributes.pythonic.py_attributes import pyAttribute, pyAttributes
 from labfreed.pac_attributes.server.server import AttributeGroupDataSource
@@ -101,21 +102,29 @@ class _BaseExcelAttributeDataSource(AttributeGroupDataSource):
             return []
         return [self._base_url + r for r in rows[0][1:]]
 
-    def attributes(self, pac_url:str) -> Optional[AttributeGroup]:
+    def attributes(self, subject_id:str) -> Optional[AttributeGroup]:
+        canonical_url = subject_id
         try:
-            p = PAC_CAT.from_url(pac_url)
-            pac_url = p.to_url(use_short_notation=self._uses_pac_cat_short_form, include_extensions=self._include_extensions)
-            print(f'Lookup in Excel of {pac_url}')
-        except:
+            # suppress_validation_errors=True: subject_id only has to be an IRI here, not a
+            # strictly valid PAC-ID - falling back to the raw input below is the expected,
+            # routine case, not something worth logging as an error.
+            p = PAC_CAT.from_url(subject_id, suppress_validation_errors=True)
+            if p.is_valid:
+                canonical_url = p.to_url(use_short_notation=self._uses_pac_cat_short_form, include_extensions=self._include_extensions)
+                logging.debug(f'Lookup in Excel of {canonical_url}')
+        except LabFREED_ValidationError:
             ... # might as well try to match the original input
-            
-        if f:= self._pac_to_key:
-            key = f(pac_url)
-        else:
-            key = pac_url
-            
+
         rows, last_changed = self._read_rows_and_last_changed()
+
+        # canonicalization can drop information the sheet is still keyed by (e.g. a
+        # tolerated trailing '/' - see design-choices.md "Empty id segments"), so fall
+        # back to the raw, as-given input if the canonical form doesn't find a match.
+        key = self._pac_to_key(canonical_url) if self._pac_to_key else canonical_url
         d = _get_row_by_first_cell(rows, key, self._base_url)
+        if not d and canonical_url != subject_id:
+            raw_key = self._pac_to_key(subject_id) if self._pac_to_key else subject_id
+            d = _get_row_by_first_cell(rows, raw_key, self._base_url)
         if not d:
             return None
         attributes = [pyAttribute(key= self._header_mappings.get(k, k), value=v) for k, v in d.items() if v is not None]

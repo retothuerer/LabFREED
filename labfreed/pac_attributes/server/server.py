@@ -68,18 +68,18 @@ class AttributeServerRequestHandler():
             print(e)
             raise InvalidRequestError
         attributes_for_pac_id = []
-        referenced_pac_ids = set()
-        attributes_for_pac = self._get_attributes_for_pac_id(pac_url=r.subject_id, 
+        referenced_ids = set()
+        attributes_for_pac = self._get_attributes_for_pac_id(pac_url=r.subject_id,
                                                             restrict_to_attribute_groups = r.restrict_to_attribute_groups)
         attributes_for_pac_id.append(attributes_for_pac)
-        ref = self._get_referenced_pac_ids(attributes_for_pac)
+        ref = self._get_referenced_ids(attributes_for_pac)
         if ref:
-            referenced_pac_ids.update(ref)
-            
-        # also find attributes of referenced pac-ids 
+            referenced_ids.update(ref)
+
+        # also find attributes of referenced ids
         if r.do_forward_lookup:
-            for pac_url in referenced_pac_ids:
-                attributes_for_pac = self._get_attributes_for_pac_id(pac_url=pac_url, 
+            for referenced_id in referenced_ids:
+                attributes_for_pac = self._get_attributes_for_pac_id(pac_url=referenced_id,
                                                                     restrict_to_attribute_groups = r.restrict_to_attribute_groups)
                 attributes_for_pac_id.append(attributes_for_pac)
 
@@ -142,18 +142,18 @@ class AttributeServerRequestHandler():
         
     
 
-    def _get_referenced_pac_ids(self, attributes_for_pac:AttributesOfItem):
-        referenced_pacs = []
+    def _get_referenced_ids(self, attributes_for_pac:AttributesOfItem):
+        referenced_ids = []
         for ag in attributes_for_pac.attribute_groups:
             for a in ag.attributes.values() :
                 for e in a.items:
                     if isinstance(e, ReferenceAttributeItemsElement):
                         try:
                             PAC_ID.from_url(e.value)
-                            referenced_pacs.append(e.value)
+                            referenced_ids.append(e.value)
                         except Exception:
                             pass
-        return referenced_pacs
+        return referenced_ids
             
     
     def _add_display_names(self, attributes_of_pac:AttributesOfItem, language:str) -> str:

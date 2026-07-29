@@ -139,7 +139,7 @@ class AttributeRequestData(LabFREED_BaseModel):
         return headers
     
     def request_params(self) -> dict[str, Any]:
-        params = {ATTR_GROUPS_FWD_LKP: self.do_forward_lookup}
+        params = {ATTR_GROUPS_FWD_LKP: str(self.do_forward_lookup).lower()}
         if self.restrict_to_attribute_groups:
             params.update({ATTR_GROUPS: ','.join(self.restrict_to_attribute_groups)})
         return params

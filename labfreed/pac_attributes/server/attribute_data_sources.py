@@ -25,7 +25,7 @@ class AttributeGroupDataSource(ABC):
         pass
     
     @abstractmethod
-    def attributes(self, pac_url: str) -> AttributeGroup:
+    def attributes(self, subject_id: str) -> AttributeGroup:
         pass
     
 
@@ -46,14 +46,14 @@ class Dict_DataSource(AttributeGroupDataSource):
         return list(set([a.key for attributes in self._data.values() for a in attributes.values()]))
     
            
-    def attributes(self, pac_url: str) -> AttributeGroup:
-        canonical_url = pac_url
+    def attributes(self, subject_id: str) -> AttributeGroup:
+        canonical_url = subject_id
         try:
-            # suppress_validation_errors=True: pac_url only has to be an IRI here, not a
+            # suppress_validation_errors=True: subject_id only has to be an IRI here, not a
             # strictly valid PAC-ID (e.g. a trailing-slash id, or a generic non-PAC-ID
             # IRI) - falling back to the raw input below is the expected, routine case,
             # not something worth logging as an error.
-            p = PAC_CAT.from_url(pac_url, suppress_validation_errors=True)
+            p = PAC_CAT.from_url(subject_id, suppress_validation_errors=True)
             if p.is_valid:
                 canonical_url = p.to_url(use_short_notation=self.uses_pac_cat_short_form, include_extensions=self._include_extensions)
         except LabFREED_ValidationError:
@@ -63,8 +63,8 @@ class Dict_DataSource(AttributeGroupDataSource):
         # tolerated trailing '/' - see design-choices.md "Empty id segments"), so fall back
         # to the raw, as-given input if the canonical form doesn't find a match.
         attributes = self._data.get(self._pac_to_key(canonical_url) if self._pac_to_key else canonical_url)
-        if attributes is None and canonical_url != pac_url:
-            attributes = self._data.get(self._pac_to_key(pac_url) if self._pac_to_key else pac_url)
+        if attributes is None and canonical_url != subject_id:
+            attributes = self._data.get(self._pac_to_key(subject_id) if self._pac_to_key else subject_id)
         if not attributes:
             if 'default' in self._data.keys():
                 attributes = self._data.get('default', None)
