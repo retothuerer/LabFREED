@@ -166,13 +166,16 @@ grammar/parsing side of the same change (see the "table row parsing" entry in
 
 ## Empty `id segment`s (trailing/double `/`) are rejected, not normalized
 
-**Decision:** `IDSegment._validate_segment` (`labfreed/pac_id/id_segment.py`) flags
-*any* empty `id segment` value as an ERROR-level validation message - including the
-empty segment produced by a trailing or repeated `/` in an `identifier` (e.g.
-`-MD/240:BAL500/21:12345/` splits into a final empty segment). `PAC_Parser` does not
-normalize a trailing/double `/` away before this check runs, so such an `identifier`
-fails validation (or raises, unless `suppress_validation_errors=True`) rather than
-silently succeeding as if the extra `/` weren't there.
+**Decision (revised 2026-07-29 - see revision note below):** `IDSegment._validate_segment`
+(`labfreed/pac_id/id_segment.py`) flags *any* empty `id segment` value as an ERROR-level
+validation message - including the empty segment produced by a *repeated* `/` in an
+`identifier` (e.g. `-MD/240:BAL500//21:12345` splits into an empty segment). This part is
+unchanged. What changed: a single *trailing* `/` (e.g. `-MD/240:BAL500/21:12345/`) is no
+longer treated as producing an empty segment at all - `PAC_Parser` now strips exactly one
+trailing `/` before splitting into segments, so it contributes no segment (empty or
+otherwise), and instead surfaces as a WARNING-level validation message rather than an
+ERROR. A *doubled* trailing `/` (e.g. `.../21:12345//`) still produces a genuine empty
+final segment and still hits the ERROR path below, unchanged.
 
 **Why:** an `id segment` is defined (PAC-ID spec) as "a part of an `identifier` that
 can stand on its own... used to organize `identifier`s." An empty value can't stand on
@@ -187,7 +190,7 @@ malformed identifier. (Confirmed even the PAC-CAT spec's own example table had o
 the "Instrument by Mettorius" row carried a stray trailing `/` until this was found
 and fixed alongside this decision.)
 
-**Alternatives considered / why not:**
+**Alternatives considered / why not (original 2026-07-28 decision, double `/` only):**
 
 - Silently strip a trailing/double `/` before parsing (mirroring the leading-`/` strip
   `_parse_id_segments` already does) - rejected because it would hide a caller bug
@@ -200,13 +203,34 @@ and fixed alongside this decision.)
 
 **Impact:** callers that build `identifier` strings themselves (e.g. proxying a
 third-party conversion service, as in `labfreed-webtools/instrument_demo/`) are
-responsible for stripping any trailing/double `/` before calling `PAC_ID.from_url()` -
-the library will not do it for them. The PAC-ID spec wording was also tightened from
-"At least one `id segment` MUST be non-empty" (ambiguous - arguably permitted some
-empty segments) to "No `id segment` may be empty," to match this implementation
-behavior exactly.
+responsible for stripping any *doubled* trailing/inner `/` before calling
+`PAC_ID.from_url()` - the library will not do it for them. A single trailing `/` is
+handled by the library itself (see revision below), so callers no longer need to guard
+against that specific, very common case themselves. The PAC-ID spec wording was also
+tightened from "At least one `id segment` MUST be non-empty" (ambiguous - arguably
+permitted some empty segments) to "No `id segment` may be empty," to match this
+implementation behavior exactly.
 
-*Investigated 2026-07-28, prompted by a real trailing-`/` failure surfaced via
+**Revision, 2026-07-29 - single trailing `/` carved out:** the two alternatives above
+were re-examined for the specific case of exactly one trailing `/` (not a doubled
+`/`, which is still handled exactly as decided above) and adopted after all: a single
+trailing `/` is now stripped before segment-splitting (so it produces no segment,
+empty or otherwise) and surfaces as a WARNING rather than an ERROR; `pac_id.is_valid`
+is `True` for this case. The earlier "no middle ground" reasoning still holds for a
+*doubled* `/` (or one in the middle of the identifier) - that always produces a real
+empty segment with no possible other meaning, and remains a hard ERROR. But a lone
+trailing `/` is common enough real-world noise (e.g. a caller-built URL with an extra
+separator) that maintainers decided it doesn't warrant surfacing as a hard error at
+the core parsing layer - see `PAC-ID-Attributes' subject_id...` entry below for the
+adjacent decision this narrows the gap with (that entry already tolerated this same
+case one layer up, at the attribute-service boundary rather than in `PAC_ID` itself).
+Downstream code that canonicalizes a valid id before using it as a lookup key (e.g.
+`Dict_DataSource.attributes()`) needs to account for the canonical form no longer
+matching a raw, as-stored key that still carries the stripped slash - fixed there by
+falling back to a raw-string lookup when the canonical-key lookup misses.
+
+*Investigated 2026-07-28 (double `/`), revised 2026-07-29 (single trailing `/`) -
+originally prompted by a real trailing-`/` failure surfaced via
 `bp_instrument_demo.py`'s PAC-Ninja conversion path.*
 
 ---
@@ -229,7 +253,9 @@ already-published PAC-ID-Attributes spec change (`ApiniLabs/PAC-Attributes` comm
 
 - `PAC_CAT._split_segments_by_category` and `_resolve_identifier_for_notation`
   (`pac_cat/pac_cat.py`) both did `segment.value[0] == '-'`, which raises an unhandled
-  `IndexError` on an empty segment (e.g. from a trailing `/`) instead of the clean,
+  `IndexError` on an empty segment (e.g. from a repeated `/` - a single trailing `/`
+  no longer produces an empty segment at all, see the 2026-07-29 revision above)
+  instead of the clean,
   catchable `LabFREED_ValidationError` the "empty id segments" decision above assumes.
   Fixed by switching to `segment.value.startswith('-')`, which handles an empty string
   correctly (`''.startswith('-')` is simply `False`) without changing behavior for any

@@ -4,7 +4,7 @@ import logging
 import re
 from types import MappingProxyType
 
-from labfreed.labfreed_infrastructure import LabFREED_ValidationError
+from labfreed.labfreed_infrastructure import LabFREED_ValidationError, ValidationMsgLevel
 
 from labfreed.pac_id.id_segment import IDSegment
 from labfreed.pac_id.extension import Extension
@@ -55,8 +55,8 @@ class PAC_Parser():
             id_str = pac_url
             ext_str = ""
                     
-        pac_id = cls._parse_pac_id(id_str)
-        
+        pac_id, had_trailing_slash = cls._parse_pac_id(id_str)
+
         # try converting to PAC-CAT. This can fail, in which case a regular PAC-ID is returned
         if try_pac_cat:
             try:
@@ -64,15 +64,22 @@ class PAC_Parser():
                 if pac_cat.categories:
                     pac_id = pac_cat
             except LabFREED_ValidationError:
-                pass 
-              
+                pass
+
         extensions = cls._parse_extensions(ext_str)
         if extensions and extension_interpreters:
             for i, e in enumerate(extensions):
                 if interpreter := extension_interpreters.get(e.type or ''):
                     extensions[i] = interpreter.from_extension(e)
         pac_id.extensions = extensions
-            
+
+        if had_trailing_slash:
+            pac_id._add_validation_message(
+                    source="identifier",
+                    level = ValidationMsgLevel.WARNING,
+                    msg="identifier has a trailing '/'. This produces no id segment and is ignored, but SHOULD be avoided."
+            )
+
         if not pac_id.is_valid and not suppress_validation_errors:
             logging.error(pac_id.print_validation_messages())
             raise LabFREED_ValidationError(validation_msgs = pac_id._get_nested_validation_messages())
@@ -80,31 +87,39 @@ class PAC_Parser():
         return pac_id
             
     @classmethod
-    def _parse_pac_id(cls,id_str:str) -> "PAC_ID":
+    def _parse_pac_id(cls,id_str:str) -> tuple["PAC_ID", bool]:
         # m = re.match('(HTTPS://)?(PAC.)?(?P<issuer>.+?\..+?)/(?P<identifier>.*)', id_str)
         m = re.match('(HTTPS://)?(PAC\.)?(?P<issuer>.+?)/(?P<identifier>.*)', id_str, re.IGNORECASE)
         if not m:
             raise LabFREED_ValidationError(f'{id_str} does not match the pattern expected for PAC-ID')
         d = m.groupdict()
-        
-        id_segments = list()
-        id_segments = cls._parse_id_segments(d.get('identifier'))
-        
+
+        id_segments, had_trailing_slash = cls._parse_id_segments(d.get('identifier'))
+
         from labfreed.pac_id import PAC_ID
         pac = PAC_ID(issuer= d.get('issuer'),
                      identifier=id_segments
         )
-        
-        return pac
-    
+
+        return pac, had_trailing_slash
+
     @classmethod
-    def _parse_id_segments(cls, identifier:str):
+    def _parse_id_segments(cls, identifier:str) -> tuple[list[IDSegment], bool]:
         if not identifier:
-            return []    
-        
-        id_segments = list()  
+            return [], False
+
         if len(identifier) > 0 and identifier[0] == '/':
             identifier = identifier[1:]
+
+        # a single trailing '/' produces no id segment. It is ignored (not treated as
+        # an empty segment), rather than being flagged as an error - unlike a repeated
+        # '/' (which includes a doubled trailing '/'), which still yields a genuinely
+        # empty segment and is left for IDSegment._validate_segment to reject.
+        had_trailing_slash = identifier.endswith('/') and not identifier.endswith('//')
+        if had_trailing_slash:
+            identifier = identifier[:-1]
+
+        id_segments = list()
         for s in identifier.split('/'):
             tmp = s.split(':', 1)
 
@@ -114,8 +129,8 @@ class PAC_Parser():
                 segment = IDSegment(key=tmp[0], value=tmp[1])
 
             id_segments.append(segment)
-        return id_segments
-    
+        return id_segments, had_trailing_slash
+
 
     @classmethod
     def _parse_extensions(cls, extensions_str:str|None) -> list["Extension"]:    
