@@ -11,13 +11,16 @@ owner typed themselves, so provenance depends entirely on process, not on what g
 
 **Rules:**
 
-1. **Never run `git commit` yourself, ever — and never run `git push` unless the owner
-   has explicitly asked for it in that specific moment.** For a commit: stage the
-   intended files (`git add`) and draft the commit message, then hand both to the owner
-   and let them run `git commit` themselves. Approving a plan, a phase, or an option that
-   merely *mentions* committing (e.g. picking "update docs, test, commit standalone" from
-   a list of choices) is NOT approval to run `git commit` — that approval covers the
-   approach, not the act, and the act is the owner's alone to perform.
+1. **Never run `git commit` or `git push` yourself, ever — both are the owner's to
+   execute.** For a commit: stage the intended files (`git add`) and draft the commit
+   message, then hand both to the owner and let them run `git commit` themselves. For
+   pushing: once commits exist locally, ask whether to push, but even a "yes, push" only
+   covers that one push — don't run it proactively otherwise, and don't assume the owner
+   wants Claude to run it at all (the owner has said outright they'll push it themselves).
+   Approving a plan, a phase, or an option that merely *mentions* committing or pushing
+   (e.g. picking "update docs, test, commit standalone" from a list of choices) is NOT
+   approval to run `git commit`/`git push` — that approval covers the approach, not the
+   act, and the act is the owner's alone to perform.
 2. **Never create branches or worktrees on your own initiative** — not via a direct
    `git branch` / `git worktree` command, and not implicitly through agent/workflow
    tooling that isolates work in a new worktree (e.g. `isolation: "worktree"`). Operate
