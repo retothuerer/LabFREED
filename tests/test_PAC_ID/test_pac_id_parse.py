@@ -1,3 +1,6 @@
+import pytest
+
+from labfreed.labfreed_infrastructure import LabFREED_ValidationError
 from labfreed.pac_id import PAC_ID, IDSegment
 
 
@@ -75,11 +78,39 @@ def test_extra_colon_splits_on_the_first_one_but_is_invalid():
     assert not pac.is_valid
 
 
-def test_empty_id_segment_value_is_invalid():
-    '''A double or trailing '/' in the identifier produces a segment with an
-    empty value, which carries no information and must be flagged.'''
-    pac = from_url(valid_base + "KEY:VAL/")
+def test_repeated_slash_produces_an_invalid_empty_segment():
+    '''A repeated '/' in the identifier produces a segment with an empty value,
+    which carries no information and must be flagged - unlike a single trailing
+    '/' (see below), which is tolerated.'''
+    pac = from_url(valid_base + "KEY:VAL//KEY2:VAL2")
     assert not pac.is_valid
+    assert any('must not be empty' in m.msg for m in pac.validation_messages())
+
+
+def test_repeated_slash_still_raises_without_suppression():
+    with pytest.raises(LabFREED_ValidationError):
+        PAC_ID.from_url(valid_base + "KEY:VAL//KEY2:VAL2", try_pac_cat=False)
+
+
+def test_doubled_trailing_slash_is_also_invalid():
+    '''A trailing '/' is only tolerated once - a doubled trailing '/' still
+    produces a genuinely empty segment and is left as an ERROR.'''
+    pac = from_url(valid_base + "KEY:VAL//")
+    assert not pac.is_valid
+    assert any('must not be empty' in m.msg for m in pac.validation_messages())
+
+
+def test_single_trailing_slash_is_stripped_and_only_warns():
+    '''A single trailing '/' produces no id segment at all, so there is nothing
+    to flag as empty. It's still not good practice (see design-choices.md
+    "trailing `/` is tolerated"), so it's flagged as a WARNING rather than
+    silently accepted - but it does not make the PAC-ID invalid, and does not
+    raise even without suppress_validation_errors.'''
+    pac = PAC_ID.from_url(valid_base + "KEY:VAL/", try_pac_cat=False)
+    assert pac.is_valid
+    assert len(pac.identifier) == 1
+    assert pac.identifier[0].value == "VAL"
+    assert any('trailing' in m.msg for m in pac.warnings())
 
 
 def test_has_derivation_segments():

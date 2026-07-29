@@ -114,17 +114,23 @@ confirm whether `/pac-id` expects the same header/key or something else.
 
 ## ~~Clarify whether a trailing (or double) `/` in an `identifier` is spec-legal~~ (resolved)
 
-Resolved: empty `id segment`s (from a trailing/double `/`) stay rejected as an ERROR -
-see ["Empty `id segment`s (trailing/double `/`) are rejected, not
+Resolved, revised 2026-07-29: a *doubled* (or inner) `/` still produces a genuinely
+empty `id segment` and stays an ERROR - see ["Empty `id segment`s (trailing/double `/`)
+are rejected, not
 normalized"](design-choices.md#empty-id-segments-trailingdouble--are-rejected-not-normalized)
-for the reasoning. The PAC-ID spec wording was tightened to match ("No `id segment`
-may be empty"), and a stray trailing `/` found in the PAC-CAT spec's own example table
-was fixed alongside this.
+for the reasoning. A single *trailing* `/`, however, is now tolerated: `PAC_Parser`
+strips it before splitting into segments (so it contributes no segment at all) and
+flags it with a WARNING instead. The PAC-ID spec wording was updated to match: `id
+segment` "MUST contain at least one character", and the URL-format `path` row now
+states a trailing `/` "MUST NOT be considered part of the identifier". A stray
+trailing `/` found in the PAC-CAT spec's own example table was fixed alongside the
+original (double-`/`) decision.
 
-Still open: `bp_instrument_demo.py` itself now strips the trailing `/` before calling
-`PAC_ID.from_url()` (see `rstrip('/')` in the PAC-Ninja conversion path) - callers
-elsewhere that build `identifier` strings from external input should do the same,
-since the library deliberately won't do it for them.
+Still open: `bp_instrument_demo.py` still strips the trailing `/` itself before calling
+`PAC_ID.from_url()` (see `rstrip('/')` in the PAC-Ninja conversion path) - this is now
+redundant for a single trailing `/` (the library does it), but callers building
+`identifier` strings from external input still need to guard against a *doubled*/inner
+`/` themselves, since the library will not silently fix that up for them.
 
 ---
 

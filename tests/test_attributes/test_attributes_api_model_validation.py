@@ -16,13 +16,14 @@ def test_valid_pac_id_is_accepted_with_no_warning():
     assert not r.validation_messages()
 
 
-def test_trailing_slash_pac_id_is_accepted_as_iri_with_warning():
-    # per the PAC-ID-Attributes spec, subject_id only has to be an IRI, "preferably" a
-    # PAC-ID - a PAC-ID-shaped id with an empty (trailing-slash) segment is a valid IRI
-    # even though it isn't a strictly valid PAC-ID.
+def test_trailing_slash_pac_id_is_accepted_as_valid_pac_id():
+    # a single trailing '/' is tolerated (stripped) by PAC_ID's own parser now (see
+    # design-choices.md "Empty id segments"), so this id counts as a valid PAC-ID here -
+    # this layer only checks PAC_ID.is_valid, it doesn't surface that parser's own
+    # trailing-slash WARNING.
     r = AttributeRequestData(subject_id=trailing_slash_pac)
     assert r.is_valid
-    assert any('not a valid PAC-ID' in m.msg for m in r.validation_messages())
+    assert not any('not a valid PAC-ID' in m.msg for m in r.validation_messages())
 
 
 def test_generic_non_pac_id_iri_is_accepted_with_warning():

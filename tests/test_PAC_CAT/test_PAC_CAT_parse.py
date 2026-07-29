@@ -1,6 +1,4 @@
 import logging
-import pytest
-from labfreed.labfreed_infrastructure import LabFREED_ValidationError
 from labfreed.pac_cat import Category, PAC_CAT
 from labfreed.pac_id import IDSegment, PAC_ID
 
@@ -193,29 +191,5 @@ def test_category_key_must_start_with_dash_and_letter():
 def test_well_formed_category_key_is_valid():
     pac = from_url(valid_base + "-DM/21:VAL")
     assert pac.is_valid
-
-
-def test_trailing_slash_is_invalid_but_does_not_crash():
-    # a trailing '/' produces an empty final id segment. This must surface as a clean
-    # ERROR-level validation message (see design-choices.md "Empty id segments"), not
-    # crash - _split_segments_by_category used to do `s.value[0] == '-'`, which raised
-    # an unhandled IndexError on the empty segment instead of failing validation.
-    pac = from_url(valid_base + "-MD/240:BAL500/21:12345/")
-    assert not pac.is_valid
-    assert any('must not be empty' in m.msg for m in pac.validation_messages())
-
-
-def test_double_slash_is_invalid_but_does_not_crash():
-    pac = from_url(valid_base + "-MD/240:BAL500//21:12345")
-    assert not pac.is_valid
-    assert any('must not be empty' in m.msg for m in pac.validation_messages())
-
-
-def test_trailing_slash_still_raises_without_suppression():
-    # guardrail: this migration only relaxes the *attribute service* layer (see
-    # AttributeRequestData._validate_subject_id) - PAC_CAT/PAC_ID's own parsing still
-    # rejects an empty id segment by default, exactly as decided in design-choices.md.
-    with pytest.raises(LabFREED_ValidationError):
-        PAC_CAT.from_url(valid_base + "-MD/240:BAL500/21:12345/")
 
 

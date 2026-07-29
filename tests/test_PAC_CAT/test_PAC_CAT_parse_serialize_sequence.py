@@ -42,4 +42,15 @@ def test_force_long_notation():
     assert type(pac) is PAC_CAT
     url = pac.to_url(use_short_notation=False)
     assert url == valid_base + "-MD/240:B-800/21:12345"
-  
+
+
+def test_trailing_slash_is_not_preserved_when_deserialize_and_serialize_in_sequence():
+    '''Unlike the cases above, a trailing '/' is NOT preserved: it produces no id
+    segment and is stripped away during parsing (with a WARNING - see
+    design-choices.md, "A single trailing `/` is tolerated"), so `to_url()`
+    deliberately differs from `url_in` here.'''
+    url_in = valid_base + "-MD/BAL500/1234/"
+    pac = from_url(url_in)
+    assert type(pac) is PAC_CAT
+    assert pac.is_valid
+    assert pac.to_url() == valid_base + "-MD/BAL500/1234"

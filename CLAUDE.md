@@ -11,16 +11,22 @@ owner typed themselves, so provenance depends entirely on process, not on what g
 
 **Rules:**
 
-1. **Never run `git commit` or `git push` unless the owner has explicitly asked for it in
-   that specific moment.** A prior approval to commit does not carry forward to later
-   changes in the same session — ask again each time, for each commit.
+1. **Never run `git commit` yourself, ever — and never run `git push` unless the owner
+   has explicitly asked for it in that specific moment.** For a commit: stage the
+   intended files (`git add`) and draft the commit message, then hand both to the owner
+   and let them run `git commit` themselves. Approving a plan, a phase, or an option that
+   merely *mentions* committing (e.g. picking "update docs, test, commit standalone" from
+   a list of choices) is NOT approval to run `git commit` — that approval covers the
+   approach, not the act, and the act is the owner's alone to perform.
 2. **Never create branches or worktrees on your own initiative** — not via a direct
    `git branch` / `git worktree` command, and not implicitly through agent/workflow
    tooling that isolates work in a new worktree (e.g. `isolation: "worktree"`). Operate
    on the current checkout/branch unless the owner explicitly asks for a new one.
-3. **Always add a `Co-Authored-By: Claude <noreply@anthropic.com>` trailer** to any
-   commit you do create, so the log at least documents that an agent produced it — even
-   though the author identity itself will still read as the repo owner.
+3. **Never reference Claude, Claude Code, or any AI agent in a commit message** — no
+   `Co-Authored-By: Claude` trailer, no mention in the subject or body. The owner does
+   not want commits attributed to or associated with an agent in any way, in message
+   content or trailers. If agent involvement needs to be recorded for later provenance
+   checks, do that outside the commit itself (e.g. a session note), never inside it.
 4. **Watch for environment-level auto-commit.** This kind of sandbox has been observed to
    silently commit — and push to the real GitHub remote — a dirty working tree with the
    message "." (e.g. triggered by a `git checkout -b` or branch switch), without any
