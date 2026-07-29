@@ -15,6 +15,7 @@ from labfreed.pac_id import  IDSegment  # noqa: E402
 from labfreed.well_known_keys.labfreed.well_known_keys import WellKnownKeys  # noqa: E402
 from labfreed.well_known_extensions import TREX_Extension  # noqa: E402
 from labfreed.pac_id_resolver import PAC_ID_Resolver, load_cit  # noqa: E402
+from labfreed.pac_id_resolver.service_availability import check_service_group  # noqa: E402
 
 # import built ins
 import os
@@ -152,7 +153,7 @@ def test_resolver():
     service_groups = PAC_ID_Resolver(resolver_configs=[cit, cit2]).resolve(pac_str)
     cached_session = requests_cache.CachedSession(backend='memory', expire_after=60)
     for sg in service_groups:
-        sg.update_states(cached_session)
+        check_service_group(sg, cached_session)
         sg.print()
     
     assert True

@@ -169,26 +169,28 @@ since it's a pure refactor with no behavior change; flagged for a later pass.
 
 ---
 
-## Separate service-availability network checks out of `Service`/`ServiceGroup`
+## `app_infrastructure.py` has a dead, second copy of the service-availability logic
 
-Related to: ["Resolver config's expression evaluation split out of the data
-model"](design-choices.md#resolver-configs-expression-evaluation-split-out-of-the-data-model-eval-replaced-with-a-direct-token-evaluator),
-the same kind of coupling one layer over.
+Found while extracting `service_availability.py` from `services.py` (see
+[`design-choices.md`](design-choices.md#service-availability-network-checks-split-out-of-servicegroupservice-with-no-shim)).
+`labfreed/labfreed_extended/app/app_infrastructure.py` has its own near-duplicate of the
+same HTTP-checking logic:
 
-`Service.check_service_status()` and `ServiceGroup.update_states()` (plus the
-free-floating `_has_internet_connection()`), all in
-`labfreed/pac_id_resolver/services.py`, do real HTTP I/O (a `HEAD` request per service,
-a `ThreadPoolExecutor` fan-out, an internet-connectivity pre-check) from inside what's
-otherwise a plain Pydantic data model - `status` is just a field, but the logic that
-decides its value lives on the model itself.
+- `update_user_handover_states()` (lines 88-96) - a second `ThreadPoolExecutor` +
+  connectivity-guard implementation, confirmed via grep to be called nowhere in either
+  `LabFREED` or `labfreed-webtools`.
+- Its own separate module-local `_has_internet_connection()` (lines 98-103) - uses
+  `requests.head` where `services.py`'s version used `requests.get`, a second,
+  inconsistent copy of the same check.
+- Line 54's `(sg.update_states() for sg in service_groups)` is a bare, never-iterated
+  generator expression - also dead (already flagged in
+  [[project_labfreed_pac_attributes_improvement_plan]] Phase 4).
 
-Proposed split (not yet implemented, awaiting go-ahead): pull the HTTP-checking logic
-into a new `service_availability.py` with a `ServiceAvailabilityChecker` that takes a
-`Service`/`ServiceGroup` (+ optional `requests.Session`) and does the actual checking,
-mutating `.status` as its output same as today. `check_service_status()`/
-`update_states()` become one-line delegating shims (same lazy-import pattern used for
-`ResolverConfig.evaluate_pac_id()`), so `resolver.py`, `test_sanity_check.py`, and
-`labfreed-webtools/resolver_tester/bp_resolver_tester.py` don't need to change.
+Left untouched since this lives entirely in the `pac_issuer_lib`/issuer-app area
+deferred to its own branch. When that phase happens: delete the dead
+`update_user_handover_states`/`_has_internet_connection` pair, and if the
+never-iterated generator turns out to need reviving, point it at
+`service_availability.check_service_group` instead of re-implementing this a third time.
 
 ---
 

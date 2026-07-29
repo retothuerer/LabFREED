@@ -7,6 +7,7 @@ from deprecated import deprecated
 from labfreed.pac_cat.pac_cat import PAC_CAT
 from labfreed.pac_id.pac_id import PAC_ID
 from labfreed.pac_id_resolver.services import ServiceGroup
+from labfreed.pac_id_resolver.service_availability import check_service_group
 from labfreed.pac_id_resolver.cit_v1 import CIT_v1
 from labfreed.pac_id_resolver.resolver_config import ResolverConfig
 
@@ -112,7 +113,7 @@ class PAC_ID_Resolver():
         
         if check_service_status:
             for m in matches:
-                m.update_states()   
+                check_service_group(m)
         return matches
             
     

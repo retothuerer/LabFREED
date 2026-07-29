@@ -133,6 +133,7 @@ print(pac_str)
 ## PAC-ID Resolver
 '''
 from labfreed import PAC_ID_Resolver, load_cit  # noqa: E402
+from labfreed.pac_id_resolver.service_availability import check_service_group  # noqa: E402
 import requests_cache
 
 # Get a CIT
@@ -156,7 +157,7 @@ pac_str = 'HTTPS://PAC.METTORIUS.COM/-MS/X3511/CAS:7732-18-5'
 service_groups = PAC_ID_Resolver(resolver_configs=[cit, cit2]).resolve(pac_str, check_service_status=False)
 cached_session = requests_cache.CachedSession(backend='memory', expire_after=60)
 for sg in service_groups:
-    sg.update_states(cached_session)
+    check_service_group(sg, cached_session)
     sg.print()
 
 

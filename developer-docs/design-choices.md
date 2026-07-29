@@ -483,3 +483,65 @@ instantiate `ResolverConfigEvaluator` directly instead of calling private method
 `ResolverConfig`.
 
 *Investigated 2026-07-29.*
+
+---
+
+## Service-availability network checks split out of `Service`/`ServiceGroup`, with no shim
+
+**Decision:** `Service.check_service_status()` and `ServiceGroup.update_states()` - along with
+the free-floating `_has_internet_connection()` - are removed entirely from
+`labfreed/pac_id_resolver/services.py`, not turned into delegating shims. The same logic now
+lives in a new `service_availability.py` as plain module-level functions,
+`check_service(service, session=None)` and `check_service_group(group, session=None)`, which
+every former caller (`resolver.py`, `examples/examples.py`, `tests/test_sanity_check.py`,
+`labfreed-webtools/resolver_tester/bp_resolver_tester.py`) now imports and calls directly instead
+of calling a method on the model.
+
+Folded into the same change: `check_service_group` no longer raises `ConnectionError` when
+`_has_internet_connection()` fails. It now sets every service's `status` to the already-existing
+`ServiceStatus.UNKNOWN` and returns normally.
+
+**Why:** this is the same data-model-vs-logic coupling already fixed for
+[`resolver_config.py`](#resolver-configs-expression-evaluation-split-out-of-the-data-model-eval-replaced-with-a-direct-token-evaluator) -
+`status` is a plain field, but deciding its value required real HTTP I/O living inside the model
+class. Unlike that fix, this one has no delegating shim at all: `ResolverConfig.evaluate_pac_id()`
+was kept as a one-liner because evaluating itself against a PAC-ID is the model's own intrinsic
+behavior; checking whether a URL is currently reachable over the network is not an intrinsic
+property of "a service" as data, it's an operation performed on it by something external - so the
+data model shouldn't expose a method for it at all, not even a thin one.
+
+The raise-to-degrade change fixes a real bug: `ConnectionError` failing loudly meant a missing
+connectivity check could abort `PAC_ID_Resolver.resolve()` (default args) even though PAC-ID
+resolution itself had already succeeded - confirmed this is exactly what made
+`tests/test_sanity_check.py::test_resolver` fail in a sandboxed/offline environment.
+`ServiceStatus` already had an `UNKNOWN` value for exactly this situation; nothing previously set
+it that way.
+
+**Alternatives considered / why not:**
+
+- A `ServiceAvailabilityChecker` class mirroring `ResolverConfigEvaluator`'s
+  construct-then-call shape, for API consistency with the sibling module - rejected: that shape
+  exists there to hold `self._config` across several private helper methods with exactly one call
+  site (the shim). This logic is fully stateless and, without a shim, now has four real external
+  callers across two repos - plain functions avoid pointless per-call-site instantiation ceremony.
+- Keep the shim methods on `Service`/`ServiceGroup` (the same lazy-import pattern as
+  `evaluate_pac_id`) - considered first, rejected on reflection: unlike evaluating a resolver
+  config against a PAC-ID, "check my own network reachability" isn't something a data model
+  should know how to do about itself, even via a one-line delegate.
+
+**Impact:** every caller of the old `.update_states()`/`.check_service_status()` methods had to
+change to call `check_service_group()`/`check_service()` instead - four call sites across
+`LabFREED` and `labfreed-webtools`, all updated in the same change (no deprecation shim, since
+this package is pre-1.0 and both are internal-only entry points, never part of a documented public
+API). `ServiceGroup.print()`/`__str__` and the `resolver_tester_main.jinja.html` template that
+branches on `s.status.name` are both unaffected - they only ever read `.status` after the fact, and
+`ServiceStatus.UNKNOWN` was already a value they knew how to render.
+
+Also surfaced, left out of scope: `labfreed/labfreed_extended/app/app_infrastructure.py` has its
+own near-duplicate of this exact logic (`update_user_handover_states` plus a second, inconsistent
+`_has_internet_connection` using `requests.head` instead of `requests.get`), confirmed dead code -
+see [`TODO.md`](TODO.md#app_infrastructurepy-has-a-dead-second-copy-of-the-service-availability-logic).
+Left alone since it's entirely inside the `pac_issuer_lib`/issuer-app area deferred to its own
+branch.
+
+*Investigated 2026-07-29.*
