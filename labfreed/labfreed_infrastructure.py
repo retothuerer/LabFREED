@@ -131,7 +131,7 @@ class LabFREED_BaseModel(PDOC_Workaround_Base):
         warnings_list = [warning for warning in self.validation_messages(nested=False)]
 
         # Traverse regular fields
-        for field_name, field in self.__fields__.items():
+        for field_name, field in type(self).model_fields.items():
             full_path = f"{parent_name}.{field_name}" if parent_name else field_name
             value = getattr(self, field_name)
 

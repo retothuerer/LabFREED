@@ -47,7 +47,7 @@ class PredefinedCategory(Category, ABC):
         `_use_position_preserving_segments`).'''
         segments = []
         can_omit_keys = use_short_notation # keeps track of whether keys can still be omitted. That is the case when the segment recommendation is followed
-        for field_name, field_info in self.model_fields.items():
+        for field_name, field_info in type(self).model_fields.items():
             if field_name in ['key', 'additional_segments']:
                 continue
             if value := getattr(self, field_name):
@@ -87,7 +87,7 @@ class PredefinedCategory(Category, ABC):
         (`PAC_CAT._resolve_identifier_for_notation`). '''
         can_omit_keys = use_short_notation
         omit_key_for_alias = {}
-        for field_name, field_info in self.model_fields.items():
+        for field_name, field_info in type(self).model_fields.items():
             if field_name in ['key', 'additional_segments']:
                 continue
             if getattr(self, field_name):
