@@ -29,7 +29,7 @@ macros:
       template_url: https://mettorius.com/
 
 
-cit:
+config:
 # Test
 - if: mettorius.com == $.issuer
   entries:
@@ -56,29 +56,29 @@ cit:
 ##############################
 
 # multiline string
-- if: "($.issuer == mettorius.com) 
+- if: "($.issuer == mettorius.com)
        AND $.categories['-MD']"
   entries:
   - <<: *dummy
-    service_name: multiline applicable_if
+    service_name: multiline if
 
 # folded string
-- if: | 
-    ($.issuer == mettorius.com) 
+- if: |
+    ($.issuer == mettorius.com)
     AND $.categories['-MD']
   entries:
   - <<: *dummy
-    service_name: folded applicable_if
+    service_name: folded if
 
 # multiline  string
-- if: | 
-    NOT NOT ($.issuer == mettorius.com) 
+- if: |
+    NOT NOT ($.issuer == mettorius.com)
     AND $.categories['-MD']
   entries:
   - <<: *dummy
-    service_name: multiline applicable_if
+    service_name: double not if
 
 - if: NOT ($.issuer != METTORIUS.COM)
   entries:
   - <<: *dummy
-    service_name: _3
+    service_name: not not equal issuer

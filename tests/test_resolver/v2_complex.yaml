@@ -1,0 +1,29 @@
+schema_version: '2.0'
+
+origin: PERSONAL
+
+config:
+# CAS Search
+- if: ($.categories[?(@.key == "-MS")] OR $.categories[?(@.key == "-MD")]) AND True AND NOT $.categories[?(@.key == "-MS")].segments[0].value == BAL-CLEAN2 # note 0 based indexing
+  entries:
+  - service_name: Chem Inventory
+    service_type: userhandover-generic
+    application_intents:
+      - chem-info
+    template_url: https://...
+    
+- if: "True"
+  entries:
+  - service_name: Google Search
+    service_type: userhandover-generic
+    application_intents:
+      - chem-info
+    template_url: https://www.google.com
+
+- if: $.categories[?(@.key == "-MS")].segments[0].value == BAL-CLEAN2
+  entries: 
+  - service_name: MSDS
+    service_type: userhandover-generic
+    application_intents:
+    - document-msds
+    template_url: https://mettorius.com/MSDS.pdf

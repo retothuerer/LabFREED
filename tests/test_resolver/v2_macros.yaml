@@ -1,0 +1,34 @@
+schema_version: '2.0'
+
+origin: PERSONAL
+
+macros:     
+    shop: &shop
+      service_name: Shop
+      service_type: userhandover-generic
+      application_intents:
+        - showdevicemanual-apinilabs
+      template_url: https://mettorius.com/shop/an={$.categories[1].segments['240'].value}
+
+config:
+# Instruments
+- if: mettorius.com == $.issuer AND $.categories['-MD']
+  entries:
+  - <<: *shop
+# CAS Search
+- if: $.categories[?(@.key == "-MS")].segments[?(@.key == "CAS")]
+  entries:
+  - service_name: CAS Search
+    service_type: userhandover-generic
+    application_intents:
+      - chem-info
+    template_url: https://pubchem.ncbi.nlm.nih.gov/#query={$.categories[?(@.key == "-MS")].segments[?(@.key == 'CAS')].value}
+    
+- if: "True"
+  entries:
+  - service_name: Google Search
+    service_type: userhandover-generic
+    application_intents:
+      - chem-info
+    template_url: https://www.google.com
+    
