@@ -132,8 +132,8 @@ def test_resolver():
     ## PAC-ID Resolver
     '''
     # Get a CIT
-    dir = os.path.join(os.getcwd(), 'examples')
-    p = os.path.join(dir, 'cit_mine.yaml')       
+    dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'examples')
+    p = os.path.join(dir, 'cit_mine.yaml')
     cit = load_cit(p)
 
     # validate the CIT

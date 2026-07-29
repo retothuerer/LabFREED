@@ -21,6 +21,10 @@ owner typed themselves, so provenance depends entirely on process, not on what g
    (e.g. picking "update docs, test, commit standalone" from a list of choices) is NOT
    approval to run `git commit`/`git push` — that approval covers the approach, not the
    act, and the act is the owner's alone to perform.
+   **Always display the drafted commit message inline in the chat response itself** -
+   not just written to a scratch file with the path mentioned. A file is fine *in
+   addition* (e.g. for `git commit -F`), but the owner should be able to read the actual
+   message text without opening anything else.
 2. **Never create branches or worktrees on your own initiative** — not via a direct
    `git branch` / `git worktree` command, and not implicitly through agent/workflow
    tooling that isolates work in a new worktree (e.g. `isolation: "worktree"`). Operate
