@@ -47,6 +47,7 @@ class Dict_DataSource(AttributeGroupDataSource):
     
            
     def attributes(self, pac_url: str) -> AttributeGroup:
+        canonical_url = pac_url
         try:
             # suppress_validation_errors=True: pac_url only has to be an IRI here, not a
             # strictly valid PAC-ID (e.g. a trailing-slash id, or a generic non-PAC-ID
@@ -54,20 +55,23 @@ class Dict_DataSource(AttributeGroupDataSource):
             # not something worth logging as an error.
             p = PAC_CAT.from_url(pac_url, suppress_validation_errors=True)
             if p.is_valid:
-                pac_url = p.to_url(use_short_notation=self.uses_pac_cat_short_form, include_extensions=self._include_extensions)
+                canonical_url = p.to_url(use_short_notation=self.uses_pac_cat_short_form, include_extensions=self._include_extensions)
         except LabFREED_ValidationError:
             ... # might as well try to match the original input
-            
-        
-        lookup_key = self._pac_to_key(pac_url) if self._pac_to_key else pac_url
-        attributes = self._data.get(lookup_key)
+
+        # canonicalization can drop information the stored data is still keyed by (e.g. a
+        # tolerated trailing '/' - see design-choices.md "Empty id segments"), so fall back
+        # to the raw, as-given input if the canonical form doesn't find a match.
+        attributes = self._data.get(self._pac_to_key(canonical_url) if self._pac_to_key else canonical_url)
+        if attributes is None and canonical_url != pac_url:
+            attributes = self._data.get(self._pac_to_key(pac_url) if self._pac_to_key else pac_url)
         if not attributes:
             if 'default' in self._data.keys():
                 attributes = self._data.get('default', None)
             else:
-                return None  
-        
-        return AttributeGroup(group_key=self._attribute_group_key, 
+                return None
+
+        return AttributeGroup(group_key=self._attribute_group_key,
                               attributes=attributes)
         
         
