@@ -372,7 +372,6 @@ def test_applicable_if_treats_matched_value_as_literal_data_not_code():
 # like 'PERSON' raised an unhandled SyntaxError instead of just working).
 # ---------------------------------------------------------------------------
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_applicable_if_supports_quoted_literals_as_reported():
     rc = ResolverConfig()
     pac = {'issuer': 'APINILABS.COM', 'identifier': [{'value': 'PERSON'}, {'value': 'THOMAS'}]}
@@ -382,7 +381,6 @@ def test_applicable_if_supports_quoted_literals_as_reported():
     assert applicable is True
 
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_applicable_if_quoted_literal_mismatch_is_not_applicable():
     rc = ResolverConfig()
     pac = {'identifier': [{'value': 'PERSON'}]}
@@ -397,7 +395,6 @@ def test_applicable_if_quoted_literal_mismatch_is_not_applicable():
 # of the whole PAC-ID, same contract as invalid entries.
 # ---------------------------------------------------------------------------
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_evaluate_pac_id_skips_blocks_with_malformed_applicable_if():
     rc = ResolverConfig(origin='o')
     bad_block = ResolverConfigBlock(**{'if': '$.a ~~ not valid syntax [[', 'entries': []})

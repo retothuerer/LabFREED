@@ -33,28 +33,24 @@ class _StubSession:
         return _StubResponse(self._status_code)
 
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_check_service_marks_active_on_2xx_response():
     s = _service()
     check_service(s, session=_StubSession(status_code=200))
     assert s.status == ServiceStatus.ACTIVE
 
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_check_service_marks_inactive_on_4xx_response():
     s = _service()
     check_service(s, session=_StubSession(status_code=404))
     assert s.status == ServiceStatus.INACTIVE
 
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_check_service_marks_inactive_on_request_exception():
     s = _service()
     check_service(s, session=_StubSession(raises=requests.RequestException("boom")))
     assert s.status == ServiceStatus.INACTIVE
 
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_check_service_group_checks_every_service(monkeypatch):
     monkeypatch.setattr(service_availability, '_has_internet_connection', lambda: True)
     group = ServiceGroup(origin='o', services=[
@@ -66,7 +62,6 @@ def test_check_service_group_checks_every_service(monkeypatch):
     assert all(s.status == ServiceStatus.ACTIVE for s in group.services)
 
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_check_service_group_degrades_to_unknown_without_internet(monkeypatch):
     # a missed connectivity check must not raise and abort resolution -- it
     # should just mean "we don't know", not "this failed".

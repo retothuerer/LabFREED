@@ -545,3 +545,53 @@ Left alone since it's entirely inside the `pac_issuer_lib`/issuer-app area defer
 branch.
 
 *Investigated 2026-07-29.*
+
+---
+
+## `PhysicoChemicalProperties`' remaining dummy values replaced with real qudt.org URIs; new chemical-identity/spec/document keys split into their own enums
+
+**Decision:** `well_known_attribute_keys.py` had three enum members still on the
+`.../dummy/...` placeholder namespace (`BOILINGPOINT`, `MELTINGPOINT`, `DENSITY`).
+These were replaced in place with the real `https://qudt.org/vocab/quantitykind/...`
+URIs, matching what a real Apini attribute server returns for a Carl Roth solvent
+(captured via `labfreed-webtools/scripts/test_apini_attribute_api.py`). `MOLARMASS` and
+`FLASHPOINT` were added to the same enum (also `qudt.org` quantitykind URIs, same
+response). The remaining new keys from that response - CAS number, EC number, empirical
+formula, assay, water content, datasheet, safety data sheet - were **not** folded into
+`PhysicoChemicalProperties`; they went into three new enums instead:
+`ChemicalIdentifiers` (CAS_NUMBER, EC_NUMBER, EMPIRICAL_FORMULA),
+`GuaranteeAnalysisProperties` (ASSAY, WATER_CONTENT), and `DocumentKeys` (DATASHEET,
+SAFETY_DATA_SHEET). `POLARITY` was left untouched on its dummy value - the sample
+response had no equivalent attribute to source a real URI from.
+
+**Why:** an identifier (CAS/EC number, empirical formula) isn't a physicochemical
+*property* in the sense the existing enum's other members are (boiling point, density,
+etc.) - a CAS number doesn't measure anything about the substance, it names it.
+Similarly, assay/water-content are QC/specification results (they came from the
+response's "Guarantee Analysis" attribute group), not intrinsic physical properties,
+and datasheet/SDS are documents, not data. Splitting by what the key actually
+*represents* keeps `PhysicoChemicalProperties` a coherent "measurable property" bucket
+rather than a catch-all for every attribute key ever seen.
+
+**Alternatives considered / why not:**
+
+- Add the `qudt.org` values as new, separate enum members alongside the existing dummy
+  ones instead of replacing them in place - rejected the same way the prior
+  `MELTINGPOINT` typo fix was: this enum is still an unreleased placeholder namespace
+  with zero confirmed real-world usage (see the "Two typo fixes" entry above), so there
+  was no deprecation window worth preserving, and keeping both would leave two keys per
+  concept with no way for a caller to know which one a given server actually uses.
+- Dump all twelve new/changed keys into a single new enum instead of three - rejected
+  because it would mix identifiers, QC results, and documents under one name, losing
+  exactly the grouping signal `MetaAttributeKeys` vs. `PhysicoChemicalProperties`
+  already established as this file's own convention.
+
+**Impact:** tagged `BREAKING:` in `CHANGELOG.md` per the `versioning` skill's "value
+change to a serialized key" rule, even though - as with the earlier `MELTINGPOINT` fix -
+the practical blast radius is zero (no confirmed caller reads `BOILINGPOINT`,
+`MELTINGPOINT`, or `DENSITY` today). `POLARITY` staying on a dummy value is a known gap,
+not an oversight - fill it in once a real server response with a polarity attribute is
+seen.
+
+*Investigated 2026-07-29, prompted by a real Apini attribute server response for a Carl
+Roth DMSO solvent.*

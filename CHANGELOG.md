@@ -16,6 +16,8 @@ PAC-ID Attributes
 - new building block
 - BREAKING: renamed PhysoChemicalProperties to PhysicoChemicalProperties (typo fix; deprecated alias kept for one more major version)
 - BREAKING: fixed MELTINGPOINT value typo (meltinggpoint -> meltingpoint) - still an unreleased `.../dummy/...` placeholder key, fixed before real adoption
+- BREAKING: replaced BOILINGPOINT, MELTINGPOINT and DENSITY `.../dummy/...` placeholder values with real qudt.org quantitykind URIs, matching what a real attribute server (Apini) returns - still unreleased placeholder keys, fixed before real adoption
+- added well-known attribute keys MOLARMASS and FLASHPOINT to PhysicoChemicalProperties, and new ChemicalIdentifiers (CAS_NUMBER, EC_NUMBER, EMPIRICAL_FORMULA), GuaranteeAnalysisProperties (ASSAY, WATER_CONTENT) and DocumentKeys (DATASHEET, SAFETY_DATA_SHEET) enums, sourced from a real Apini attribute server response for a Carl Roth solvent
 - renamed well_knonw_attribute_keys module to well_known_attribute_keys (typo fix; deprecated shim module kept for one more major version)
 
 
