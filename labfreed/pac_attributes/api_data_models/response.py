@@ -2,7 +2,7 @@
 from abc import ABC
 from datetime import  datetime, date
 import re
-from typing import  Annotated, Any,  Literal, Union, get_args
+from typing import  Annotated, Any,  Literal, Union
 from urllib.parse import urlparse
 
 from deprecated import deprecated
@@ -22,27 +22,8 @@ class AttributeItemsElementBase(LabFREED_BaseModel, ABC):
         if type(self) is AttributeItemsElementBase:
             raise TypeError("AttributeItemsElementBase must not be instantiated")
         return self
-        
-    # def __init__(self, **data):
-    #     # Automatically inject the Literal value for `type`
-    #     discriminator_value = self._get_discriminator_value()
-    #     data["type"] = discriminator_value
-    #     super().__init__(**data)       
-    
-    # @classmethod
-    # def _get_discriminator_value(cls) -> str:
-    #     """Extract the Literal value from the 'type' annotation."""
-    #     try:
-    #         type_annotation = cls.__annotations__["type"]
-    #         literal_value = get_args(type_annotation)[0]
-    #         return literal_value
-    #     except Exception as e:
-    #         raise TypeError(
-    #             f"{cls.__name__} must define `type: Literal[<value>]` annotation"
-    #         ) from e
-            
 
-    
+
 class DateTimeAttributeItemsElement(AttributeItemsElementBase):
     type: Literal["datetime"] = "datetime"
     value: date | datetime
