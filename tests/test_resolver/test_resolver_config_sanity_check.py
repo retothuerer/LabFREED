@@ -11,7 +11,6 @@ from labfreed.pac_id_resolver.resolver_config import ResolverConfig
 from labfreed.pac_cat.pac_cat import PAC_CAT
 
 HERE = os.path.dirname(__file__)
-EXAMPLES_DIR = os.path.join(HERE, '..', '..', 'examples')
 
 # Sample PAC-IDs used by the live labfreed-webtools resolver tester
 # (resolver_tester/bp_resolver_tester.py), plus one with an explicit CAS
@@ -38,13 +37,11 @@ def _service_names(rc, pac_url):
 # cit.yaml (local fixture)
 # ---------------------------------------------------------------------------
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_cit_yaml_is_valid():
     rc = _load(os.path.join(HERE, 'cit.yaml'))
     assert rc.is_valid
 
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_cit_yaml_device_gets_shop_and_manual_and_logic_showcase_entries():
     # the unconditional "Test" block and the "-MD"-gated "Instruments" block
     # both match a device PAC-ID, so Shop/Manual legitimately appear twice --
@@ -57,7 +54,6 @@ def test_cit_yaml_device_gets_shop_and_manual_and_logic_showcase_entries():
     ])
 
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_cit_yaml_consumable_also_gets_coa():
     rc = _load(os.path.join(HERE, 'cit.yaml'))
     assert sorted(_service_names(rc, PAC_CONSUMABLE)) == sorted([
@@ -69,32 +65,27 @@ def test_cit_yaml_consumable_also_gets_coa():
 # v2_basic.yaml (copied from labfreed-webtools resolver_tester/static/cit_examples)
 # ---------------------------------------------------------------------------
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_v2_basic_is_valid():
     rc = _load(os.path.join(HERE, 'v2_basic.yaml'))
     assert rc.is_valid
 
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_v2_basic_device_gets_technical_datasheet_and_shop():
     rc = _load(os.path.join(HERE, 'v2_basic.yaml'))
     assert set(_service_names(rc, PAC_DEVICE)) == {'Technical Datasheet', 'Shop'}
 
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_v2_basic_substance_gets_coa_msds_shop():
     rc = _load(os.path.join(HERE, 'v2_basic.yaml'))
     assert set(_service_names(rc, PAC_SUBSTANCE)) == {'CoA', 'MSDS', 'Shop'}
 
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_v2_basic_substance_with_cas_also_gets_cas_and_web_search():
     rc = _load(os.path.join(HERE, 'v2_basic.yaml'))
     names = set(_service_names(rc, PAC_SUBSTANCE_WITH_CAS))
     assert {'CoA', 'MSDS', 'Shop', 'CAS Search', 'Web Search'} == names
 
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_v2_basic_consumable_gets_nothing():
     # neither block's condition covers "-MC" -- this config simply has no
     # rule for consumables today.
@@ -106,19 +97,16 @@ def test_v2_basic_consumable_gets_nothing():
 # v2_complex.yaml (copied from labfreed-webtools resolver_tester/static/cit_examples)
 # ---------------------------------------------------------------------------
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_v2_complex_is_valid():
     rc = _load(os.path.join(HERE, 'v2_complex.yaml'))
     assert rc.is_valid
 
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_v2_complex_substance_gets_chem_inventory_and_google_search():
     rc = _load(os.path.join(HERE, 'v2_complex.yaml'))
     assert set(_service_names(rc, PAC_SUBSTANCE)) == {'Chem Inventory', 'Google Search'}
 
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_v2_complex_device_still_gets_chem_inventory_via_or():
     # applicable_if ORs "-MS" and "-MD" together, so a device (no "-MS"
     # category at all) still matches through the "-MD" side.
@@ -126,7 +114,6 @@ def test_v2_complex_device_still_gets_chem_inventory_via_or():
     assert set(_service_names(rc, PAC_DEVICE)) == {'Chem Inventory', 'Google Search'}
 
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_v2_complex_consumable_only_gets_google_search():
     # "-MC" matches neither side of the "-MS" OR "-MD" condition.
     rc = _load(os.path.join(HERE, 'v2_complex.yaml'))
@@ -137,13 +124,11 @@ def test_v2_complex_consumable_only_gets_google_search():
 # v2_macros.yaml (copied from labfreed-webtools resolver_tester/static/cit_examples)
 # ---------------------------------------------------------------------------
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_v2_macros_is_valid():
     rc = _load(os.path.join(HERE, 'v2_macros.yaml'))
     assert rc.is_valid
 
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_v2_macros_device_gets_shop_via_macro():
     # same single-quote bracket shorthand issue as cit.yaml:
     # $.categories['-MD'] never matches, so the macro-based Shop entry never
@@ -152,13 +137,11 @@ def test_v2_macros_device_gets_shop_via_macro():
     assert 'Shop' in _service_names(rc, PAC_DEVICE)
 
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_v2_macros_substance_with_cas_gets_cas_search():
     rc = _load(os.path.join(HERE, 'v2_macros.yaml'))
     assert 'CAS Search' in _service_names(rc, PAC_SUBSTANCE_WITH_CAS)
 
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_v2_macros_always_includes_google_search():
     rc = _load(os.path.join(HERE, 'v2_macros.yaml'))
     for pac_url in (PAC_SUBSTANCE, PAC_DEVICE, PAC_DERIVED_DEVICE, PAC_CONSUMABLE):
@@ -166,57 +149,49 @@ def test_v2_macros_always_includes_google_search():
 
 
 # ---------------------------------------------------------------------------
-# examples/cit_mine.yaml
+# cit_mine.yaml (copied from examples/cit_mine.yaml)
 # ---------------------------------------------------------------------------
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_examples_cit_mine_is_valid():
-    rc = _load(os.path.join(EXAMPLES_DIR, 'cit_mine.yaml'))
+    rc = _load(os.path.join(HERE, 'cit_mine.yaml'))
     assert rc.is_valid
 
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_examples_cit_mine_substance_with_cas_gets_cas_search():
-    rc = _load(os.path.join(EXAMPLES_DIR, 'cit_mine.yaml'))
+    rc = _load(os.path.join(HERE, 'cit_mine.yaml'))
     assert _service_names(rc, PAC_SUBSTANCE_WITH_CAS) == ['CAS Search']
 
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_examples_cit_mine_substance_without_cas_gets_nothing():
-    rc = _load(os.path.join(EXAMPLES_DIR, 'cit_mine.yaml'))
+    rc = _load(os.path.join(HERE, 'cit_mine.yaml'))
     assert _service_names(rc, PAC_SUBSTANCE) == []
 
 
 # ---------------------------------------------------------------------------
-# examples/resolver_config_demo.yaml
+# resolver_config_demo.yaml (copied from examples/resolver_config_demo.yaml)
 # ---------------------------------------------------------------------------
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_examples_resolver_config_demo_is_valid():
-    rc = _load(os.path.join(EXAMPLES_DIR, 'resolver_config_demo.yaml'))
+    rc = _load(os.path.join(HERE, 'resolver_config_demo.yaml'))
     assert rc.is_valid
 
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_examples_resolver_config_demo_device_gets_demo_attributes():
-    rc = _load(os.path.join(EXAMPLES_DIR, 'resolver_config_demo.yaml'))
+    rc = _load(os.path.join(HERE, 'resolver_config_demo.yaml'))
     assert _service_names(rc, PAC_DEVICE) == ['DemoAttributes']
 
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_examples_resolver_config_demo_substance_gets_inventory():
-    rc = _load(os.path.join(EXAMPLES_DIR, 'resolver_config_demo.yaml'))
+    rc = _load(os.path.join(HERE, 'resolver_config_demo.yaml'))
     assert _service_names(rc, PAC_SUBSTANCE) == ['Inventory']
 
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_examples_resolver_config_demo_substance_with_cas_gets_search_services_too():
-    rc = _load(os.path.join(EXAMPLES_DIR, 'resolver_config_demo.yaml'))
+    rc = _load(os.path.join(HERE, 'resolver_config_demo.yaml'))
     names = set(_service_names(rc, PAC_SUBSTANCE_WITH_CAS))
     assert {'Inventory', 'CAS Search', 'Supplier Search Google'} == names
 
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_examples_resolver_config_demo_consumable_gets_nothing():
-    rc = _load(os.path.join(EXAMPLES_DIR, 'resolver_config_demo.yaml'))
+    rc = _load(os.path.join(HERE, 'resolver_config_demo.yaml'))
     assert _service_names(rc, PAC_CONSUMABLE) == []
