@@ -14,7 +14,7 @@ from labfreed.pac_attributes.api_data_models.response import (Attribute, Attribu
                                                               TextAttributeItemsElement)
 from labfreed.pac_attributes.client.client_attribute_group import ClientAttributeGroup
 from labfreed.pac_id.pac_id import PAC_ID
-from labfreed.trex.pythonic.quantity import Quantity
+from labfreed.utilities.quantity import Quantity
 
 
 

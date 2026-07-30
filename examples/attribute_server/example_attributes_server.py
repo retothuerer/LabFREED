@@ -15,7 +15,7 @@ from labfreed.pac_attributes.well_known_attribute_keys import MetaAttributeKeys
 from labfreed.pac_attributes.server.attribute_data_sources import AttributeGroupDataSource
 from labfreed.pac_attributes.server.translation_data_sources import DictTranslationDataSource
 
-from labfreed.trex.pythonic.quantity import Quantity
+from labfreed.utilities.quantity import Quantity
 
 from labfreed.pac_attributes.pythonic.attribute_server_factory import AttributeServerFactory, Webframework
 from labfreed.pac_attributes.pythonic.excel_attribute_data_source import LocalExcelAttributeDataSource

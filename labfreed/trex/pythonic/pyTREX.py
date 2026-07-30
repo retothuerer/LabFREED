@@ -6,10 +6,11 @@ from typing import Self
 
 from pydantic import RootModel
 from labfreed.well_known_keys.unece import ucum_bridge
+from labfreed.well_known_keys.unece.unece_units import unece_units
 from labfreed.trex.pythonic.data_table import DataTable
 from labfreed.utilities.base36 import from_base36, base36, to_base36
 
-from labfreed.trex.pythonic.quantity import Quantity, unece_unit_code_from_quantity
+from labfreed.utilities.quantity import Quantity
 from labfreed.trex.table_segment import ColumnHeader, TableSegment
 from labfreed.trex.trex import TREX
 from labfreed.trex.trex_base_models import AlphanumericValue, BinaryValue, BoolValue, DateValue, ErrorValue, NumericValue, TextValue
@@ -122,7 +123,30 @@ class pyTREX(RootModel[dict[str, Quantity | datetime | time | date | bool | str 
     
   
   
-# Helper functions to convert python types to TREX types    
+# Helper functions to convert python types to TREX types
+
+def unece_unit_code_from_quantity(q:Quantity):
+    if not q.unit:
+        return 'C62' # dimensionless
+
+    # fast path: no dependency needed, correct for plain SI units where UNECE's raw fields
+    # happen to equal the UCUM string (kg, m, s, ...)
+    by_name =   [ u['commonCode'] for u in unece_units() if u.get('name','') == q.unit]
+    by_symbol = [ u['commonCode'] for u in unece_units() if u.get('symbol','') == q.unit]
+    by_code = [ u['commonCode'] for u in unece_units() if u.get('commonCode','') == q.unit]
+    code = list(set(by_name) | set(by_symbol) | set(by_code))
+    if len(code) == 1:
+        return code[0]
+
+    # fallback: dimensional/scale matching for compound or non-identical units (mol/L,
+    # kg/m3, Cel, ...) - needs the optional 'units' extra
+    if ucum_bridge.HAS_UCUM_SUPPORT:
+        return ucum_bridge.best_unece_code_for_ucum(q.unit)
+
+    raise ucum_bridge.UcumSupportError(
+        f'Cannot automatically resolve a UNECE unit code for Quantity {q} (unit {q.unit!r}).'
+    )
+
 
 def _numeric_value_from_python_type(v:int|float):
     return NumericValue(value = str(v))

@@ -26,6 +26,7 @@ General
 - Minor Bugfixes
 - BREAKING: reorganization of module structure > some import paths have changed
 - BREAKING: renamed Quantity.float property to Quantity.as_float (the name collided with the float type used in Quantity's own annotations, breaking model construction on Python 3.14)
+- moved `Quantity` from `labfreed.trex.pythonic.quantity` to `labfreed.utilities.quantity` (it's used by PAC-ID Attributes too, not only T-REX); `from labfreed.trex.pythonic import Quantity` still works, but the old submodule path is gone - `unece_unit_code_from_quantity` (T-REX-specific) moved into `pyTREX.py`
 - new optional `units` extra (`pip install labfreed[units]`, adds pint+ucumvert): Quantity<->T-REX UNECE unit-code mapping is now automatic for compound/non-SI units (mol/L, kg/m3, Cel, ...) instead of only working when a unit's UNECE symbol happened to equal its UCUM string
 - BREAKING (edge case): when a unit can't be resolved to a UNECE code and the `units` extra isn't installed, `Quantity`/`pyTREX.to_trex()` now raise `UcumSupportError` (an `ImportError` subclass) instead of `ValueError` - only observable if calling code specifically caught `ValueError` from this path, which previously fired for every non-exact-match unit
 

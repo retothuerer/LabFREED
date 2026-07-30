@@ -1,7 +1,7 @@
 import pytest
 
 from labfreed.trex.pythonic.pyTREX import pyTREX
-from labfreed.trex.pythonic.quantity import Quantity
+from labfreed.utilities.quantity import Quantity
 
 
 def _same_physical_quantity(ucum_unit_a, ucum_unit_b):

@@ -7,7 +7,7 @@ from datetime import datetime
 import requests_cache  # noqa: E402
 from labfreed.trex.pythonic.pyTREX import pyTREX  # noqa: E402
 from labfreed.trex.pythonic.data_table import DataTable  # noqa: E402
-from labfreed.trex.pythonic.quantity import Quantity  # noqa: E402
+from labfreed.utilities.quantity import Quantity  # noqa: E402
 from labfreed.labfreed_infrastructure import LabFREED_ValidationError  # noqa: E402
 from labfreed import PAC_ID, LabFREED_ValidationError  # noqa: E402, F811
 from labfreed.pac_cat import PAC_CAT  # noqa: E402

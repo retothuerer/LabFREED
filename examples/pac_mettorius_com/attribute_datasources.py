@@ -10,7 +10,7 @@ from labfreed.pac_cat.predefined_categories import Material_Device
 from labfreed.pac_attributes.pythonic.py_dict_data_source import pyDict_DataSource
 from labfreed.pac_attributes.pythonic.py_attributes import pyAttributes, pyAttribute, pyReference, pyResource
 from labfreed.pac_attributes.server.translation_data_sources import DictTranslationDataSource
-from labfreed.trex.pythonic.quantity import Quantity
+from labfreed.utilities.quantity import Quantity
 
 from labfreed.utilities.translations import Terms, Term
 
