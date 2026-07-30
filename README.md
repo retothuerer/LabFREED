@@ -96,6 +96,16 @@ The `labfreed` package is organized into three parts, reflecting how far the cod
   pip install labfreed[experimental]
   ```
 
+## Design Philosophy
+
+This library optimizes for ease of use over the cleanest possible architecture. Concretely:
+
+- **Data types carry their own behavior.** Rather than keeping models as plain data holders and pushing parsing, serialization, and validation into separate classes, types like `PAC_ID`, `Quantity`, and `DataTable` expose that behavior directly as methods (`PAC_ID.from_url()`/`.to_url()`, `Quantity.from_str_value()`, `DataTable.append()`/`.get_column()`). One import, one object — no separate factory or validator to look up.
+- **Few factories.** Construction from external representations (URLs, strings, payload dicts) goes through classmethods on the type itself (`from_url`, `from_str_value`, `from_payload_attributes`, ...) rather than dedicated `*Factory` classes. The handful of factories that do exist live in `labfreed_extended`, not in the core building blocks.
+- **Validation lives on the model.** `LabFREED_BaseModel` gives every core type `is_valid` / `validation_messages()` / `print_validation_messages()` directly, instead of routing through an external validator.
+
+This is a deliberate tradeoff: a stricter separation-of-concerns design would be easier to unit-test in isolation and would keep each class's responsibility narrower, but it would also mean more classes to import and more indirection to trace for what is, for most users, a small set of well-defined operations — parse an identifier, serialize it, check it's valid.
+
 ## Usage Examples
 > ⚠️ **Note:** These examples are building on each other. Imports and parsing are not repeated in each example.
 <!-- BEGIN EXAMPLES -->
