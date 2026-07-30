@@ -42,7 +42,8 @@ class AttributeGroupDataSource(ABC):
         only) key. Multi-group sources should use attribute_group_keys instead.'''
         return self._attribute_group_keys[0]
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def provides_attributes(self):
         pass
 
