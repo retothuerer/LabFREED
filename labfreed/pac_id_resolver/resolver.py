@@ -4,6 +4,7 @@ from typing import Self
 from requests import get
 from deprecated import deprecated
 
+from labfreed.labfreed_infrastructure import ValidationMsgLevel
 from labfreed.pac_cat.pac_cat import PAC_CAT
 from labfreed.pac_id.pac_id import PAC_ID
 from labfreed.pac_id_resolver.services import ServiceGroup
@@ -36,7 +37,20 @@ def cit_from_str(s:str, origin:str='') -> CIT_v1|ResolverConfig:
         cit1 = None
     
     cit = cit2 or cit1 or None
+
+    if cit is not None:
+        _log_cit_validation_messages(cit)
+
     return cit
+
+
+def _log_cit_validation_messages(cit: "CIT_v1|ResolverConfig"):
+    '''Entries/blocks with validation errors are silently dropped during resolution
+    (see ResolverConfigEvaluator.evaluate) rather than raised -- log them here so a
+    CIT that "loads fine" but quietly resolves to nothing is easier to catch.'''
+    for m in cit.validation_messages():
+        log = logging.error if m.level == ValidationMsgLevel.ERROR else logging.warning
+        log(f"CIT '{cit.origin}': {m.source}: {m.msg}")
 
 @lru_cache
 def _get_issuer_resolver_config(issuer:str):
