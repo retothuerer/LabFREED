@@ -160,6 +160,99 @@ def test_get_non_derived_pac_id_without_derivation_keeps_extensions():
     assert base.extensions == pac.extensions
 
 
+def test_get_parent_pac_id_strips_only_the_last_marker():
+    '''Unlike get_non_derived_pac_id (which strips back to the root), a chained
+    derivation's immediate parent still carries the earlier marker(s).'''
+    pac = from_url("HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/21:9876"
+                    "/+ACMELABS.COM/250:1/+PARTNERLAB.ORG/TESTPORTION:A")
+    parent = pac.get_parent_pac_id()
+    assert parent.to_url() == "HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/21:9876/+ACMELABS.COM/250:1"
+    assert parent.get_derivation_namespaces() == ['ACMELABS.COM']
+    assert parent.to_url() != pac.get_non_derived_pac_id().to_url()
+
+
+def test_get_parent_pac_id_matches_root_without_chaining():
+    pac = from_url("HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/21:9876/+ACMELABS.COM/250:1")
+    assert pac.get_parent_pac_id().to_url() == pac.get_non_derived_pac_id().to_url()
+
+def test_get_parent_pac_id_without_marker_drops_last_segment():
+    '''No `+<namespace>` marker doesn't mean there's no parent: the issuing party's
+    own derivation needs no marker (see PAC-ID spec, "Issuing derived PAC-ID"s, and
+    server.py's _get_derivation_parent_id). ".../-MD/240:B-800/21:12345"'s parent is
+    ".../-MD/240:B-800" -- dropping the last id segment, same as the marker case,
+    drops extensions too since they describe the child entity, not the parent.'''
+    pac = from_url(valid_base + valid_standard_segments + "*N$TEXT/ABC")
+    parent = pac.get_parent_pac_id()
+    assert parent.to_url() == valid_base + "-MD/240:B-800"
+    assert parent.extensions == []
+
+
+def test_get_parent_pac_id_returns_none_for_bare_category_plus_one_field():
+    '''Dropping the last segment here would leave a bare, field-less category key
+    ("-MD" alone) -- not a meaningful narrower entity, so this identifier already
+    is its own parent, same as the true no-parent case.'''
+    pac = from_url(valid_base + "-MD/240:B-800" + "*N$TEXT/ABC")
+    parent = pac.get_parent_pac_id()
+    assert parent is None
+
+
+def test_get_parent_pac_id_drops_extensions_when_derived():
+    pac = from_url("HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/21:9876/+ACMELABS.COM/250:1*N$TEXT/ABC")
+    parent = pac.get_parent_pac_id()
+    assert parent.extensions == []
+
+
+def test_derive_appends_marker_and_segments():
+    pac = from_url("HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/21:9876")
+    derived = pac.derive("ACMELABS.COM", IDSegment(key="250", value="1"))
+    assert derived.to_url() == "HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/21:9876/+ACMELABS.COM/250:1"
+    assert derived.get_derivation_namespaces() == ["ACMELABS.COM"]
+
+
+def test_derive_drops_parents_extensions():
+    '''The derived PAC-ID refers to a different entity than its parent, so the
+    parent's extensions (which describe the parent) must not carry over.'''
+    pac = from_url("HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/21:9876*N$TEXT/ABC")
+    derived = pac.derive("ACMELABS.COM", IDSegment(key="250", value="1"))
+    assert derived.extensions == []
+
+
+def test_derive_round_trips_via_get_parent_pac_id():
+    pac = from_url("HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/21:9876")
+    derived = pac.derive("ACMELABS.COM", IDSegment(key="250", value="1"))
+    assert derived.get_parent_pac_id().to_url() == pac.to_url()
+
+
+def test_is_derived_from_direct_parent():
+    parent = from_url("HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/21:9876")
+    child = from_url("HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/21:9876/+ACMELABS.COM/250:1")
+    assert child.is_derived_from(parent)
+
+
+def test_is_derived_from_grandparent():
+    root = from_url("HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/21:9876")
+    grandchild = from_url("HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/21:9876"
+                           "/+ACMELABS.COM/250:1/+PARTNERLAB.ORG/TESTPORTION:A")
+    assert grandchild.is_derived_from(root)
+
+
+def test_is_derived_from_is_false_for_self():
+    pac = from_url("HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/21:9876/+ACMELABS.COM/250:1")
+    assert not pac.is_derived_from(pac)
+
+
+def test_is_derived_from_is_false_for_unrelated_pac_id():
+    pac = from_url("HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/21:9876/+ACMELABS.COM/250:1")
+    other = from_url(valid_base + valid_standard_segments)
+    assert not pac.is_derived_from(other)
+
+
+def test_is_derived_from_is_false_for_different_issuer():
+    pac = from_url("HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/21:9876/+ACMELABS.COM/250:1")
+    other = from_url("HTTPS://PAC.ACMELABS.COM/-MS/240:AMYLASE/10:AB9876/21:9876")
+    assert not pac.is_derived_from(other)
+
+
 def test_combined_issuer_and_identifier_length_recommendation():
     '''Combined length of issuer and identifier SHOULD NOT exceed 100 characters,
     even if the 256 character MUST-limit on identifier alone isn't hit.'''

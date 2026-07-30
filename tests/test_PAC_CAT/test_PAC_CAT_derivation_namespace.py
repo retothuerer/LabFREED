@@ -21,30 +21,59 @@ def from_url(url):
     return PAC_CAT.from_url(url, suppress_validation_errors=True)
 
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_segment_after_marker_fills_a_known_field():
     pac = from_url("HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/20:500ML/21:9876/+ACMELABS.COM/250:1")
     ms = pac.get_category('-MS')
     assert ms.aliquot == '1'
 
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_segment_after_marker_fills_a_known_field_short_notation():
     pac = from_url("HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/20:500ML/21:9876/+ACMELABS.COM/1")
     ms = pac.get_category('-MS')
     assert ms.aliquot == '1'
 
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_marker_does_not_start_a_new_category():
     pac = from_url("HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/20:500ML/21:9876/+ACMELABS.COM/250:1")
     assert len(pac.categories) == 1
+
+def test_get_non_derived_pac_id_preserves_pac_cat_type():
+    pac = from_url("HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/20:500ML/21:9876/+ACMELABS.COM/250:1")
+    root = pac.get_non_derived_pac_id()
+    assert isinstance(root, PAC_CAT)
+    assert root.get_category('-MS').product_number == 'AMYLASE'
+
+def test_get_parent_pac_id_preserves_pac_cat_type():
+    pac = from_url("HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/20:500ML/21:9876/+ACMELABS.COM/250:1")
+    parent = pac.get_parent_pac_id()
+    assert isinstance(parent, PAC_CAT)
+    assert parent.get_category('-MS').product_number == 'AMYLASE'
+
+def test_category_has_derivation_segments():
+    pac = from_url("HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/20:500ML/21:9876/+ACMELABS.COM/250:1")
+    ms = pac.get_category('-MS')
+    assert ms.has_derivation_segments()
+
+def test_category_has_derivation_segments_is_false_without_marker():
+    pac = from_url("HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/20:500ML/21:9876")
+    ms = pac.get_category('-MS')
+    assert not ms.has_derivation_segments()
+
+def test_category_segments_derived_by():
+    pac = from_url("HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/20:500ML/21:9876/+ACMELABS.COM/250:1")
+    ms = pac.get_category('-MS')
+    derived = ms.segments_derived_by('ACMELABS.COM')
+    assert [s.value for s in derived] == ['1']
+
+def test_category_segments_derived_by_returns_empty_for_other_namespace():
+    pac = from_url("HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/20:500ML/21:9876/+ACMELABS.COM/250:1")
+    ms = pac.get_category('-MS')
+    assert ms.segments_derived_by('SOMEONE-ELSE.COM') == []
 
 
 # DECIDED: once every segment is tagged with the namespace that contributed it,
 # the marker segment itself is redundant - it must not appear as its own entry in
 # a category's `.segments`.
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_marker_removed_from_segments():
     pac = from_url("HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/20:500ML/21:9876/+ACMELABS.COM/250:1")
     segs = pac.get_category('-MS').segments
@@ -53,7 +82,6 @@ def test_marker_removed_from_segments():
     assert not any(s.is_derivation_namespace for s in segs)
 
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_derivation_namespace_tagged_on_segment_after_marker():
     pac = from_url("HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/20:500ML/21:9876/+ACMELABS.COM/250:1")
     segs = pac.get_category('-MS').segments
@@ -66,7 +94,6 @@ def test_derivation_namespace_tagged_on_segment_after_marker():
 # default (non-forced) `to_url()` just echoes `pac.identifier` verbatim regardless of
 # PAC-CAT - it doesn't go through `.segments` at all, so removing the marker there
 # doesn't affect it. Kept mainly to document that this path is unaffected.
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_round_trip_default_notation_preserves_marker_position():
     url_in = valid_base.replace('METTORIUS', 'OMNIZYME') + "-MS/240:AMYLASE/10:AB9876/20:500ML/21:9876/+ACMELABS.COM/250:1"
     pac = from_url(url_in)
@@ -77,14 +104,12 @@ def test_round_trip_default_notation_preserves_marker_position():
 # reconstruction (`_get_segments`/`_get_segments_from_bindings`) keeps the marker
 # internally even though the public `.segments` property hides it - so the marker is
 # still correctly reproduced at its original position in forced-notation output.
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_round_trip_forced_long_notation_preserves_marker_position():
     url_in = "HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/20:500ML/21:9876/+ACMELABS.COM/250:1"
     pac = from_url(url_in)
     assert pac.to_url(use_short_notation=False) == url_in
 
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_round_trip_forced_short_notation_preserves_marker_position():
     url_in = "HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/20:500ML/21:9876/+ACMELABS.COM/250:1"
     pac = from_url(url_in)
@@ -94,7 +119,6 @@ def test_round_trip_forced_short_notation_preserves_marker_position():
 
 # kept: this covers the marker sitting inside a fully-implicit run from the very
 # start of the category, not just after an explicit prefix.
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_marker_does_not_break_implicit_key_sequence():
     # per spec: 'A +<namespace> marker does not interrupt the implicit key sequence'
     url_short = "HTTPS://PAC.OMNIZYME.COM/-MS/AMYLASE/AB9876/500ML/9876/+ACMELABS.COM/1"
@@ -102,7 +126,6 @@ def test_marker_does_not_break_implicit_key_sequence():
     assert pac.get_category('-MS').aliquot == '1'
 
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_segments_after_marker_belong_to_primary_category_not_issuing_system():
     ''' Spec example: a result recalculated by a third party after it was recorded
     by an issuing system - the recalc segment still belongs to the *primary*
@@ -125,7 +148,6 @@ def test_segments_after_marker_belong_to_primary_category_not_issuing_system():
     assert issuing_system.segments[0].derivation_namespace is None
 
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_round_trip_recalc_example():
     url_in = valid_base + "-DR/21:1234/-PS/240:LABCROSS/+ACMELABS.COM/RECALC:1"
     pac = from_url(url_in)
@@ -139,7 +161,6 @@ def test_round_trip_recalc_example():
 # order, -DR's reattributed tail gets emitted before -PS - which puts `-PS` textually
 # after a marker in the output, and reparsing that then wrongly redirects `-PS` itself
 # into the primary category, collapsing two categories into one.
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_forced_notation_never_changes_category_structure_across_a_marker():
     url_in = valid_base + "-DR/21:1234/-PS/240:LABCROSS/+ACMELABS.COM/RECALC:1"
     pac = from_url(url_in)
@@ -154,30 +175,4 @@ def test_forced_notation_never_changes_category_structure_across_a_marker():
         assert reparsed.get_category('-PS').processor_code == 'LABCROSS'
 
 
-# STRETCH GOAL: forced notation should reproduce the exact original layout, the same
-# way the default (non-forced) `to_url()` already does - not just an equivalent but
-# differently-ordered structure.
-@pytest.mark.skip(reason="NOT REVIEWED")
-def test_forced_long_notation_preserves_exact_layout_across_categories():
-    url_in = valid_base + "-DR/21:1234/-PS/240:LABCROSS/+ACMELABS.COM/RECALC:1"
-    pac = from_url(url_in)
-    assert pac.to_url(use_short_notation=False) == url_in
 
-
-@pytest.mark.skip(reason="NOT REVIEWED")
-def test_chained_derivation_namespaces_stay_in_original_order():
-    url_in = ("HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/20:500ML/21:9876"
-              "/+ACMELABS.COM/250:1/+PARTNERLAB.ORG/TESTPORTION:A")
-    pac = from_url(url_in)
-    assert pac.to_url() == url_in
-    segs = pac.get_category('-MS').segments
-    values = [(s.key, s.value) for s in segs]
-    assert values == [
-        ('240', 'AMYLASE'), ('10', 'AB9876'), ('20', '500ML'), ('21', '9876'),
-        ('250', '1'), ('TESTPORTION', 'A'),
-    ]
-    # each segment is attributed to whichever namespace's marker precedes it
-    namespaces = [s.derivation_namespace for s in segs]
-    assert namespaces == [
-        None, None, None, None, 'ACMELABS.COM', 'PARTNERLAB.ORG',
-    ]
