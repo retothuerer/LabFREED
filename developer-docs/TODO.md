@@ -205,3 +205,20 @@ A process gap found while auditing the client/server area during
 actual fixes. Add a retroactive `CHANGELOG.md` entry under the pending `v1.0.0` heading
 (new public API, not breaking) so the release history isn't silently missing a real
 feature.
+
+---
+
+## Fill in `ucum_for_unece_code`'s normalization gaps as they're actually hit
+
+Related to: ["Automatic, optional UNECE<->UCUM unit mapping via pint/ucumvert"](design-choices.md#automatic-optional-unecucum-unit-mapping-via-pintucumvert)
+
+`ucum_for_unece_code` (`labfreed/well_known_keys/unece/ucum_bridge.py`) derives a UCUM string for
+a UNECE Common Code by normalizing UNECE's own `symbol` field (superscript digits, `µ`->`u`,
+`°C`->`Cel`, `·`->`.`). That covers 877/1511 active UNECE entries with a symbol; the rest -
+almost entirely imperial/trade units (`oz/ft²`, `BtuIT/h`, `ppm`, `kbyte`, ...) - raise
+`UcumSupportError` instead of returning a guess, by design (see the linked design-choice entry -
+curating all ~2159 codes upfront was explicitly what this change avoided).
+
+If a real T-REX payload ever uses one of these codes and hits the error, add that specific code's
+UCUM translation to `_normalize_unece_symbol` (or a small lookup table next to it) at that point,
+rather than trying to pre-empt the whole remaining set now.

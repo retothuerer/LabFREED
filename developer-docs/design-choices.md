@@ -595,3 +595,84 @@ seen.
 
 *Investigated 2026-07-29, prompted by a real Apini attribute server response for a Carl
 Roth DMSO solvent.*
+
+---
+
+## Automatic, optional UNECE<->UCUM unit mapping via pint/ucumvert
+
+**Decision:** `labfreed/well_known_keys/unece/ucum_bridge.py` is a new module that maps between
+UCUM unit strings (used by `Quantity`, and therefore by T-REX's pythonic API and PAC-ID
+Attributes) and UNECE Common Codes (mandated by T-REX's wire format for
+`NumericSegment`/`ColumnHeader.type`), using `pint` + `ucumvert` for dimensional/scale-factor
+matching instead of the previous string-equality hack. Both libraries are optional (a new `units`
+extra in `pyproject.toml`) - the module soft-imports them, exposes `HAS_UCUM_SUPPORT`, and falls
+back to the original fast exact-match/regex heuristics when absent, raising `UcumSupportError`
+(naming the `pip install labfreed[units]` fix) only for the cases that genuinely need the library
+and don't have it.
+
+`quantity.py`'s `unece_unit_code_from_quantity` and both reverse-lookup call sites in
+`pyTREX.py` try their existing dependency-free exact-match path first (still correct for plain SI
+units - kg, m, s), and only fall through to `ucum_bridge` for compound/non-identical units
+(`mol/L`, `kg/m3`, `Cel`, ...). `pac_attributes/api_data_models/response.py`'s
+`NumericAttributeItemsElement._validate_unit` now shares `ucum_bridge.is_valid_ucum` instead of
+its own separate regex (the blankspace/`^` hard-reject check stays inline, unchanged, ahead of
+it).
+
+**Why:** the old mapping (`unece_unit_code_from_quantity`) compared a Quantity's UCUM unit string
+against UNECE's raw `name`/`symbol`/`commonCode` fields for byte-equality. That only works when
+UNECE's display symbol happens to equal the UCUM string - true for `kg`/`m`/`s`, false for `Cel`
+vs UNECE's `°C`, and false for essentially every compound unit (`mol/L`, `kg/m3`) since UNECE
+symbols never use UCUM notation for those. There were also two independent, diverging
+hand-written "is this valid UCUM" regexes (one in `quantity.py`'s coercion step, one in
+`NumericAttributeItemsElement._validate_unit`).
+
+Verified empirically (installed `pint`+`ucumvert` in a throwaway venv, ran real matching against
+the actual bundled `UneceUnits.json`) rather than assumed: every active UNECE entry already
+carries an unused `parsedSymbol` field (`"millimeter"`, `"degree_Celsius"`, `"1 / meter"`) that is
+literal **pint** expression syntax - 1200/1211 parse cleanly with a stock `pint.UnitRegistry()`.
+Using that field, dimensional/scale-factor matching against an arbitrary UCUM string (parsed via
+`ucumvert`, the only Python package found that converts UCUM to pint) resolves correctly with
+zero hand-curated table: `kg/m3` matches `KMQ`/`GL`/`F23` (all three really are the same physical
+quantity - UCUM has no canonical form, so multiple hits is correct, not a bug), `mmol/L` matches
+`M33`, etc. Building the quantity via `ureg.parse_expression(...)`/`ureg.from_ucum(...)` directly
+(both already return a `Quantity`) rather than re-multiplying by a bare scalar was required to
+avoid `pint`'s `OffsetUnitCalculusError` on `degree_Celsius`/`degree_Fahrenheit` - confirmed by
+isolating the exact failing call (`1 * <already-a-Quantity>`) in the same throwaway venv.
+`ucumvert` only converts UCUM->pint (confirmed from its source/README: "currently only the
+conversion direction from UCUM to pint is supported"), so the reverse direction (UNECE code ->
+UCUM string) instead normalizes UNECE's own `symbol` field (superscript digits, `µ`->`u`,
+`°C`->`Cel`, `·`->`.`) - already valid UCUM for 877/1511 active entries without any table at all;
+the residual gap is almost entirely imperial/trade units (`oz/ft²`, `BtuIT/h`) that don't occur in
+lab data, and is left for `ucum_for_unece_code` to raise `UcumSupportError` on, lazily, rather than
+curated upfront.
+
+`pint`/`ucumvert` were kept optional (not core dependencies like `pydantic`) specifically because
+they're new to this codebase and less central/proven here - an optional extra with a
+dependency-free fast path for the common case, degrading to a named, actionable error rather than
+a crash for the rest, was judged the better tradeoff than either hand-curating ~2000 UNECE rows or
+making the whole package depend on them.
+
+**Alternatives considered / why not:**
+
+- Hand-curate a UNECE-code -> UCUM lookup table covering all ~2159 codes - rejected: explicitly
+  what this change was meant to avoid; the empirical finding that `parsedSymbol` already encodes
+  everything needed for physical-equivalence matching made a full manual table unnecessary.
+- Make `pint`/`ucumvert` hard dependencies - rejected: they're peripheral (only touch the
+  UNECE<->UCUM boundary) and comparatively new/unproven in this codebase, unlike `pydantic`; an
+  optional extra with graceful degradation keeps the core package unaffected if either library
+  breaks or is abandoned.
+- Guaranteeing every compound-unit round trip returns the *original* exact string - rejected:
+  UCUM has no canonical form (`ucumvert`'s own docs note `m/s` and `m.s-1` are the same unit two
+  ways), so a round trip through a T-REX UNECE code is only guaranteed to preserve the physical
+  quantity, not the input string byte-for-byte. Made explicit via `best_unece_code_for_ucum`'s
+  documented, deterministic tie-break (own-symbol match, then `LEVEL_1_NORMATIVE`, then lowest
+  `commonCode`) rather than leaving the choice among equally-valid codes unspecified.
+
+**Impact:** `quantity.py`'s `unece_unit_code_from_quantity`, both reverse-lookup sites in
+`pyTREX.py`, and `NumericAttributeItemsElement._validate_unit` in `response.py` all changed
+internally (none are public API - free to change without a deprecation shim, this package is
+pre-1.0). The reverse-normalization gap in `ucum_for_unece_code` (~40% of UNECE symbols,
+overwhelmingly imperial/trade units) is tracked in
+[TODO.md](TODO.md#fill-in-ucum_for_unece_codes-normalization-gaps-as-theyre-actually-hit).
+
+*Investigated 2026-07-29.*

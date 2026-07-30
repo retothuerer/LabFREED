@@ -1,5 +1,6 @@
 import re
 from pydantic import BaseModel, model_validator
+from labfreed.well_known_keys.unece import ucum_bridge
 from labfreed.well_known_keys.unece.unece_units import unece_units
 
 
@@ -148,12 +149,23 @@ class Quantity(BaseModel):
 def unece_unit_code_from_quantity(q:Quantity):
         if not q.unit:
             return 'C62' # dimensionless
-        by_name =   [ u['commonCode'] for u in unece_units() if u.get('name','') == q.unit] 
+
+        # fast path: no dependency needed, correct for plain SI units where UNECE's raw fields
+        # happen to equal the UCUM string (kg, m, s, ...)
+        by_name =   [ u['commonCode'] for u in unece_units() if u.get('name','') == q.unit]
         by_symbol = [ u['commonCode'] for u in unece_units() if u.get('symbol','') == q.unit]
         by_code = [ u['commonCode'] for u in unece_units() if u.get('commonCode','') == q.unit]
         code = list(set(by_name) | set(by_symbol) | set(by_code))
-        if len(code) != 1:
-            raise ValueError(f'No UNECE unit code found for Quantity {q}' ) 
-        return code[0]
+        if len(code) == 1:
+            return code[0]
+
+        # fallback: dimensional/scale matching for compound or non-identical units (mol/L,
+        # kg/m3, Cel, ...) - needs the optional 'units' extra
+        if ucum_bridge.HAS_UCUM_SUPPORT:
+            return ucum_bridge.best_unece_code_for_ucum(q.unit)
+
+        raise ucum_bridge.UcumSupportError(
+            f'Cannot automatically resolve a UNECE unit code for Quantity {q} (unit {q.unit!r}).'
+        )
     
     

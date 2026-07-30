@@ -5,7 +5,7 @@ import re
 from typing import Self
 
 from pydantic import RootModel
-from labfreed.well_known_keys.unece.unece_units import unece_unit
+from labfreed.well_known_keys.unece import ucum_bridge
 from labfreed.trex.pythonic.data_table import DataTable
 from labfreed.utilities.base36 import from_base36, base36, to_base36
 
@@ -183,8 +183,7 @@ def _trex_segment_to_python_type(v):
         num_val = _trex_value_to_python_type(v)
         if num_val is None:
             return None
-        u = unece_unit(v.type)
-        unit = u.get('symbol')
+        unit = ucum_bridge.ucum_for_unece_code(v.type)
         return Quantity(value=num_val, unit=unit)
     
     # value segments are derived from their respective value type
@@ -197,8 +196,7 @@ def _trex_segment_to_python_type(v):
             r = []
             for e, h in zip(row, v.column_headers):
                 if isinstance(e, NumericValue) and e.value:
-                    u = unece_unit(h.type)
-                    unit = u.get('symbol')
+                    unit = ucum_bridge.ucum_for_unece_code(h.type)
                     r.append(Quantity(value=e.value, unit=unit))
                 else:
                     r.append(_trex_value_to_python_type(e))

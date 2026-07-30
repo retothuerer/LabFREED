@@ -9,6 +9,7 @@ from deprecated import deprecated
 
 from labfreed.utilities.ensure_utc_time import ensure_utc
 from labfreed.labfreed_infrastructure import  LabFREED_BaseModel, ValidationMsgLevel, _quote_texts
+from labfreed.well_known_keys.unece import ucum_bridge
 from pydantic import   BaseModel, Field, field_validator, model_validator
 
 
@@ -133,9 +134,10 @@ class NumericAttributeItemsElement(AttributeItemsElementBase):
             )
     
     def _validate_unit(self):
-        '''A sanity check on unit complying with UCUM. NOTE: It is not a complete validation
-        - I check for blankspaces and ^, which are often used for units, but are invalid.
-        - the general structure of a ucum unit is validated, but 1)parentheses are not matched 2) units are not validated 3)prefixes are not checked
+        '''Validates the unit against UCUM. Blankspace/'^' (the two most common mistakes) are
+        always a hard error. Beyond that, is_valid_ucum is authoritative (via the optional
+        'units' extra) when installed; otherwise it falls back to a best-effort heuristic - see
+        labfreed.well_known_keys.unece.ucum_bridge.is_valid_ucum.
         '''
         if ' ' in self._unit or '^' in self._unit:
             self._add_validation_message(
@@ -144,7 +146,7 @@ class NumericAttributeItemsElement(AttributeItemsElementBase):
                     msg=f"Unit {self._unit} is invalid. Must not contain blankspace  or '^'.",
                     highlight_pattern = self._unit
             )
-        elif not re.fullmatch(r"^(((?P<unit>[\w\[\]]+?)(?P<exponent>\-?\d+)?|(?P<annotation>)\{\w+?\})(?P<operator>[\./]?)?)+", self._unit):
+        elif not ucum_bridge.is_valid_ucum(self._unit):
             self._add_validation_message(
                     source="Numeric Attribute",
                     level= ValidationMsgLevel.WARNING,
