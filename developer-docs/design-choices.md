@@ -774,3 +774,199 @@ succeeded silently - `BREAKING`, flagged in `CHANGELOG.md`. Two unit strings in 
 examples/tests (`'hour'`) were never valid UCUM (`'h'` is) and were fixed as part of this change.
 
 *Investigated 2026-07-29.*
+
+---
+
+## Ease of use is prioritized over textbook-clean separation of concerns; data types carry their own behavior
+
+**Decision:** Core types across the package (`PAC_ID`, `PAC_CAT`, `Quantity`, `DataTable`,
+`LabFREED_BaseModel` and its validation-message API, ...) hold parsing, serialization,
+formatting, and validation directly as methods on the model itself, rather than routing
+them through separate Factory/Validator/Serializer classes. Construction from external
+representations goes through classmethods on the type (`PAC_ID.from_url`,
+`Quantity.from_str_value`, `pyAttributes.from_payload_attributes`, ...), not dedicated
+`*Factory` types - the only two `*Factory` classes in the repo
+(`attribute_server_factory.py`, `app_factory.py`) live in `labfreed_extended`, not in any
+core building block.
+
+**Why:** the primary audience is someone writing a script against a PAC-ID/T-REX/etc. who
+wants to `import PAC_ID`, call `.from_url()`, and be done - not someone assembling a
+`PACIDFactory` + `PACIDValidator` + `PACIDSerializer` first. Keeping behavior on the type
+it belongs to means one import and one object account for the whole interaction with a
+concept, which matters more for a library whose main value is being easy to pick up than
+for an internal service where testability-in-isolation and strict single-responsibility
+would normally win out.
+
+**Alternatives considered / why not:** none formally trialed as a rewrite - this documents
+the standing, repo-wide convention (confirmed by grep: only 2 `Factory` classes total,
+both outside core) rather than a single point-in-time investigation. The textbook
+alternative - anemic data models plus dedicated factory/validator/serializer classes per
+type - was implicitly rejected from the start in favor of the above; `url_parser.py`'s own
+docstring makes the same call explicitly for the parsing side (see "`pac_id` depends on
+`pac_cat`..." entry above - "we have given priority to convenient usage").
+
+**Impact:** classes like `PAC_ID` and `Quantity` mix several responsibilities (parsing,
+validation, formatting, sometimes normalization) in one class body, and can't be
+unit-tested with one responsibility swapped out in isolation the way a narrower class
+could. This is a standing, intentional tradeoff, not something to "clean up"
+opportunistically - see the README's "Design Philosophy" section for the same tradeoff
+stated for users of the package, not just contributors.
+
+*Investigated 2026-07-30, while phrasing this tradeoff for the README's new "Design
+Philosophy" section.*
+
+---
+
+## `PAC_ID.get_parent_pac_id()` covers issuer self-derivation too, not just `+<namespace>`-marked derivation
+
+**Decision:** `PAC_ID.get_parent_pac_id()` treats a PAC-ID as having a parent in two
+cases, not one: (1) it has a `+<namespace>` marker - parent is everything up to the
+*last* marker (unchanged) - and (2), even without any marker, its identifier has more
+than one id segment - parent is the identifier with its last segment dropped (e.g.
+`.../-MD/BAL500/134`'s parent is `.../-MD/BAL500`), unless that would leave nothing but
+a bare, field-less category key (`.../-MD/BAL500` itself has no parent, since dropping
+`BAL500` leaves only `-MD`). Either way extensions are dropped, same as before. When
+neither case applies, the method now returns `None` rather than `self` - "no marker"
+no longer means "this is already the root," so there's no meaningful identity value
+left to fall back to.
+
+This logic previously lived only in `AttributeServerRequestHandler._get_derivation_parent_id`
+(server.py), duplicating case (1) via a direct call to `get_parent_pac_id()` and
+reimplementing case (2) inline. It has been moved onto `PAC_ID` itself and `server.py`
+now just calls `get_parent_pac_id()` and converts to a url, per the "data types carry
+their own behavior" convention (see "Ease of use is prioritized over textbook-clean
+separation of concerns" above) - `get_parent_pac_id()` is the one full definition of
+"parent" for a `PAC_ID`, not something server.py should partially reimplement.
+
+**Why:** the PAC-ID spec's "Issuing derived PAC-ID"s section describes derivation as one
+concept with two forms - an issuer forming a more specific PAC-ID by appending id
+segments to its own PAC-ID (product -> batch -> container, no marker), and a third party
+doing the same to someone else's PAC-ID (marker required, purely to preserve
+attribution). The `+<namespace>` marker is a *third-party attribution* mechanism, not
+the definition of "derived" - conflating "has a marker" with "has a parent" would
+silently miss every issuer-derived PAC-ID, which given the spec's own worked examples is
+probably the more common case in practice. `get_parent_pac_id()` originally implemented
+only the marker case (added same day, never released - see CHANGELOG.md), which is what
+surfaced the gap.
+
+**Alternatives considered / why not:**
+
+- Keep the marker as the sole signal (the original implementation) - rejected once the
+  `BAL500/134` example was raised: it directly contradicts the spec section's own
+  primary example, which never uses a marker at all.
+- Recursively strip every trailing segment back to the root, rather than one segment at
+  a time - rejected: without a marker there's no way to know how many segments the
+  issuer added in one derivation "step" (unlike the marker case, where the boundary is
+  explicit), so only the *immediate* one-segment-back parent is well-defined; guessing
+  further back risks reporting an intermediate stage that was never actually issued as
+  its own PAC-ID.
+- Drop the last segment unconditionally, even down to a bare category key - rejected: a
+  bare key like `-MD` with no fields isn't an entity anything could plausibly hold
+  attributes for, so it's excluded rather than treated as a real parent.
+- Keep the duplicate logic in server.py rather than relocating it - rejected: it's
+  generic `PAC_ID` behavior with no dependency on anything attribute-server-specific,
+  and leaving it duplicated risks the two copies drifting apart.
+- `is_derived_from`'s ancestor walk still only follows the marker-based chain (its loop
+  stops as soon as `has_derivation_segments()` is false) - deliberately left alone here;
+  extending it to walk no-marker ancestry too is a further behavior change, not yet
+  scoped.
+
+**Impact:** `do_derivation_lookup` (default `True`, in the attribute server) now
+triggers an extra attribute lookup for almost any multi-segment PAC-ID subject, not just
+marker-derived ones - a wider set of PAC-IDs than before will get a `+1` request against
+the configured data sources. Mitigated by the existing `do_derivation_lookup=False`
+opt-out, same as `do_forward_lookup`. More broadly, any other caller of
+`get_parent_pac_id()` must now handle a `None` return.
+
+*Investigated 2026-07-30, following up on the PAC-ID-Attributes parent-lookup feature
+added the same day; relocated from server.py into `PAC_ID` the same day after a test
+review caught `get_parent_pac_id()` not yet covering the no-marker case.*
+
+---
+
+## Python floor pinned to exactly 3.14, not widened to the real code-imposed minimum
+
+**Decision:** `pyproject.toml`'s `requires-python` stays `>=3.14`, a single minor version
+with no attempt to widen it - even though the only actual *code* constraint
+(`itertools.batched` in `labfreed/trex/table_segment.py`, added in Python 3.12) would
+allow going as low as 3.12.
+
+**Why:** the package has essentially one active user today, so there's no existing
+installed base on an older interpreter to keep working - the usual reason to support a
+wide version matrix doesn't apply yet. `developer-docs/README.md` previously carried a
+stale warning that 3.14 itself was the *broken* version (pydantic failing to evaluate
+`float | int`-style forward refs under 3.14's deferred-annotation-evaluation change) -
+re-checked empirically against the current pydantic (2.13.4): the full test suite passes
+cleanly on 3.14.6 (348 passed, 9 skipped, 0 failed), so that caveat no longer holds and
+isn't a reason to avoid 3.14 either.
+
+**Alternatives considered / why not:**
+
+- Widen to `>=3.12` (the real floor `itertools.batched` imposes) - rejected for now: only
+  3.14 was actually run in the environment this decision was made in; 3.12/3.13 were never
+  verified, and claiming support for versions nobody tested would be worse than being
+  explicit about the one version actually confirmed working.
+- Keep `developer-docs/README.md`'s old "3.11-3.13, 3.14 broken" guidance and treat
+  `pyproject.toml`'s `>=3.14` as the bug to revert - rejected once tests were actually run:
+  the dev-docs note was the stale side, not the packaging metadata. 3.11 wasn't even a
+  real option regardless, since `itertools.batched` doesn't exist there.
+
+**Impact:** CI (`run-tests.yml`, `pypi-publish.yml`) moved from testing on 3.11 (a version
+the package can't even import on) to 3.14, matching `requires-python`. Revisit and widen
+the floor once there's real external adoption and/or someone actually verifies 3.12/3.13
+pass too.
+
+*Investigated 2026-07-30, prompted by a question about why `requires-python` looked
+inverted relative to `developer-docs/README.md`'s (stale) setup note.*
+
+---
+
+## Well-known action handler: `action-generic` params travel as plain query params, not through the CIT template
+
+**Decision:** the new `labfreed_experimental.actions` package (a fixed set of
+well-known actions - `update-location`, `update-amount`, `container-is-empty` - with a
+Flask HTTP layer dispatching to a pluggable `ActionConsumer` backend) has its resolved
+action URL take *only* the CIT's usual PAC-ID-derived substitutions. Anything the
+action itself needs beyond that (the new location's PAC-ID, the UCUM quantity) is
+appended by the caller as ordinary query parameters on top of the resolved URL, outside
+the CIT templating mechanism entirely - e.g. a resolved `.../actions/update_location`
+gets called as `.../actions/update_location?pac_id=...&location=...`.
+
+**Why:** checked both the published spec and the reference implementation for a
+convention here, and neither has one. `ServiceType.ACTION_GENERIC` /
+`"action-generic"` (`pac_id_resolver/resolver_config_common.py`) is real and already
+wired up end-to-end - `ResolverConfigEntry`/`ResolverConfig` accept it,
+`ResolverConfigEvaluator._eval_url_template` resolves its `template_url`, and
+`Labfreed_App_Infrastructure.process_pac()` already surfaces matching services as
+`pac_info.actions` - but it is **not** in the published PAC-ID-Resolver spec (confirmed
+via a fetch of the spec repo: the published spec documents only `userhandover-generic`
+and `attributes-generic`), so it's an unpublished, implementation-only extension.
+More importantly, `_eval_url_template`'s placeholder substitution
+(`{$.jsonpath}`, read via `ResolverConfigEvaluator._evaluate_jsonpath`) only ever pulls
+values out of the PAC-ID being resolved (`pac.to_dict()`) - there is no mechanism, in
+the spec or the code, for a caller to feed additional runtime values (a second PAC-ID,
+a quantity that isn't part of the subject PAC-ID at all) into that substitution. Same
+finding holds for the older, deprecated `CIT_v1._find_pattern_in_pac` mechanism.
+
+**Alternatives considered / why not:**
+
+- Encode the location PAC-ID / quantity as a `{placeholder}` resolved from some
+  invented pseudo-JSONPath - rejected: would require inventing syntax with no basis in
+  either the spec or `resolver_config_evaluator.py`, and the CIT's whole templating
+  contract is "derived from the PAC-ID being resolved," not "arbitrary caller-supplied
+  values." Overloading it would be surprising to any other CIT consumer.
+- Wait for the spec/reference implementation to define an official convention before
+  building this - rejected: `action-generic` itself is already unpublished/ahead of
+  spec, and there is no indication one is imminent. Plain query params on top of the
+  resolved URL is the smallest thing that works today, and doesn't block on someone
+  else's timeline.
+
+**Impact:** any `action-generic` consumer of this package - not just
+`SignalsActionConsumer` - inherits the same contract: resolve the action's base URL
+through the CIT as usual, then append whatever extra parameters the specific action
+needs as a query string. If `action-generic`/parameter-passing is ever formalized in
+the published spec, this package's Flask layer (`flask_layer.py`) is the one place
+that would need to change to match it.
+
+*Investigated 2026-07-30, while designing `labfreed_experimental.actions` for
+labfreed-webtools' `instrument_demo` (Signals Notebook inventory sync).*
