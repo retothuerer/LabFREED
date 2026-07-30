@@ -49,10 +49,7 @@ class Labfreed_App_Infrastructure():
         service_groups = self._resolver.resolve(pac, check_service_status=False, use_issuer_resolver_config=self._use_issuer_resolver_config)
         
         pac_info = PacInfo(pac_id=pac)
-                       
-        # update service states
-        (sg.update_states() for sg in service_groups)
-               
+
         # Services
         sg_user_handovers = []
         for sg in service_groups:

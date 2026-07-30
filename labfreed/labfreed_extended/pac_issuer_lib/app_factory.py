@@ -1,10 +1,12 @@
 from dataclasses import dataclass
 from functools import cache, partial, partialmethod, wraps
+import ipaddress
 import logging
 import os
 from pathlib import Path
 import re
 import secrets
+import socket
 from typing import Any, Protocol
 from uuid import uuid4
 from jinja2 import ChoiceLoader, FileSystemLoader
@@ -36,6 +38,8 @@ from labfreed.pac_attributes.server.attribute_data_sources import AttributeGroup
 from labfreed.pac_attributes.server.translation_data_sources import TranslationDataSource, DictTranslationDataSource, Terms
 
 from labfreed.labfreed_extended.app.pac_info.pac_info import PacInfo
+from labfreed.pac_id_resolver.service_availability import check_service
+from labfreed.pac_id_resolver.services import Service
 
 
 
@@ -439,12 +443,24 @@ class IssuerFlaskAppFactory():
             if a := bp._pac_info_extender:
                 a:PacInfoExtender
                 pac_info = a.extend(pac_info)
-            response = render_from_bp(bp, 'pac_info/card.jinja.html', 
+            response = render_from_bp(bp, 'pac_info/card.jinja.html',
                                       pac_info=pac_info,
                                       **request.args
-                                      )  
+                                      )
             return response
-        
+
+        @bp_landing_page.get('/check_service')
+        def check_service_route():
+            # Runs the reachability check server-side (same-origin, no CORS blind spot)
+            # but is only ever called async from the browser after the page has
+            # already rendered, so it can't add latency to the initial response.
+            url = request.args.get('url', '')
+            if not _is_safe_service_url(url):
+                return {'reachable': False}, 400
+            s = Service(service_name='', application_intents=[], service_type='', url=url)
+            check_service(s)
+            return {'reachable': s.status.name == 'ACTIVE'}
+
         # on local host for testing we need to circumvent the error, which is cause by PAC-ID validation when encountering the local host instead of issuer. 
         # TODO: make this cleaner and more stable
         bp.register_blueprint(bp_landing_page)
@@ -457,17 +473,21 @@ class IssuerFlaskAppFactory():
                 
         def render_from_bp(bp, template_name, **context):
             # Make a new Jinja environment for this bp
-            env = jinja2.Environment(loader=bp.jinja_loader)
+            env = jinja2.Environment(
+                loader=bp.jinja_loader,
+                autoescape=jinja2.select_autoescape(['html', 'htm', 'xml', 'xhtml']),
+            )
 
             # Copy Flask globals/context
             env.globals.update(current_app.jinja_env.globals)
             
             trace_id = session.get('trace_id')
-            d = {            
+            d = {
                 "url_for_within_issuer": url_for_within_issuer,
                 "resolve_static_image": resolve_static_image,
                 "url_for": url_for_within_issuer,
-                "with_ga_and_trace": lambda url: add_trace_id_params(add_ga_params(url, issuer), trace_id)
+                "with_ga_and_trace": lambda url: add_trace_id_params(add_ga_params(url, issuer), trace_id),
+                "check_service_url_for": lambda service_url: url_for(f'{issuer_name}.landing_page.check_service_route', url=service_url),
             }
             env.globals.update(d)
             
@@ -517,6 +537,24 @@ def is_pac_id(v:str) -> bool:
 def title_format(s:str) -> str:
     """Convert snake_case string to NYTimes-style title."""
     return s.replace('_', ' ').title()
+
+def _is_safe_service_url(url: str) -> bool:
+    """Reject loopback/private/link-local/reserved targets before the server issues a
+    HEAD request to them - /check_service takes an arbitrary URL from a query param,
+    so without this it's an SSRF oracle (probing internal hosts/ports via the reachable
+    status it returns)."""
+    parsed = urlparse(url)
+    if parsed.scheme not in ('http', 'https') or not parsed.hostname:
+        return False
+    try:
+        addrinfos = socket.getaddrinfo(parsed.hostname, None)
+    except socket.gaierror:
+        return False
+    for info in addrinfos:
+        ip = ipaddress.ip_address(info[4][0])
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast:
+            return False
+    return True
     
 render_context_utils = {            
             "is_url": lambda s: isinstance(s, str) and urlparse(s).scheme in ('http', 'https') and bool(urlparse(s).netloc),

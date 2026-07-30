@@ -195,7 +195,18 @@
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-    
+
+/* Set async by service_availability.js once the server-side reachability check resolves */
+.lf-service--unreachable {
+    color: #d97706; /* orange */
+}
+.lf-service--unreachable .lf-service__name::after {
+    content: " (unavailable)";
+    font-size: 0.85em;
+    font-style: italic;
+}
+
+
 
 
 /* Position context */

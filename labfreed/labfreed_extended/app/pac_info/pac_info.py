@@ -160,8 +160,10 @@ class PacInfo(BaseModel):
         
         
     @cached_property
-    def image_url(self) -> str:
+    def image_url(self) -> str|None:
         image_attr = self._all_attributes.get(MetaAttributeKeys.IMAGE.value)
+        if not image_attr:
+            return None
         if isinstance(image_attr.values, pyResource):
             return image_attr.values.root
         if isinstance(image_attr.values, str):

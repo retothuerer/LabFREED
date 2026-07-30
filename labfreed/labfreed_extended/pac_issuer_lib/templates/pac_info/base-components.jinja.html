@@ -29,7 +29,8 @@
 {%- macro service_table_section(services) %}
     <div class="lf-services">
     {%- for s in services -%}
-        <a href="{{ with_ga_and_trace(s.url) }}" target="_blank" rel="noopener" class="lf-service">
+        <a href="{{ with_ga_and_trace(s.url) }}" target="_blank" rel="noopener" class="lf-service"
+           data-check-service-url="{{ check_service_url_for(s.url) }}">
             <img src="{{ resolve_static_image('external-link.svg')  }}" alt="" class="lf-service__icon">
             <span class="lf-service__name">{{ s.service_name }}</span>
         </a>
