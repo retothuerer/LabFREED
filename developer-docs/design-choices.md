@@ -598,6 +598,55 @@ Roth DMSO solvent.*
 
 ---
 
+## PAC-ID-Attributes response parsing permanently tolerates the pre-migration wire shape (`pac_id` field, JSON-LD `@context` object)
+
+**Decision:** `AttributesOfItem` (`api_data_models/response.py`) gained a
+`model_validator(mode="before")` (`_accept_legacy_pac_id_field`) that falls back to
+reading `pac_id` when `id` is absent - moved up from the deprecated `AttributesOfPACID`
+subclass so it applies to the base class that `AttributeResponsePayload.data` actually
+parses, not just a subclass nothing in the response-parsing path uses.
+`AttributeResponsePayload.context` gained a `field_validator(mode="before")`
+(`_accept_legacy_jsonld_context_object`) that unwraps the pre-"minimization" JSON-LD
+object shape (`{"@import": "<url>"}`, see the "minimized import of `@context`" commit
+`5424d8b`) back to a plain string; a bare string already passes through unchanged. Both
+are input-only leniency - the model still always parses to `id: str` / `context: str`,
+and output/serialization shape is unaffected.
+
+**Why:** `LabFREED_BaseModel` sets `model_config = ConfigDict(extra="forbid")`, so a
+server still emitting the pre-migration wire shape doesn't get ignored - it hard-fails
+client-side parsing as `AttributeServerError` ("response is not adhering to the PAC
+Attributes specifications"), even though the actual defect is version skew, not a
+genuine spec violation by that server. Confirmed empirically against the real,
+externally-hosted Apini Cloud Function attribute server
+(`europe-west6-apini-cloud.cloudfunctions.net`, used by
+`labfreed-webtools/instrument_demo/bp_instrument_demo.py`): it still emits the
+pre-migration shape today, reproducing exactly 3 pydantic validation errors
+(`extra_forbidden` on `pac_id`, `missing` on `id`, `string_type` on `@context`). That
+server isn't part of this repo and can't be fixed here.
+
+**Alternatives considered / why not:**
+
+- Treat this as a temporary shim tied to Apini's migration status, with a `TODO.md`
+  entry to remove it once that server updates - rejected. The repo owner explicitly
+  chose to keep this permanently ("I'm fine if this stays forever") rather than track it
+  as pending removal, since there's no reliable signal for *if or when* a third-party
+  service will ever migrate - a "remove once X updates" TODO would sit forever with no
+  way to know it's actionable.
+- Reject old-format responses outright and require the server operator to fix it (the
+  existing error message's own "contact the server admin" framing) - rejected as
+  impractical: this external service is the demo webapp's only real attribute source
+  today, so a hard requirement to fix a third-party server first would just mean the
+  demo never works against real data.
+
+**Impact:** `AttributesOfPACID` (deprecated) no longer redeclares the rename validator -
+it now inherits the same behavior from `AttributesOfItem` unchanged. See
+[[project_labfreed_iri_migration]] for the migration this shim is bridging around.
+
+*Investigated 2026-07-29, while debugging `bp_instrument_demo.py`'s PAC-Ninja conversion
+path returning no attributes.*
+
+---
+
 ## Automatic, optional UNECE<->UCUM unit mapping via pint/ucumvert
 
 **Decision:** `labfreed/well_known_keys/unece/ucum_bridge.py` is a new module that maps between

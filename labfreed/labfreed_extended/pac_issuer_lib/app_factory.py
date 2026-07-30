@@ -88,7 +88,8 @@ class IssuerFlaskAppFactory():
                     pac_info_extender:PacInfoExtender|None = None,
                     resolver_macros:dict[str, str] = None,
                     use_issuer_resolver_config=False,
-                    feature_flags:dict|None = None):
+                    feature_flags:dict|None = None,
+                    attribute_server_http_client=None):
         
         app =  Flask(__name__, static_folder=None, static_url_path='/static') 
         
@@ -110,7 +111,8 @@ class IssuerFlaskAppFactory():
                                     path_to_custom_resources=path_to_custom_resources,
                                     pac_info_extender=pac_info_extender,
                                     resolver_macros=resolver_macros,
-                                    use_issuer_resolver_config = use_issuer_resolver_config)
+                                    use_issuer_resolver_config = use_issuer_resolver_config,
+                                    attribute_server_http_client=attribute_server_http_client)
         app.register_blueprint(bp)
         
         flask_cors.CORS(app,
@@ -135,8 +137,9 @@ class IssuerFlaskAppFactory():
                             keep_duplicate_attributes:Literal["all", "first", "last"] = "all",
                             path_to_custom_resources:str|None = None,
                             pac_info_extender:PacInfoExtender|None = None,
-                            resolver_macros:dict[str, str] = None, 
-                            use_issuer_resolver_config=False):
+                            resolver_macros:dict[str, str] = None,
+                            use_issuer_resolver_config=False,
+                            attribute_server_http_client=None):
         
         logging.info('initializing Blueprint')
         
@@ -223,11 +226,14 @@ class IssuerFlaskAppFactory():
         '''
         Set up the attribute server
         =================
-        We will create a server app with Flask. 
+        We will create a server app with Flask. Optional: an issuer that only points to
+        an external attribute service (via the resolver config) has no local data_sources
+        and doesn't need this at all.
         '''
+        bp_attribute_server = None
         if attribute_data:
-            request_handler = AttributeServerRequestHandler(data_sources=attribute_data.data_sources, 
-                                                            translation_data_sources= attribute_data.translation_data_sources, 
+            request_handler = AttributeServerRequestHandler(data_sources=attribute_data.data_sources,
+                                                            translation_data_sources= attribute_data.translation_data_sources,
                                                             default_language=attribute_data.default_language,
                                                             keep_duplicate_attributes=keep_duplicate_attributes
                                                             )
@@ -262,9 +268,10 @@ class IssuerFlaskAppFactory():
             loader = FileSystemLoader(str(default_templates))
         bp.jinja_loader = loader
         bp_landing_page.jinja_loader = loader
-        bp_attribute_server.jinja_loader = loader
-            
-            
+        if bp_attribute_server:
+            bp_attribute_server.jinja_loader = loader
+
+
         if attribute_data:
             if as_multi_issuer_app:
                 request_handler_key = f'{issuer_name}/attributes'
@@ -275,12 +282,19 @@ class IssuerFlaskAppFactory():
                     request_handler_key: request_handler
                 }
             )
-
-            app_infrastructure = Labfreed_App_Infrastructure(language_preferences=attribute_data.default_language, 
-                                                             http_client=http_client, 
+            app_infrastructure = Labfreed_App_Infrastructure(language_preferences=attribute_data.default_language,
+                                                             http_client=http_client,
                                                              use_issuer_resolver_config=use_issuer_resolver_config)
-            bp._app_infrastructure = app_infrastructure
-        
+        else:
+            # no local attribute server - resolver-config-listed attribute-generic
+            # services (e.g. an external server like Apini) are reached over a plain,
+            # real HTTP client instead of the in-process SessionLocalDirectCall above.
+            # attribute_server_http_client lets the caller supply one with auth
+            # (e.g. PatternMatchedAuth) wired up for that external service.
+            app_infrastructure = Labfreed_App_Infrastructure(http_client=attribute_server_http_client,
+                                                             use_issuer_resolver_config=use_issuer_resolver_config)
+        bp._app_infrastructure = app_infrastructure
+
         
         # in order to have the resolver configuration work out of the box for services on this server 
         # the macro $HOST_URL$ can be used. Before the first request to this blueprint it needs to be initialized with the 
@@ -350,13 +364,13 @@ class IssuerFlaskAppFactory():
                 pac_id = request.url
                 pac_id, is_localhost = turn_local_host_to_valid_pac(pac_id, issuer)
             
-            try: 
+            try:
                 pac_info = app_infrastructure.process_pac(pac_id)
             except Exception as e:
                 logging.exception("Unhandled error")  # full traceback
-                render_from_bp(bp, 'pac_issuer_error.jinja.html'), 404
+                return render_from_bp(bp, 'pac_issuer_error.jinja.html'), 404
             if not pac_info:
-                render_from_bp(bp, 'pac_issuer_error.jinja.html'), 404
+                return render_from_bp(bp, 'pac_issuer_error.jinja.html'), 404
             
              
             # let the pac_info extender do it's job, if one was provided
@@ -490,8 +504,13 @@ class IssuerFlaskAppFactory():
 
 def is_pac_id(v:str) -> bool:
     try:
-        p = PAC_CAT.from_url(v)
-        return True and 'PAC.' in v.upper()
+        # suppress_validation_errors=True: this is called on arbitrary attribute
+        # values to decide how to render them, most of which were never meant to be
+        # a PAC-ID at all - without it, PAC_CAT.from_url logs a full validation
+        # report for every value that merely looks PAC-ID-shaped (e.g. contains a
+        # '/', like a unit "g/cm3") before raising, which we then just swallow below.
+        PAC_CAT.from_url(v, suppress_validation_errors=True)
+        return 'PAC.' in v.upper()
     except Exception:
         return False
     

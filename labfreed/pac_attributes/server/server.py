@@ -98,19 +98,25 @@ class AttributeServerRequestHandler():
     def _get_attributes_for_pac_id(self, pac_url:str, restrict_to_attribute_groups:list[str]|None=None) -> AttributesOfItem:
         attribute_groups = []
         if restrict_to_attribute_groups:
-            relevant_data_sources = [ds for ds in self._attribute_group_data_sources if ds.attribute_group_key in restrict_to_attribute_groups]
+            # a source with no declared keys (attribute_group_keys == []) doesn't know
+            # its groups ahead of time (e.g. a live remote proxy) - always ask it, and
+            # rely on the post-hoc filter below instead of pre-filtering on a declared key.
+            relevant_data_sources = [ds for ds in self._attribute_group_data_sources
+                                      if not ds.attribute_group_keys or any(k in restrict_to_attribute_groups for k in ds.attribute_group_keys)]
         else:
             relevant_data_sources = self._attribute_group_data_sources
         for ds in relevant_data_sources:
-            try: 
+            try:
                 ag = ds.attributes(pac_url)
-                if ag:
-                    attribute_groups.append(ag)
+                ags = ag if isinstance(ag, list) else ([ag] if ag else [])
+                if restrict_to_attribute_groups:
+                    ags = [g for g in ags if g.group_key in restrict_to_attribute_groups]
+                attribute_groups.extend(ags)
             except Exception as e:
-                e.add_note(f'Attribute Source {ds.attribute_group_key} encountered an error')
+                e.add_note(f'Attribute Source {ds.attribute_group_keys} encountered an error')
                 traceback.print_exc()
                 raise e
-        
+
         self._remove_duplicate_attributes(attribute_groups)
                         
         return AttributesOfItem(id=pac_url, # return the pac_url as given, i.e. with the extension if there was one
@@ -209,7 +215,7 @@ class AttributeServerRequestHandler():
     def capabilities(self) -> ServerCapabilities:
         return ServerCapabilities(supported_languages=self._supported_languages,
                                   default_language=self._default_language,
-                                  available_attribute_groups= [ds.attribute_group_key for ds in self._attribute_group_data_sources])
+                                  available_attribute_groups= [k for ds in self._attribute_group_data_sources for k in ds.attribute_group_keys])
     
 
             
