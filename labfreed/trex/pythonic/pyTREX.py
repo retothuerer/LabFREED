@@ -46,7 +46,7 @@ class pyTREX(RootModel[dict[str, Quantity | datetime | time | date | bool | str 
                 segments.append(NumericSegment(key=k, value=value.value, type=unece_code))
             elif isinstance(v, (int, float)):
                 value = _numeric_value_from_python_type(v)
-                segments.append(NumericSegment(key=k, value=value.value, type='C63'))  # unitless
+                segments.append(NumericSegment(key=k, value=value.value, type='C62'))  # unitless
             elif isinstance(v, (datetime, time, date)):
                 value = _date_value_from_python_type(v)
                 segments.append(DateSegment(key=k, value=value.value))
