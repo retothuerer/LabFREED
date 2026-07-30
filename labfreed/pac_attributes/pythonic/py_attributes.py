@@ -103,10 +103,18 @@ class pyAttributes(RootModel[list[pyAttribute]]):
                 
             elif isinstance(value, str):
                 # capture quantities in the form of "100.0e5 g/L"
+                q = None
                 if Quantity.can_convert_to_quantity(value):
-                    q = Quantity.from_str_with_unit(value)
+                    try:
+                        q = Quantity.from_str_with_unit(value)
+                    except ValueError:
+                        # can_convert_to_quantity only checks "number followed by a word" -
+                        # the word need not be a valid UCUM unit (e.g. "5 boxes"). Fall back to
+                        # plain text rather than reject the whole attribute over it.
+                        q = None
+                if q is not None:
                     v = f"{q.value_as_str()} {q.unit}"
-                    items.append(NumericAttributeItemsElement(value=v))      
+                    items.append(NumericAttributeItemsElement(value=v))
                 else:
                     items.append(TextAttributeItemsElement(value=value))
 
@@ -151,8 +159,11 @@ class pyAttributes(RootModel[list[pyAttribute]]):
                     case ResourceAttributeItemsElement() :
                         values.append(pyResource(v.value))
                         
-                    case NumericAttributeItemsElement() :                                       
-                        values.append(Quantity.from_str_value(value=v._numerical_value, unit=v._unit))
+                    case NumericAttributeItemsElement() :
+                        # v._unit already went through response.py's own (non-fatal, WARNING-level)
+                        # UCUM check - don't turn that warning into a hard crash here by re-validating
+                        # strictly on the way back into a pythonic Quantity.
+                        values.append(Quantity.from_str_value(value=v._numerical_value, unit=v._unit, dont_enforce_ucum_units=True))
 
                     case BoolAttributeItemsElement() :
                         values.append(v.value)

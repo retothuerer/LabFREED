@@ -1,9 +1,16 @@
 import re
 from pydantic import BaseModel, model_validator
 
+from labfreed.well_known_keys.unece import ucum_bridge
+
 
 class Quantity(BaseModel):
-    ''' Represents a quantity'''
+    ''' Represents a quantity. `unit` must be a valid UCUM unit (checked at construction time
+    against `ucum_bridge.is_valid_ucum` - structure only without the optional 'units' extra,
+    full symbol-level validation with it). Pass `dont_enforce_ucum_units=True` to the
+    constructor to bypass this check - discouraged, since a non-UCUM unit will silently break
+    T-REX's UNECE-code mapping and PAC-ID Attributes validation later on.
+    '''
     value: float|int
     unit: str | None
     '''UCUM unit code. For SI units this is just the SI symbol (e.g. "kg", "m"). Set to None if the Quantity is dimensionless'''
@@ -15,6 +22,8 @@ class Quantity(BaseModel):
     def transform_inputs(cls, d:dict):
         if not isinstance(d, dict):
             return d
+
+        dont_enforce_ucum_units = bool(d.pop('dont_enforce_ucum_units', False))
 
         # decimals_to_log_significant_digits
         if decimals:= d.pop('decimals', None):
@@ -31,6 +40,14 @@ class Quantity(BaseModel):
             unit = unit.replace('/ ', '/').replace(' /', '/').replace(' ', '.').replace('^', '').replace('·','.')
             d['unit'] = unit
 
+        if unit and not dont_enforce_ucum_units and not ucum_bridge.is_valid_ucum(unit):
+            extra_hint = '' if ucum_bridge.HAS_UCUM_SUPPORT else " (checked syntax only - pip install labfreed[units] for a full symbol-level check)"
+            raise ValueError(
+                f"Unit {unit!r} is not a valid UCUM unit{extra_hint}. See https://ucum.org/ or "
+                "check it with https://lhncbc.github.io/ucum-lhc/demo.html. Pass "
+                "dont_enforce_ucum_units=True to bypass this check (discouraged)."
+            )
+
         return d
 
 
@@ -46,7 +63,7 @@ class Quantity(BaseModel):
         return self.value
 
     @classmethod
-    def from_str_value(cls, value:str, unit:str|None, log_least_significant_digit=None):
+    def from_str_value(cls, value:str, unit:str|None, log_least_significant_digit=None, *, dont_enforce_ucum_units=False):
         '''
         Creates a quantity from a string representing a number (e.g. -12.345E-8 ).
         It does some magic to find the least significant digit. NOTE: for numbers like 11000 it is ambiguous if the
@@ -61,7 +78,8 @@ class Quantity(BaseModel):
         if log_least_significant_digit is None:
             log_least_significant_digit = cls._find_log_significant_digits(value)
 
-        q = Quantity(value = num_val, unit=unit, log_least_significant_digit=log_least_significant_digit)
+        q = Quantity(value = num_val, unit=unit, log_least_significant_digit=log_least_significant_digit,
+                     dont_enforce_ucum_units=dont_enforce_ucum_units)
         return q
 
     @classmethod
@@ -128,7 +146,10 @@ class Quantity(BaseModel):
         unit_symbol = self.unit
         if self.unit in [ "1", "dimensionless"] or not self.unit:
             unit_symbol = ""
-        unit_symbol = unit_symbol.replace('.', '·')
+        elif ucum_bridge.HAS_UCUM_SUPPORT:
+            unit_symbol = ucum_bridge.pretty_print_ucum(self.unit)
+        else:
+            unit_symbol = unit_symbol.replace('.', '·')
         val = self.value_as_str()
         return f"{val} {unit_symbol}"
 

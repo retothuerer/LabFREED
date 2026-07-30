@@ -29,6 +29,8 @@ General
 - moved `Quantity` from `labfreed.trex.pythonic.quantity` to `labfreed.utilities.quantity` (it's used by PAC-ID Attributes too, not only T-REX); `from labfreed.trex.pythonic import Quantity` still works, but the old submodule path is gone - `unece_unit_code_from_quantity` (T-REX-specific) moved into `pyTREX.py`
 - new optional `units` extra (`pip install labfreed[units]`, adds pint+ucumvert): Quantity<->T-REX UNECE unit-code mapping is now automatic for compound/non-SI units (mol/L, kg/m3, Cel, ...) instead of only working when a unit's UNECE symbol happened to equal its UCUM string
 - BREAKING (edge case): when a unit can't be resolved to a UNECE code and the `units` extra isn't installed, `Quantity`/`pyTREX.to_trex()` now raise `UcumSupportError` (an `ImportError` subclass) instead of `ValueError` - only observable if calling code specifically caught `ValueError` from this path, which previously fired for every non-exact-match unit
+- BREAKING: `Quantity` now validates that `unit` is a valid UCUM unit at construction time (structure only without the `units` extra, full symbol-level check with it) and raises `ValueError` otherwise - previously any string was accepted. Pass `dont_enforce_ucum_units=True` to the constructor to bypass this (discouraged)
+- `Quantity.__str__` pretty-prints its unit (e.g. `kg/m3` -> `kg/m³`) when the `units` extra is installed, instead of the old naive `.`->`·` substitution
 
 
 

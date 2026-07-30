@@ -6,6 +6,7 @@ Bridge between UCUM unit strings (used by `Quantity` / PAC-ID Attributes) and UN
 them. See developer-docs/design-choices.md for why, and what was verified empirically about
 `UneceUnits.json`'s `parsedSymbol` field.
 '''
+import logging
 import math
 import re
 from functools import lru_cache
@@ -168,6 +169,10 @@ def ucum_for_unece_code(code: str) -> str:
     if is_valid_ucum(candidate):
         return candidate
 
+    logging.warning(
+        f"ucum_bridge: no automatic UCUM translation for UNECE code {code!r} (symbol {symbol!r}). "
+        "If this code shows up in real T-REX data, add a case to _normalize_unece_symbol for it."
+    )
     raise UcumSupportError(
         f"UNECE code {code!r}'s symbol {symbol!r} could not be automatically translated to UCUM."
     )

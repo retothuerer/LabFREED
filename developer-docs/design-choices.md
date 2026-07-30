@@ -725,3 +725,52 @@ overwhelmingly imperial/trade units) is tracked in
 [TODO.md](TODO.md#fill-in-ucum_for_unece_codes-normalization-gaps-as-theyre-actually-hit).
 
 *Investigated 2026-07-29.*
+
+---
+
+## `Quantity` validates its unit is UCUM at construction time, with an explicit opt-out
+
+**Decision:** `Quantity.transform_inputs` now rejects (`ValueError`) any non-empty `unit` that
+`ucum_bridge.is_valid_ucum` doesn't accept - structural syntax only without the optional `units`
+extra, a real symbol-level parse via `ucumvert`/`pint` with it. The constructor accepts a
+`dont_enforce_ucum_units: bool = False` keyword that skips this check entirely; it's popped out of
+the input dict in `transform_inputs` (the same pattern already used for `decimals`) rather than
+stored as a model field, so it never becomes part of `Quantity`'s persisted state.
+
+**Why:** previously `Quantity(unit=...)` accepted any string at all - `unece_unit_code_from_quantity`
+and PAC-ID Attributes' own `NumericAttributeItemsElement._validate_unit` were the only places a bad
+unit ever got caught, and only downstream, sometimes much later than construction. Since the
+package is committing to UCUM as *the* unit representation in Python (see the previous entry),
+`Quantity` itself - not just its consumers - should refuse to hold an invalid one. The escape hatch
+exists because one caller *legitimately* needs to construct a `Quantity` from a unit that already
+failed validation elsewhere without crashing: `pyAttributes.from_payload_attributes` reconstructs a
+`Quantity` from a received `NumericAttributeItemsElement`, whose `_unit` was already checked by
+`response.py` at WARNING level (non-fatal, by design - see ["Non-fatal, severity-tiered
+validation"](#non-fatal-severity-tiered-validation-instead-of-plain-pydantic-errors)). Re-validating
+strictly on the way back into a `Quantity` would turn that already-accepted WARNING into a hard
+crash, which would contradict the whole point of treating it as non-fatal in the first place - so
+that one call site passes `dont_enforce_ucum_units=True` explicitly, with a comment explaining why.
+
+The other place a unit string reaches `Quantity` from outside the type system -
+`pyAttributes._attribute_to_attribute_payload_type`'s heuristic detection of "number space word"
+strings like `"100.0e5 g/L"` (via `Quantity.can_convert_to_quantity`) - deliberately does *not* use
+the bypass. That regex only checks "a number followed by some word", not that the word is a valid
+unit (e.g. it also matches `"5 boxes"`), so a `ValueError` there is now caught and the value falls
+back to a plain `TextAttributeItemsElement` instead of propagating - restoring the same "guess, and
+fall back to text if the guess doesn't hold up" behavior the heuristic always intended, just now
+enforced by `Quantity` instead of silently accepting whatever word followed the number.
+
+**Alternatives considered / why not:**
+
+- Only validate in `NumericAttributeItemsElement`/`unece_unit_code_from_quantity` as before, leave
+  `Quantity` itself permissive - rejected: this is exactly the gap that let invalid units survive
+  construction and surface as confusing failures later, sometimes only at T-REX serialization time.
+- A module-level flag (mirroring `HAS_UCUM_SUPPORT`) instead of a per-call keyword - rejected: the
+  need to bypass is a property of one specific call site's data provenance (already-validated wire
+  data), not a global policy; a keyword keeps the exception scoped to exactly the call that needs it.
+
+**Impact:** constructing a `Quantity` with a non-UCUM unit now raises where it previously
+succeeded silently - `BREAKING`, flagged in `CHANGELOG.md`. Two unit strings in this repo's own
+examples/tests (`'hour'`) were never valid UCUM (`'h'` is) and were fixed as part of this change.
+
+*Investigated 2026-07-29.*

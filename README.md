@@ -78,7 +78,12 @@ See [plugins/labfreed/README.md](plugins/labfreed/README.md) for exactly what th
 
 The `labfreed` package is organized into three parts, reflecting how far the code strays from being a plain implementation of the building block specifications:
 
-- **`labfreed/`** (core) — the building blocks themselves (PAC-ID, PAC-CAT, T-REX, PAC-ID Resolver, PAC-Attributes), plus the Python-specific convenience code that goes with them (e.g. converting between spec types and native Python types). Only needs the base dependencies installed by `pip install labfreed`.
+- **`labfreed/`** (core) — the building blocks themselves (PAC-ID, PAC-CAT, T-REX, PAC-ID Resolver, PAC-Attributes), plus the Python-specific convenience code that goes with them (e.g. converting between spec types and native Python types). Only needs the base dependencies installed by `pip install labfreed`. Units (`Quantity`, T-REX's UNECE-code mapping) are [UCUM](https://ucum.org/) throughout — the [UCUM unit validator](https://lhncbc.github.io/ucum-lhc/demo.html) is the quickest way to check whether a unit string is valid UCUM. Structural UCUM validation works with no extra dependency; automatic mapping for compound/non-SI units, full symbol-level validation, and pretty-printing additionally need the `units` extra:
+
+  ```bash
+  pip install labfreed[units]
+  ```
+
 - **`labfreed/labfreed_extended/`** — reference implementations built on top of the library that go beyond representing the specs in Python, such as a Flask-based attribute server and the PAC issuer landing page (see [Setting up a PAC-ID Landing Page](examples/pac_mettorius_com/README.md)). Requires the `extended` extra:
 
   ```bash
