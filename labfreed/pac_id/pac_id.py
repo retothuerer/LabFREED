@@ -54,7 +54,7 @@ class PAC_ID(LabFREED_BaseModel):
         return [s.value[1:] for s in self.identifier if s.is_derivation_namespace]
 
 
-    def get_non_derived_pac_id(self) -> "PAC_ID":
+    def get_non_derived_pac_id(self) -> Self:
         '''The original PAC-ID before any derivation: everything up to (but not
         including) the first derivation namespace segment, without extensions.
         Derivation produces a PAC-ID for a different (derived) entity, and
@@ -64,8 +64,63 @@ class PAC_ID(LabFREED_BaseModel):
         so self is returned unchanged, extensions included.'''
         for i, s in enumerate(self.identifier):
             if s.is_derivation_namespace:
-                return PAC_ID(issuer=self.issuer, identifier=self.identifier[:i])
+                return type(self)(issuer=self.issuer, identifier=self.identifier[:i])
         return self
+
+
+    def get_parent_pac_id(self) -> Self | None:
+        '''The immediate parent PAC-ID, covering both forms of derivation from the
+        PAC-ID spec's "Issuing derived PAC-ID"s section:
+        - a third party's derivation, marked with `+<namespace>` -- the parent is
+          everything up to (but not including) the *last* marker. Differs from
+          `get_non_derived_pac_id` only when there is more than one derivation --
+          that one strips back to the root, this one strips back a single level.
+        - the issuing party's own derivation, which needs no marker (there's no
+          third-party attribution to preserve) -- the parent is this identifier
+          with its last segment dropped, e.g. ".../-MD/240:B-800/21:12345" ->
+          ".../-MD/240:B-800".
+        Either way, extensions are dropped (see `get_non_derived_pac_id` for why):
+        they describe the entity they're attached to, not its parent.
+        None if there is no meaningful parent: the identifier has only one
+        segment, or dropping the last one would leave nothing but a bare,
+        field-less category key (e.g. ".../-MD/240:B-800" has no parent --
+        dropping "240:B-800" would leave only "-MD").'''
+        last_marker_idx = None
+        for i, s in enumerate(self.identifier):
+            if s.is_derivation_namespace:
+                last_marker_idx = i
+        if last_marker_idx is not None:
+            return type(self)(issuer=self.issuer, identifier=self.identifier[:last_marker_idx])
+        if len(self.identifier) > 1 and not self.identifier[-2].value.startswith('-'):
+            return type(self)(issuer=self.issuer, identifier=self.identifier[:-1])
+        return None
+
+
+    def derive(self, namespace: str, *segments: IDSegment) -> Self:
+        '''Derive a new PAC-ID from this one, as a third party identified by
+        `namespace` (typically a controlled domain name, without the leading `+`).
+        Appends a derivation namespace segment (`+<namespace>`) followed by
+        `segments`. See PAC-ID spec, "Issuing derived PAC-ID"s.
+        The result carries no extensions even if `self` has some: extensions
+        describe the entity they're attached to, and derivation produces a
+        PAC-ID for a different (derived) entity.'''
+        marker = IDSegment(value=f'+{namespace}')
+        return type(self)(issuer=self.issuer, identifier=[*self.identifier, marker, *segments])
+
+
+    def is_derived_from(self, other: "PAC_ID") -> bool:
+        '''Whether this PAC-ID is derived from `other`, directly or through a
+        chain of further derivations -- i.e. whether `other` is one of this
+        PAC-ID's ancestors. `self == other` (no derivation in between) does not
+        count: `other` must be a proper ancestor.'''
+        if self.issuer != other.issuer:
+            return False
+        ancestor = self
+        while ancestor.has_derivation_segments():
+            ancestor = ancestor.get_parent_pac_id()
+            if ancestor.identifier == other.identifier:
+                return True
+        return False
 
 
     @classmethod

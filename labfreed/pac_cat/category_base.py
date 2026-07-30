@@ -34,7 +34,18 @@ class Category(LabFREED_BaseModel):
     @property
     def segments(self) -> list[CategorySegment]:
         return self._segments
-    
+
+    def has_derivation_segments(self) -> bool:
+        '''Whether any segment in this category was added via a derivation
+        namespace (`+<namespace>`) by a third party, rather than by the original
+        issuer. See PAC-CAT spec, "Segments added via a derivation namespace".'''
+        return any(s.derivation_namespace for s in self.segments)
+
+    def segments_derived_by(self, namespace: str) -> list[CategorySegment]:
+        '''The segments in this category that were added by the given derivation
+        namespace (`namespace`, without the leading `+`).'''
+        return [s for s in self.segments if s.derivation_namespace == namespace]
+
     def __init__(self, **data: Any):
         '''@private'''
         # Pop the user-provided value for computed segments
