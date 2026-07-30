@@ -264,7 +264,7 @@ mydata = pyTREX(segments)
 
 # Create a table
 table = DataTable(col_names=['DURATION', 'Date', 'OK', 'COMMENT'])
-table.append([Quantity(value=1, unit= 'hour'), datetime.now(), True, 'FOO'])
+table.append([Quantity(value=1, unit='h'), datetime.now(), True, 'FOO'])
 table.append([                                                 1.1,  datetime.now(), True, 'BAR'])
 table.append([                                                 1.3,  datetime.now(), False, 'BLUBB'])
 #add the table to the pytrex

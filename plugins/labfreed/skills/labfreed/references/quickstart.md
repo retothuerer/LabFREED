@@ -91,7 +91,7 @@ segments = {
 mydata = pyTREX(segments)
 
 table = DataTable(col_names=['DURATION', 'DATE', 'OK', 'COMMENT'])
-table.append([Quantity(value=1, unit='hour'), datetime.now(), True, 'FOO'])
+table.append([Quantity(value=1, unit='h'), datetime.now(), True, 'FOO'])
 table.append([1.1, datetime.now(), True, 'BAR'])
 mydata.update({'TABLE': table})
 
