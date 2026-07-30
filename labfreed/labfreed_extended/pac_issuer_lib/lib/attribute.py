@@ -76,7 +76,7 @@ class DynamicDemoAttributeGroup(AttributeGroupDataSource):
             return None
         
         attributes = pyAttributes( [pyAttribute(key=d[0], value=d[1]) for d in self._data] ).to_payload_attributes()
-        return AttributeGroup(group_key=self._attribute_group_key, 
+        return AttributeGroup(group_key=self.attribute_group_key,
                               attributes=attributes)
         
         
@@ -191,8 +191,13 @@ def render_template_with_results(pac_id, pac_info=None, cit="", hide_attribute_g
     
 def is_pac_id(v:str) -> bool:
     try:
-        p = PAC_CAT.from_url(v)
-        return True and 'PAC.' in v.upper()
+        # suppress_validation_errors=True: this is called on arbitrary attribute
+        # values to decide how to render them, most of which were never meant to be
+        # a PAC-ID at all - without it, PAC_CAT.from_url logs a full validation
+        # report for every value that merely looks PAC-ID-shaped (e.g. contains a
+        # '/', like a unit "g/cm3") before raising, which we then just swallow below.
+        PAC_CAT.from_url(v, suppress_validation_errors=True)
+        return 'PAC.' in v.upper()
     except Exception:
         return False
 
