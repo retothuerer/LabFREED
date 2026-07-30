@@ -69,9 +69,9 @@ weight = pytrex['WEIGHT']
 weight = trex.native('WEIGHT')
 
 # before
-trex = pyTREX({'WEIGHT': Quantity(value=67.89, unit='GRM')}).to_trex()
+trex = pyTREX({'WEIGHT': Quantity(value=67.89, unit='g')}).to_trex()
 # after
-trex = TREX.from_native_dict({'WEIGHT': Quantity(value=67.89, unit='GRM')})
+trex = TREX.from_native_dict({'WEIGHT': Quantity(value=67.89, unit='g')})
 ```
 
 Same treatment would apply to `pac_attributes`: `Attribute.native()` /

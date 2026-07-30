@@ -151,6 +151,21 @@ open floor (which reintroduces the original risk). Consider whether the `release
 skill should gain a step for this once labfreed-webtools' own repo conventions are
 better established here.
 
+**Revised 2026-07-29:** deliberately reopened to a floor, `labfreed[extended]>=1.0.0`,
+in preparation for the real `1.0.0` release that will land once the current major
+refactor (units/UCUM work, PAC-ID Attributes cleanup, etc.) is done. This isn't the same
+risk as the original open floor: pip excludes pre-releases from an unqualified `>=`
+range, so `>=1.0.0` cannot resolve to any `1.0.0bNN` pre-release - only the real final
+`1.0.0` (or later) satisfies it. Concretely, this means `pip install -r requirements.txt`
+will **fail to resolve at all** (no matching distribution) until `1.0.0` is actually
+published to PyPI - a hard stop, not a silent stale-version fallback, so it's safe to
+leave in place across the rest of the refactor. Once `1.0.0` ships this floor will
+resolve automatically with no manual bump needed - but it still has no upper bound, so
+the original "silently jumps into a future version with zero gate" risk returns for any
+`1.1.0`/`2.0.0` released afterward. Revisit then: an upper bound (e.g. `<2.0.0`) would
+close that gap without reintroducing the manual-bump toil this revision was meant to
+avoid.
+
 ---
 
 ## Pull the shared "canonicalize, then fall back to raw string" lookup out of the data sources
