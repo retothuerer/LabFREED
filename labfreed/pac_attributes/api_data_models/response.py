@@ -212,35 +212,45 @@ class AttributesOfItem(LabFREED_BaseModel):
     id: str
     attribute_groups: list[AttributeGroup]
 
+    @model_validator(mode="before")
+    @classmethod
+    # field was renamed from pac_id to id. Accept servers still on the old field
+    # name so older, not-yet-migrated attribute servers keep working.
+    def _accept_legacy_pac_id_field(cls, d):
+        if isinstance(d, dict) and 'id' not in d and (pac_id := d.pop('pac_id', None)):
+            d['id'] = pac_id
+        return d
+
 
 @deprecated("Class AttributesOfPACID is deprecated. Use it's base class instead.")
 class AttributesOfPACID(AttributesOfItem):
-
-    @model_validator(mode="before")
-    @classmethod
-    # field pac-id was renamed to subject-id. This is for backward compatibility.
-    def _rename_to_subject_id(cls, d):
-        if pac_id := d.pop('pac_id', None):
-            d['id'] = pac_id
-        return d
 
     @property
     @deprecated(" field pac_id was renamed to id.")
     def pac_id(self):
         # field pac-id was renamed to subject-id. This is for backward compatibility.
         return self.id
-    
-    
+
+
 IMPORT_URL = "https://vocab.labfreed.org/attributes/v1.jsonld"
 
 class AttributeResponsePayload(LabFREED_BaseModel):
     schema_version: str = Field(default='1.0')
-    language:str 
+    language:str
     data: list[AttributesOfItem]
-    
+
     context: str = Field(alias='@context', default=IMPORT_URL)
-      
-    
+
+    @field_validator('context', mode='before')
+    @classmethod
+    # @context used to be a json-ld object ({"@import": "<url>"}) before it was
+    # minimized to a plain string. Accept both so older, not-yet-migrated
+    # attribute servers keep working.
+    def _accept_legacy_jsonld_context_object(cls, v):
+        if isinstance(v, dict):
+            return v.get('@import', IMPORT_URL)
+        return v
+
     def to_json(self):
         return self.model_dump_json(exclude_none=True, by_alias=True)
     
