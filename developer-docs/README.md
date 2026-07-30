@@ -12,18 +12,7 @@ flit install --deps develop
 # or: pip install -e ".[dev]"
 ```
 
-Requires **Python 3.11–3.13**. Python 3.14 breaks pydantic's evaluation of
-`float | int`-style forward refs, surfacing as
-`TypeError: unsupported operand type(s) for |: 'property' and 'type'`. This currently
-breaks *collecting* three test files - not a code bug, don't try to fix it in the
-package:
-
-```bash
-pytest --ignore=tests/test_Quantity.py --ignore=tests/test_attributes --ignore=tests/test_sanity_check.py
-```
-
-If you're on 3.11–3.13, plain `pytest` is fine. CI (`.github/workflows/run-tests.yml`)
-runs on 3.11.
+Requires **Python 3.14** (see `requires-python` in `pyproject.toml`)
 
 ## Branches
 

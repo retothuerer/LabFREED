@@ -60,7 +60,7 @@ experimental = [
 
 [project.urls]
 Homepage = "https://github.com/retothuerer/LabFREED"
-Documentation = "https://github.com/retothuerer/LabFREED?tab=readme-ov-file#readme"
+Documentation = "https://retothuerer.github.io/LabFREED/"
 Source = "https://github.com/retothuerer/LabFREED"
 Tracker = "https://github.com/retothuerer/LabFREED/issues"
 

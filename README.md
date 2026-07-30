@@ -1,13 +1,30 @@
 # LabFREED for Python
 
-[![PyPI](https://img.shields.io/pypi/v/labfreed.svg)](https://pypi.org/project/labfreed/) ![Python Version](https://img.shields.io/pypi/pyversions/labfreed) [![Test Labfreed](https://github.com/retothuerer/LabFREED/actions/workflows/run-tests.yml/badge.svg)](https://github.com/retothuerer/LabFREED/actions/workflows/run-tests.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) 
-
-<!--
-[![Ruff](https://img.shields.io/badge/style-Ruff-black?logo=ruff&labelColor=gray)](https://github.com/astral-sh/ruff)
--->
-
+[![PyPI](https://img.shields.io/pypi/v/labfreed.svg)](https://pypi.org/project/labfreed/) ![Python Version](https://img.shields.io/pypi/pyversions/labfreed) [![Test Labfreed](https://github.com/retothuerer/LabFREED/actions/workflows/run-tests.yml/badge.svg)](https://github.com/retothuerer/LabFREED/actions/workflows/run-tests.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![Ruff](https://img.shields.io/badge/style-Ruff-black?logo=ruff&labelColor=gray)](https://github.com/astral-sh/ruff)
 
 This is a Python implementation of [LabFREED](https://labfreed.org/) building blocks.
+
+LabFREED itself is an open, vendor-neutral community initiative for pragmatic lab
+digitalization, contributed to mainly by [ApiniLabs](https://github.com/ApiniLabs),
+Büchi, and WEGA-IT, with 40+ supporting vendors/adopters. See
+[labfreed.org](https://labfreed.org/) for the building-block specs themselves, or join
+the community [Discord](https://discord.com/invite/bxAghUAHFE) for questions and
+discussion. This repo is only the Python reference implementation.
+
+## Contents
+
+- [Supported Building Blocks](#supported-building-blocks)
+- [Installation](#installation)
+- [Using with Claude Code](#using-with-claude-code)
+- [Package Structure](#package-structure)
+- [Design Philosophy](#design-philosophy)
+- [Usage Examples](#usage-examples)
+- [PAC-ID Resolver](#pac-id-resolver)
+- [PAC-ID Attributes](#pac-id-attributes)
+- [Versioning](#versioning)
+- [Change Log](#change-log)
+- [Getting Help / FAQ](#getting-help--faq)
+- [Contributing](#contributing)
 
 ## Supported Building Blocks
 - PAC-ID
@@ -315,7 +332,7 @@ print(pac_str)
 ```text
 >> HTTPS://PAC.METTORIUS.COM/21:1234*MYTREX$TREX/STOP$T.D:20240505T1306+TEMP$KEL:10.15+OK$T.B:F+COMMENT$T.A:FOO+COMMENT2$T.T:12G3+TABLE$$DURATION$HUR:Date$T.D:OK$T.B:COMMENT$T.A::1:20260729T025139.639:T:FOO::1.1:20260729T025139.639:T:BAR::1.3:20260729T025139.639:F:BLUBB
 ```
-## PAC-ID Resolver
+### PAC-ID Resolver
 
 ```python
 from labfreed import PAC_ID_Resolver, load_cit  
@@ -348,7 +365,7 @@ for sg in service_groups:
 ```text
 >> [Error during execution: No Internet Connection]
 ```
-## PAC-ID Attributes
+### PAC-ID Attributes
 Attributes attach lightweight metadata -- e.g. a display name, an image, a calibration due date -- to a PAC-ID,
 without baking it into the identifier itself.
 
@@ -520,6 +537,23 @@ General
 - QR generation 
 - ok-ish test coverage
 <!-- END CHANGELOG -->
+
+## Getting Help / FAQ
+
+- **Questions about the LabFREED building blocks themselves** (PAC-ID, PAC-CAT, T-REX,
+  PAC-ID Resolver, PAC-ID Attributes) — join the community
+  [Discord](https://discord.com/invite/bxAghUAHFE) or see [labfreed.org](https://labfreed.org/).
+- **Bugs or feature requests for this Python package** — open a
+  [GitHub issue](https://github.com/retothuerer/LabFREED/issues).
+- **Found a security issue?** See [SECURITY.md](SECURITY.md) instead of opening a public issue.
+- **Looking for the full API reference** (all classes/functions, generated from docstrings via
+  [pdoc](https://pdoc.dev/))? It's published at
+  [retothuerer.github.io/LabFREED](https://retothuerer.github.io/LabFREED/).
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setting up a dev environment, running the test
+suite, and what's expected of a pull request.
 
 # Attributions
 The following tools were used:
