@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class MetaAttributeKeys(Enum):
+class MetaAttributeKeys(StrEnum):
     DISPLAYNAME = "https://schema.org/name"
     IMAGE = "https://schema.org/image"
     ALIAS = "https://schema.org/alternateName"
@@ -16,7 +16,7 @@ class MetaAttributeKeys(Enum):
     COUNTRY = 'https://schema.org/addressCountry'
 
 
-class IdentifierKeys(Enum):
+class IdentifierKeys(StrEnum):
     CAS_NUMBER              = "https://registry.identifiers.org/registry/cas"
     CAS_NUMBER_ALT          = "https://www.wikidata.org/wiki/Property:P231"
     MDL_NUMBER              = "https://bioregistry.io/registry/mdl"
@@ -40,7 +40,7 @@ class IdentifierKeys(Enum):
     SUPPLIER                = "https://schema.org/manufacturer"
 
 
-class PhysicoChemicalProperties(Enum):
+class PhysicoChemicalProperties(StrEnum):
     BOILINGPOINT            = "https://qudt.org/vocab/quantitykind/BoilingPoint"
     MELTINGPOINT            = "https://qudt.org/vocab/quantitykind/MeltingPoint"
     POLARITY                = "https://labfreed.org/dummy/polarity"
@@ -72,7 +72,7 @@ class PhysicoChemicalProperties(Enum):
     GROSS_WEIGHT            = "https://schema.org/weight"
 
 
-class ChemicalAppearanceProperties(Enum):
+class ChemicalAppearanceProperties(StrEnum):
     AUTOIGNITION_TEMPERATURE   = "https://www.wikidata.org/wiki/Q558378"
     DECOMPOSITION_TEMPERATURE  = "https://www.wikidata.org/wiki/Q113847680"
     ODOUR                      = "https://www.wikidata.org/wiki/Q1971477"
@@ -87,7 +87,7 @@ class ChemicalAppearanceProperties(Enum):
     MATERIAL                   = "https://schema.org/material"
 
 
-class RegulatorySafetyKeys(Enum):
+class RegulatorySafetyKeys(StrEnum):
     GHS_HAZARD_STATEMENT        = "https://www.wikidata.org/wiki/Q28360"
     GHS_PRECAUTIONARY_STATEMENT = "https://www.wikidata.org/wiki/Q2467204"
     GHS_SIGNAL_WORD              = "https://www.wikidata.org/wiki/Q15350855"
@@ -113,7 +113,7 @@ class RegulatorySafetyKeys(Enum):
     ACCEPTANCE_QUALITY_LIMIT     = "https://www.wikidata.org/wiki/Q4672371"
 
 
-class StorageHandlingShippingKeys(Enum):
+class StorageHandlingShippingKeys(StrEnum):
     STORAGE_CONDITION     = "http://purl.obolibrary.org/obo/NCIT_C96145"
     SHIPPING_CONDITION    = "http://purl.obolibrary.org/obo/NCIT_C40353"
     SHELF_LIFE            = "http://purl.obolibrary.org/obo/NCIT_C70855"
@@ -122,7 +122,7 @@ class StorageHandlingShippingKeys(Enum):
     EXPIRY_DATE           = "https://schema.org/expires"
 
 
-class BiologyAssayKeys(Enum):
+class BiologyAssayKeys(StrEnum):
     CELL_TYPE                = "http://www.ebi.ac.uk/efo/EFO_0000324"
     SAMPLE_TYPE              = "http://purl.obolibrary.org/obo/NCIT_C210102"
     APPLICATION_TECHNIQUE    = "http://purl.obolibrary.org/obo/NCIT_C60755"
@@ -146,7 +146,7 @@ class BiologyAssayKeys(Enum):
     MICROBIAL_CONTAMINATION  = "https://www.wikidata.org/wiki/Q118218165"
 
 
-class CommercePackagingKeys(Enum):
+class CommercePackagingKeys(StrEnum):
     BRAND                        = "https://schema.org/brand"
     GRADE                        = "http://purl.obolibrary.org/obo/NCIT_C48309"
     FORMAT                       = "http://purl.obolibrary.org/obo/NCIT_C42761"
@@ -167,14 +167,14 @@ class CommercePackagingKeys(Enum):
     # https://schema.org/additionalProperty/<snake_case_name>
 
 
-class DocumentKeys(Enum):
+class DocumentKeys(StrEnum):
     SAFETY_DATA_SHEET        = "https://www.wikidata.org/wiki/Q222067"
     CERTIFICATE_OF_ANALYSIS  = "https://www.wikidata.org/wiki/Q1056230"
     DATASHEET                = "https://www.wikidata.org/wiki/Q20819677"
     USER_MANUAL              = "https://www.wikidata.org/wiki/Q1057179"
 
 
-class EventAttributeKeys(Enum):
+class EventAttributeKeys(StrEnum):
     ATTENDEE_NAME    = "https://schema.org/name"
     GIVEN_NAME       = "https://schema.org/givenName"
     FAMILY_NAME      = "https://schema.org/familyName"

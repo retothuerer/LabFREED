@@ -25,11 +25,11 @@ from labfreed.pac_attributes.client.client import AttributeClient, authenticated
 PAC_STR = 'HTTPS://PAC.METTORIUS.COM/-MD/BAL500/000001'
 
 data_source = Dict_DataSource(
-    attribute_group_key=MetaAttributeKeys.GROUPKEY.value,
+    attribute_group_key=MetaAttributeKeys.GROUPKEY,
     data={
         PAC_STR: {
-            MetaAttributeKeys.DISPLAYNAME.value: Attribute(
-                key=MetaAttributeKeys.DISPLAYNAME.value,
+            MetaAttributeKeys.DISPLAYNAME: Attribute(
+                key=MetaAttributeKeys.DISPLAYNAME,
                 label='Display Name',
                 items=[TextAttributeItemsElement(value='My Balance')],
             ),
@@ -39,8 +39,8 @@ data_source = Dict_DataSource(
 translations = DictTranslationDataSource(
     supported_languages={'en'},
     data=Terms(terms=[
-        Term.create(MetaAttributeKeys.GROUPKEY.value, [('en', 'Meta Data')]),
-        Term.create(MetaAttributeKeys.DISPLAYNAME.value, [('en', 'Display Name')]),
+        Term.create(MetaAttributeKeys.GROUPKEY, [('en', 'Meta Data')]),
+        Term.create(MetaAttributeKeys.DISPLAYNAME, [('en', 'Display Name')]),
     ]),
 )
 

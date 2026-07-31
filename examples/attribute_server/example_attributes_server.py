@@ -15,7 +15,7 @@ from labfreed.pac_attributes.well_known_attribute_keys import MetaAttributeKeys
 from labfreed.pac_attributes.server.attribute_data_sources import AttributeGroupDataSource
 from labfreed.pac_attributes.server.translation_data_sources import DictTranslationDataSource
 
-from labfreed.utilities.quantity import Quantity
+from labfreed.utilities.quantity import Quantity, CommonQuantityUnit
 
 from labfreed.pac_attributes.pythonic.attribute_server_factory import AttributeServerFactory, Webframework
 from labfreed.pac_attributes.pythonic.excel_attribute_data_source import LocalExcelAttributeDataSource
@@ -40,19 +40,19 @@ NOTE: Such a metadata source is good practice to include
 '''
 data_sources.append(
     pyDict_DataSource( 
-        attribute_group_key=MetaAttributeKeys.GROUPKEY.value,
+        attribute_group_key=MetaAttributeKeys.GROUPKEY,
         include_extensions=False,
         data = {
             # first entry of a balance
             "HTTPS://PAC.METTORIUS.COM/-MD/BAL500/000001/K:V": pyAttributes([
-                pyAttribute(key=MetaAttributeKeys.DISPLAYNAME.value, value="My Balance"),
-                pyAttribute(key=MetaAttributeKeys.IMAGE.value, value=pyResource("https://picsum.photos/id/82/200")),
+                pyAttribute(key=MetaAttributeKeys.DISPLAYNAME, value="My Balance"),
+                pyAttribute(key=MetaAttributeKeys.IMAGE, value=pyResource("https://picsum.photos/id/82/200")),
             ]),
 
             # this is for a calibration weight, which is referenced by attributes of the balances
             "HTTPS://PAC.METTORIUS.COM/-MD/CALWEIGH/A00002": pyAttributes([
-                pyAttribute(key=MetaAttributeKeys.DISPLAYNAME.value, value="Calibration Weight PRN003"),
-                pyAttribute(key=MetaAttributeKeys.IMAGE.value, value=pyResource("https://picsum.photos/id/86/200")),
+                pyAttribute(key=MetaAttributeKeys.DISPLAYNAME, value="Calibration Weight PRN003"),
+                pyAttribute(key=MetaAttributeKeys.IMAGE, value=pyResource("https://picsum.photos/id/86/200")),
             ])
         } 
     )
@@ -64,9 +64,9 @@ transation_data_sources.append(
         supported_languages={'en', 'fr'},
         data=Terms(
                 terms=[
-                    Term.create(MetaAttributeKeys.GROUPKEY.value, [('en', 'Meta Data'), ('fr', 'Métadonnées')]),
-                    Term.create(MetaAttributeKeys.DISPLAYNAME.value, [('en', 'Display Name'), ('fr', 'Nom visuel')]),
-                    Term.create(MetaAttributeKeys.IMAGE.value, [('en', 'Image'), ('fr', 'Image')]),
+                    Term.create(MetaAttributeKeys.GROUPKEY, [('en', 'Meta Data'), ('fr', 'Métadonnées')]),
+                    Term.create(MetaAttributeKeys.DISPLAYNAME, [('en', 'Display Name'), ('fr', 'Nom visuel')]),
+                    Term.create(MetaAttributeKeys.IMAGE, [('en', 'Image'), ('fr', 'Image')]),
                 ]
             )
     )
@@ -140,7 +140,8 @@ class DynamicDemoAttributeGroup(AttributeGroupDataSource):
         attributes = pyAttributes(
                 [
                     pyAttribute(key="https://labfreed.org/terms/example/TextAttribute", value=random.choice(["Foo", "Bar"])),
-                    pyAttribute(key="https://labfreed.org/terms/example/NumericAttribute", value=Quantity(value=round(random.uniform(0, 100), 2), unit=random.choice(["m", "kg", "mol/L"]))),
+                    # unit can be a CommonQuantityUnit member or a plain UCUM string - both work
+                    pyAttribute(key="https://labfreed.org/terms/example/NumericAttribute", value=Quantity(value=round(random.uniform(0, 100), 2), unit=random.choice([CommonQuantityUnit.LENGTH_METER, "kg", CommonQuantityUnit.CONCENTRATION_MOLAR]))),
                     pyAttribute(key="https://labfreed.org/terms/example/ReferenceAttribute", value=pyReference('HTTPS://PAC.METTORIUS.COM/-MD/CALWEIGH/A00002')),
                     pyAttribute(key="https://labfreed.org/terms/example/ResourceAttribute", value=pyResource('https://picsum.photos/id/86/200')),
                     pyAttribute(key="https://labfreed.org/terms/example/DateTimeAttribute", value=datetime.now(tz=timezone.utc)),
@@ -148,7 +149,7 @@ class DynamicDemoAttributeGroup(AttributeGroupDataSource):
                     pyAttribute(key="https://labfreed.org/terms/example/ObjectAttribute", value={'k1':1, 'k2': {'a':'bar', 'b':'foo'}, 'k3': [0,1,2]}),
                     
                     pyAttribute(key="https://labfreed.org/terms/example/TextAttributeList", value=["Foo", "Bar"]),
-                    pyAttribute(key="https://labfreed.org/terms/example/NumericAttributeList", value= [Quantity(value=100, unit="m"), Quantity(value=110, unit='m')] ),
+                    pyAttribute(key="https://labfreed.org/terms/example/NumericAttributeList", value= [Quantity(value=100, unit=CommonQuantityUnit.LENGTH_METER), Quantity(value=110, unit='m')] ),
                     pyAttribute(key="https://labfreed.org/terms/example/ReferenceAttributeList", value=[ pyReference('HTTPS://PAC.METTORIUS.COM/-MD/CALWEIGH/A00002'), pyReference('HTTPS://PAC.METTORIUS.COM/-MD/CALWEIGH/A00003')] ),
                     pyAttribute(key="https://labfreed.org/terms/example/ResourceAttributeList", value= [pyResource('https://picsum.photos/id/86/200'), pyResource('https://picsum.photos/id/87/200')]),
                     pyAttribute(key="https://labfreed.org/terms/example/DateTimeAttributeList", value= [ datetime.now(tz=timezone.utc), datetime(2015,12,6) ]),

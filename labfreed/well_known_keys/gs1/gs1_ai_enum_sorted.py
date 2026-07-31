@@ -1,6 +1,6 @@
-from enum import Enum
+from enum import StrEnum
 
-class GS1ApplicationIdentifier(Enum):
+class GS1ApplicationIdentifier(StrEnum):
     SSCC = "00"
     GTIN = "01"
     CONTENT = "02"

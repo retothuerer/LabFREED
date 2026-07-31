@@ -128,7 +128,7 @@ class BlePacCentral:
             async with BleakClient(device) as client:
                 for characteristic in self._pac_characteristics:
                     try:
-                        raw = await client.read_gatt_char(characteristic.value)
+                        raw = await client.read_gatt_char(characteristic)
                         if raw:
                             pac_id_url += raw.decode("utf-8")
                     except Exception as e:

@@ -92,16 +92,18 @@ from datetime import datetime  # noqa: E402
 from labfreed.trex.pythonic import pyTREX  # noqa: E402
 from labfreed.trex.pythonic import DataTable  # noqa: E402
 from labfreed.trex.pythonic import Quantity  # noqa: E402
+from labfreed.utilities.quantity import CommonQuantityUnit  # noqa: E402
 
 # Value segments of different type
+# unit can be set from the CommonQuantityUnit enum (TEMP) or as a plain UCUM string (DURATION below)
 segments = {
                 'STOP': datetime(year=2024,month=5,day=5,hour=13,minute=6),
-                'TEMP': Quantity(value=10.15, unit= 'K'),
+                'TEMP': Quantity(value=10.15, unit=CommonQuantityUnit.TEMPERATURE_KELVIN),
                 'OK':False,
                 'COMMENT': 'FOO',
                 'COMMENT2':'£'
             }
-mydata = pyTREX(segments) 
+mydata = pyTREX(segments)
 
 # Create a table
 table = DataTable(col_names=['DURATION', 'Date', 'OK', 'COMMENT'])
@@ -181,11 +183,11 @@ from labfreed.utilities.translations import Terms, Term  # noqa: E402
 # Attributes for one PAC-ID. A data source could just as well read this from a database, an Excel sheet, or anywhere else.
 pac_str = 'HTTPS://PAC.METTORIUS.COM/-MD/BAL500/000001'
 data_source = pyDict_DataSource(
-    attribute_group_key=MetaAttributeKeys.GROUPKEY.value,
+    attribute_group_key=MetaAttributeKeys.GROUPKEY,
     data={
         pac_str: pyAttributes([
-            pyAttribute(key=MetaAttributeKeys.DISPLAYNAME.value, value="My Balance"),
-            pyAttribute(key=MetaAttributeKeys.IMAGE.value, value=pyResource("https://picsum.photos/id/82/200")),
+            pyAttribute(key=MetaAttributeKeys.DISPLAYNAME, value="My Balance"),
+            pyAttribute(key=MetaAttributeKeys.IMAGE, value=pyResource("https://picsum.photos/id/82/200")),
         ])
     }
 )
@@ -194,9 +196,9 @@ data_source = pyDict_DataSource(
 translations = DictTranslationDataSource(
     supported_languages={'en'},
     data=Terms(terms=[
-        Term.create(MetaAttributeKeys.GROUPKEY.value, [('en', 'Meta Data')]),
-        Term.create(MetaAttributeKeys.DISPLAYNAME.value, [('en', 'Display Name')]),
-        Term.create(MetaAttributeKeys.IMAGE.value, [('en', 'Image')]),
+        Term.create(MetaAttributeKeys.GROUPKEY, [('en', 'Meta Data')]),
+        Term.create(MetaAttributeKeys.DISPLAYNAME, [('en', 'Display Name')]),
+        Term.create(MetaAttributeKeys.IMAGE, [('en', 'Image')]),
     ])
 )
 

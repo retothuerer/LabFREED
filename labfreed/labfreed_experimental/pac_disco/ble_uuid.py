@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class ServiceUUID(Enum):
+class ServiceUUID(StrEnum):
     MATERIAL_DEVICE = "6b190a7d-5aac-4943-bc3f-0ca90a9dff66"
     MATERIAL_SUBSTANCE = "5a0f2312-e944-4761-adf1-ecac1ea30171"
     MATERIAL_CONSUMABLE = "72e77869-da3c-4dab-b540-563ba5085a3e"
@@ -18,12 +18,12 @@ class ServiceUUID(Enum):
     
     @classmethod
     def all_uuid(cls):
-        out = [member.value.lower() for member in cls]
+        out = [member.lower() for member in cls]
         return out
-        
-    
-    
-class PAC_Characteristics(Enum):
+
+
+
+class PAC_Characteristics(StrEnum):
     PAC_ID_PART_0 = "1b79bd10-b4f9-4932-b93b-17b9ee161d0c"
     PAC_ID_PART_1 = "f636bdc7-88da-49e5-b823-12310e62c215"
     PAC_ID_PART_2 = "644c3de5-4337-44be-9dec-8b3abf10bf70"

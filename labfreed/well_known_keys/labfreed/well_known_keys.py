@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class WellKnownKeys(Enum):
+class WellKnownKeys(StrEnum):
     GTIN = '01'
     BATCH = '10'
     VARIANT = '20'
