@@ -1,5 +1,7 @@
 from datetime import datetime
 
+from labfreed.pac_attributes.api_data_models.request import AttributeRequestData
+from labfreed.pac_attributes.api_data_models.response import AttributeResponsePayload
 from labfreed.pac_attributes.client.client import AttributeClient
 from labfreed.pac_attributes.pythonic.py_attributes import pyAttribute, pyAttributes, pyReference
 from labfreed.pac_attributes.pythonic.py_dict_data_source import pyDict_DataSource
@@ -11,9 +13,11 @@ NORMAL_PAC_ID = "HTTPS://PAC.METTORIUS.COM/-MD/BAL500/12340"
 CAL_PAC_ID = "HTTPS://PAC.METTORIUS.COM/-MD/CALWEIGH/A00002"
 TRAILING_SLASH_PAC_ID = "HTTPS://PAC.METTORIUS.COM/-MD/BAL500/12345/"
 GENERIC_IRI = "https://example.com/thing?x=1"
+SUBSTANCE_PAC_ID = "HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876"
+ALIQUOT_PAC_ID = "HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/+ACMELABS.COM/250:1"
 
 
-def _build_client():
+def _build_handler():
     data_source = pyDict_DataSource(
         attribute_group_key="ProductionData",
         data={
@@ -30,6 +34,12 @@ def _build_client():
             GENERIC_IRI: pyAttributes([
                 pyAttribute(key="MfgDate", value=datetime(2021, 1, 1)),
             ]),
+            SUBSTANCE_PAC_ID: pyAttributes([
+                pyAttribute(key="MfgDate", value=datetime(2022, 3, 1)),
+            ]),
+            ALIQUOT_PAC_ID: pyAttributes([
+                pyAttribute(key="MfgDate", value=datetime(2023, 5, 1)),
+            ]),
         },
     )
     translations = Terms(terms=[
@@ -38,11 +48,15 @@ def _build_client():
         Term.create("NominalWeight", [("en", "Nominal weight")]),
     ])
     translation_data_source = DictTranslationDataSource(data=translations, supported_languages=["en"])
-    handler = AttributeServerRequestHandler(
+    return AttributeServerRequestHandler(
         data_sources=[data_source],
         translation_data_sources=[translation_data_source],
         default_language="en",
     )
+
+
+def _build_client():
+    handler = _build_handler()
 
     def local_callback(url, attribute_request_data):
         try:
@@ -92,3 +106,51 @@ def test_no_attributes_found_returns_empty_list_not_a_crash():
     client = _build_client()
     groups = client.get_attributes(server_url="", pac_id="HTTPS://PAC.METTORIUS.COM/-MD/UNKNOWN/000")
     assert groups == []
+
+
+def test_derivation_parent_attributes_are_included_under_parents_id():
+    # ALIQUOT_PAC_ID was derived from SUBSTANCE_PAC_ID (+ACMELABS.COM marker) - the
+    # server should include the parent's own attributes in the response, under the
+    # parent's own id, alongside the subject's.
+    handler = _build_handler()
+    request = AttributeRequestData(subject_id=ALIQUOT_PAC_ID)
+    payload = AttributeResponsePayload.model_validate_json(handler.handle_attribute_request(request))
+    items_by_id = {item.id: item for item in payload.data}
+
+    assert ALIQUOT_PAC_ID in items_by_id
+    assert items_by_id[ALIQUOT_PAC_ID].attribute_groups[0].attributes["MfgDate"].items[0].value == datetime(2023, 5, 1).date()
+
+    assert SUBSTANCE_PAC_ID in items_by_id
+    assert items_by_id[SUBSTANCE_PAC_ID].attribute_groups[0].attributes["MfgDate"].items[0].value == datetime(2022, 3, 1).date()
+
+
+def test_derivation_lookup_can_be_disabled():
+    handler = _build_handler()
+    request = AttributeRequestData(subject_id=ALIQUOT_PAC_ID, do_derivation_lookup=False)
+    payload = AttributeResponsePayload.model_validate_json(handler.handle_attribute_request(request))
+    ids = {item.id for item in payload.data}
+    assert SUBSTANCE_PAC_ID not in ids
+
+
+def test_self_derived_parent_attributes_are_included_without_a_marker():
+    # NORMAL_PAC_ID ("-MD/BAL500/12340") was derived by its own issuer from the
+    # model-level PAC-ID ("-MD/BAL500") by appending a serial number - no
+    # +<namespace> marker is needed for this, since there's no third-party
+    # attribution to preserve (PAC-ID spec, "Issuing derived PAC-ID"s). Forward
+    # lookup is disabled here to isolate this from NORMAL_PAC_ID's unrelated
+    # CalWeight reference.
+    handler = _build_handler()
+    request = AttributeRequestData(subject_id=NORMAL_PAC_ID, do_forward_lookup=False)
+    payload = AttributeResponsePayload.model_validate_json(handler.handle_attribute_request(request))
+    ids = {item.id for item in payload.data}
+    assert "HTTPS://PAC.METTORIUS.COM/-MD/BAL500" in ids
+
+
+def test_single_field_category_has_no_parent_entry():
+    # Dropping "BAL500" would leave only the bare category key "-MD", which isn't
+    # a meaningful narrower entity to report as a parent.
+    handler = _build_handler()
+    request = AttributeRequestData(subject_id="HTTPS://PAC.METTORIUS.COM/-MD/BAL500")
+    payload = AttributeResponsePayload.model_validate_json(handler.handle_attribute_request(request))
+    assert len(payload.data) == 1
+    assert payload.data[0].id == "HTTPS://PAC.METTORIUS.COM/-MD/BAL500"

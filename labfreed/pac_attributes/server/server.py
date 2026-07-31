@@ -76,6 +76,17 @@ class AttributeServerRequestHandler():
         if ref:
             referenced_ids.update(ref)
 
+        # also find attributes of the derivation parent, if subject_id was derived
+        # from another PAC-ID (`+<namespace>` segment) - reported under the
+        # parent's own id, alongside the subject's.
+        if r.do_derivation_lookup:
+            parent_id = self._get_derivation_parent_id(r.subject_id)
+            if parent_id:
+                attributes_for_pac_id.append(
+                    self._get_attributes_for_pac_id(pac_url=parent_id,
+                                                     restrict_to_attribute_groups=r.restrict_to_attribute_groups)
+                )
+
         # also find attributes of referenced ids
         if r.do_forward_lookup:
             for referenced_id in referenced_ids:
@@ -147,6 +158,19 @@ class AttributeServerRequestHandler():
                     used_attribute_keys.add(ak)
         
     
+
+    def _get_derivation_parent_id(self, pac_url:str) -> str|None:
+        '''The immediate parent's PAC-ID url, or None if pac_url isn't a PAC-ID at
+        all (subject_id only has to be an IRI), or if there's nothing to call a
+        parent (see PAC_ID.get_parent_pac_id() for what counts as a parent).'''
+        try:
+            pac_id = PAC_ID.from_url(pac_url, suppress_validation_errors=True)
+        except Exception:
+            return None
+
+        parent = pac_id.get_parent_pac_id()
+        return parent.to_url() if parent else None
+
 
     def _get_referenced_ids(self, attributes_for_pac:AttributesOfItem):
         referenced_ids = []

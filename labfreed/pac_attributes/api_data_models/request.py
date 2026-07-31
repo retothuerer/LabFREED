@@ -10,15 +10,21 @@ from labfreed.pac_id.pac_id import PAC_ID
 
 ATTR_GROUPS = 'attr_grps'
 ATTR_GROUPS_FWD_LKP= 'attr_fwd_lkp'
+ATTR_GROUPS_DERIVATION_LKP = 'attr_deriv_lkp'
 
 
-class AttributeRequestData(LabFREED_BaseModel):  
-    model_config = ConfigDict(arbitrary_types_allowed=True)  
-    
+class AttributeRequestData(LabFREED_BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     subject_id: str
     language_preferences: LanguageAccept|None = None
     restrict_to_attribute_groups: list[str]|None = None
     do_forward_lookup: bool = True
+    do_derivation_lookup: bool = True
+    '''If subject_id is a derived PAC-ID - either a third party's derivation, marked
+    with `+<namespace>`, or the issuing party's own derivation (no marker needed) -
+    also include the attributes of its immediate parent PAC-ID in the response,
+    under the parent's own id. See AttributeServerRequestHandler._get_derivation_parent_id().'''
     
     def as_json(self):
         return self.model_dump_json()
@@ -44,13 +50,20 @@ class AttributeRequestData(LabFREED_BaseModel):
         else:
             do_forward_lookup =  fwd_lkp.lower() not in ['false', 'no', '0', 'n', 'off']
 
+        deriv_lkp = params.get(ATTR_GROUPS_DERIVATION_LKP, True)
+        if deriv_lkp is True:
+            do_derivation_lookup = True
+        else:
+            do_derivation_lookup = deriv_lkp.lower() not in ['false', 'no', '0', 'n', 'off']
+
         lang_hdr = headers.get('Accept-Language')
         language_preferences: LanguageAccept = parse_accept_header(lang_hdr, LanguageAccept)
-        out = cls(  subject_id=id, 
+        out = cls(  subject_id=id,
                     restrict_to_attribute_groups = restrict_to_attribute_groups,
                     do_forward_lookup = do_forward_lookup,
+                    do_derivation_lookup = do_derivation_lookup,
                     language_preferences=language_preferences
-                    )   
+                    )
         return out
         
 
@@ -139,7 +152,10 @@ class AttributeRequestData(LabFREED_BaseModel):
         return headers
     
     def request_params(self) -> dict[str, Any]:
-        params = {ATTR_GROUPS_FWD_LKP: str(self.do_forward_lookup).lower()}
+        params = {
+            ATTR_GROUPS_FWD_LKP: str(self.do_forward_lookup).lower(),
+            ATTR_GROUPS_DERIVATION_LKP: str(self.do_derivation_lookup).lower(),
+        }
         if self.restrict_to_attribute_groups:
             params.update({ATTR_GROUPS: ','.join(self.restrict_to_attribute_groups)})
         return params
