@@ -65,7 +65,7 @@ class IDSegment(LabFREED_BaseModel):
                 )
 
         # Segment key should be in Well know keys
-        if key and key not in [k.value for k in WellKnownKeys]:
+        if key and key not in WellKnownKeys:
             self._add_validation_message(
                     source=f"id segment key {key}",
                     level = ValidationMsgLevel.RECOMMENDATION,

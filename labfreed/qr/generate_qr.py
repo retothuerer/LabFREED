@@ -6,11 +6,11 @@ import numpy as np
 import segno
 from segno import DataOverflowError, writers
 from typing import List
-from enum import Enum
+from enum import StrEnum
 
 
 
-class Direction(str, Enum):
+class Direction(StrEnum):
     LEFT_TO_RIGHT = "LTR"
     TOP_TO_BOTTOM = "TTB"
     RIGHT_TO_LEFT = "RTL"

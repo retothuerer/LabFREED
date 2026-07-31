@@ -1,5 +1,5 @@
 
-from enum import auto, Enum
+from enum import StrEnum
 
 from pydantic import Field
 
@@ -9,10 +9,10 @@ from rich.table import Table
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel
 
 
-class ServiceStatus(Enum):
-    ACTIVE = auto()
-    INACTIVE = auto()
-    UNKNOWN = auto()
+class ServiceStatus(StrEnum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    UNKNOWN = "unknown"
 
 class Service(LabFREED_BaseModel):
     service_name: str

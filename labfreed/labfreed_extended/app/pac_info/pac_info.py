@@ -161,7 +161,7 @@ class PacInfo(BaseModel):
         
     @cached_property
     def image_url(self) -> str|None:
-        image_attr = self._all_attributes.get(MetaAttributeKeys.IMAGE.value)
+        image_attr = self._all_attributes.get(MetaAttributeKeys.IMAGE)
         if not image_attr:
             return None
         if isinstance(image_attr.values, pyResource):
@@ -179,7 +179,7 @@ class PacInfo(BaseModel):
             display_name = dn.display_name or ""
         # there can be a display name in attributes, too
 
-        if dn_attr := self._all_attributes.get(MetaAttributeKeys.DISPLAYNAME.value): 
+        if dn_attr := self._all_attributes.get(MetaAttributeKeys.DISPLAYNAME): 
             dn = dn_attr.values
             display_name = dn + f' ( aka {display_name} )' if display_name else dn
             

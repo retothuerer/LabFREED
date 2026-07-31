@@ -970,3 +970,110 @@ that would need to change to match it.
 
 *Investigated 2026-07-30, while designing `labfreed_experimental.actions` for
 labfreed-webtools' `instrument_demo` (Signals Notebook inventory sync).*
+
+---
+
+## Attribute-key enums migrated from `Enum` to `StrEnum`
+
+**Decision:** the ten well-known-attribute-key enums in
+`labfreed/pac_attributes/well_known_attribute_keys.py` (`MetaAttributeKeys`,
+`IdentifierKeys`, `PhysicoChemicalProperties`, `ChemicalAppearanceProperties`,
+`RegulatorySafetyKeys`, `StorageHandlingShippingKeys`, `BiologyAssayKeys`,
+`CommercePackagingKeys`, `DocumentKeys`, `EventAttributeKeys`) now derive from
+`StrEnum` instead of plain `Enum`, matching the convention `CommonQuantityUnit`
+(`labfreed/utilities/quantity.py`) already used.
+
+**Why:** prompted by the user noticing the inconsistency directly - `CommonQuantityUnit`
+already derives from `StrEnum` so its members compare, hash, and format as plain
+strings, while the attribute-key enums didn't, forcing `.value` at every call site to
+satisfy `pyAttribute.key: str` (confirmed ~30 such call sites across `examples/*.py`
+and `pac_info.py`). Verified empirically (throwaway `Enum` vs `StrEnum` classes in a
+REPL) that this asymmetry has a real, *silent* failure mode, not just a boilerplate
+cost: a plain-`Enum` member's `hash()`/`==` don't match the raw string it wraps, so
+`dict.get(MetaAttributeKeys.IMAGE)` against a plain-string-keyed dict returns `None`
+instead of raising - exactly the shape of bug `pac_info.py:164`'s
+`self._all_attributes.get(MetaAttributeKeys.IMAGE.value)` would hit if the `.value`
+were ever dropped by accident. Separately verified pydantic v2 already coerces a plain
+`Enum` member into a `str` field by extracting `.value` automatically, so the `.value`
+calls at `pyAttribute(key=...)` construction sites were already redundant there - the
+real risk was confined to plain dict/set lookups and `==` comparisons outside pydantic.
+
+**Alternatives considered / why not:**
+
+- Leave `.value` as the required access pattern - rejected: pure boilerplate at every
+  call site, and the dict-lookup/equality failure mode above is silent rather than
+  loud - it doesn't raise, it just silently returns the wrong thing.
+- Keep plain `Enum` for stricter type separation from arbitrary strings - rejected:
+  nothing in this file needs that separation enforced at the type-system level; these
+  are just constants for well-known IRIs, same role `CommonQuantityUnit` already fills
+  as a `StrEnum`.
+
+**Impact:** now-redundant `.value` calls stripped from `pyAttribute(key=...)`,
+dict-literal keys, and `Term.create(...)` call sites in `examples/*.py` and
+`pac_info.py`. Tagged `BREAKING:` in `CHANGELOG.md`'s pending `v1.0.0` entry per the
+`versioning` skill's "ambiguous, decide deliberately" guidance: functionally backward
+compatible for existing `.value` call sites, but `isinstance(key, str)` and `str(key)`
+now behave differently than before. Other plain-`Enum` classes in the codebase were
+surveyed for the same treatment; `ServiceType`, `WellKnownKeys`,
+`GS1ApplicationIdentifier`, and `ServiceUUID`/`PAC_Characteristics` were converted too
+(same day) once the user confirmed the blast radius of each was acceptable - see
+[[developer-docs/TODO.md]] for the per-class detail, including one pre-existing,
+unrelated latent bug (`cit_v1.py:190`) surfaced while checking `ServiceType`'s call
+sites but deliberately left unfixed as out of scope.
+
+*Investigated 2026-07-31, prompted by the user contrasting this file with
+`CommonQuantityUnit`'s existing `StrEnum` usage.*
+
+---
+
+## `auto()`-backed enums (`ServiceStatus`, `ValidationMsgLevel`) also converted to `StrEnum`, with new explicit string values
+
+**Decision:** following up on ["Attribute-key enums migrated from `Enum` to
+`StrEnum`"](design-choices.md#attribute-key-enums-migrated-from-enum-to-strenum), the
+two remaining plain-`Enum` classes that had been left alone as "not candidates"
+because their members were `auto()`-generated ints - `ServiceStatus`
+(`labfreed/pac_id_resolver/services.py`: `ACTIVE`/`INACTIVE`/`UNKNOWN`) and
+`ValidationMsgLevel` (`labfreed/labfreed_infrastructure.py`:
+`ERROR`/`WARNING`/`RECOMMENDATION`/`INFO`) - were converted too, at the user's request,
+by giving them explicit lowercase string values (e.g. `ACTIVE = "active"`) and deriving
+from `StrEnum`. `Webframework` (`attribute_server_factory.py`, already string-valued)
+and `Direction` (`qr/generate_qr.py`, already `class Direction(str, Enum)`) were
+converted/modernized to `StrEnum` in the same pass - both were pure base-class swaps
+with no value change.
+
+**Why:** the user's reasoning was "there's nothing that speaks against it, and it
+reduces the `.value` error surface" - and for `Webframework`/`Direction` that's exactly
+right, same mechanical swap as the first round. `ServiceStatus`/`ValidationMsgLevel`
+are a materially different kind of change, though, and worth distinguishing:
+their *values* change (int -> string), not just their base class - unlike every enum in
+the first round, where the string value was untouched and only comparison/hashing
+behavior changed. Checked empirically before doing this: neither enum had any
+`.value`-reading call site anywhere in the codebase (both were only ever compared via
+`==` or displayed via `.name`), and `ValidationMessage`/`Service` (the models that hold
+these enums as fields) are never `model_dump()`/`model_dump_json()`'d in this codebase
+today - `ValidationMessage` lives inside `LabFREED_BaseModel._validation_messages`, a
+`PrivateAttr` excluded from the parent's serialization by default. So the practical
+blast radius inside this repo is zero, but the *type* of change is still worth flagging
+distinctly: an external consumer who serialized either model directly, or read
+`.value` on either enum, would see a string where an int used to be.
+
+**Alternatives considered / why not:**
+
+- Leave `ServiceStatus`/`ValidationMsgLevel` on `auto()` ints since nothing in-repo
+  reads `.value` - rejected: the user's ask was explicitly about consistency and
+  closing off the `.value` error surface everywhere it plausibly could recur, not just
+  where a live bug was already confirmed; also, an int enum with `auto()`-assigned
+  values is itself a latent footgun for exactly this same "value that's not really the
+  value you'd want serialized" class of issue.
+- Give `ValidationMsgLevel` numeric string values (`"1"`/`"2"`/...) to stay closer to
+  the old ints - rejected: the human-readable names (`"error"`, `"warning"`, ...)
+  already exist as `.name`, and are far more useful as an actual `.value` than
+  renumbered ints would ever have been.
+
+**Impact:** no in-repo call sites needed updating (none read `.value` on either enum).
+Tagged `BREAKING:` in `CHANGELOG.md`'s pending `v1.0.0` entry, called out separately
+from the base-class-only conversions since this one changes actual serialized values,
+not just comparison semantics.
+
+*Investigated 2026-07-31, same session as the entry above, once the user asked to
+extend the same treatment to the two enums that had been left out.*

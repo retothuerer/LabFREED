@@ -1,4 +1,4 @@
-from enum import Enum, auto
+from enum import StrEnum
 import logging
 import re
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator
@@ -28,17 +28,17 @@ class PDOC_Workaround_Base(BaseModel):
 
 
 
-class ValidationMsgLevel(Enum):
+class ValidationMsgLevel(StrEnum):
     '''
     Level of validation messages
     '''
-    ERROR = auto() 
+    ERROR = "error"
     '''Model is **invalid**'''
-    WARNING = auto() 
+    WARNING = "warning"
     '''Model is **valid**, but has issues'''
-    RECOMMENDATION = auto()
+    RECOMMENDATION = "recommendation"
     '''Model is **valid**, but recommendations apply'''
-    INFO = auto()
+    INFO = "info"
     '''Model is **valid**. Something of interest was detected, which is not a recommendation.'''
 
 class ValidationMessage(PDOC_Workaround_Base):

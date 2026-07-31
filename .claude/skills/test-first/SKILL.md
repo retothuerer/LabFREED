@@ -1,6 +1,6 @@
 ---
 name: test-first
-description: Test-first workflow where new tests are flagged unreviewed via @pytest.mark.skip until the user manually removes the marker, and implementation changes wait for a reviewed test to exist first. Use whenever the user says to work test-first, asks for a test before implementing, or invokes this skill directly.
+description: Test-first workflow where new tests are flagged unreviewed via @pytest.mark.skip until the user manually removes the marker, edits to an already-reviewed test re-flag it too, and implementation changes wait for a reviewed test to exist first. Use whenever the user says to work test-first, asks for a test before implementing, or invokes this skill directly.
 ---
 
 # Test-first development workflow
@@ -47,6 +47,26 @@ def test_something():
   backlog of everything still pending, with no separate tracking file needed.
 - One decorator above a parametrized function skips/unskips every case together - don't
   try to mark individual parameter cases separately.
+
+## Editing an already-reviewed test
+
+If you change the body or assertions of a test the human had previously reviewed
+(i.e. they'd deleted its skip marker), put the marker back:
+
+```python
+@pytest.mark.skip(reason="NOT REVIEWED")
+def test_something():
+    ...
+```
+
+Their review covered *that* version of the test, not whatever it becomes after your
+edit - re-flagging it means the new version goes through the same gate before anything
+is implemented against it.
+
+- Only applies to changes *you* make. If the human edits a test themselves, that edit is
+  inherently reviewed - they wrote it - don't add the marker to it.
+- Doesn't apply to adding a brand-new test alongside already-reviewed ones in the same
+  file - only the new test needs the marker; leave the existing, still-valid tests alone.
 
 ## Stop and wait
 

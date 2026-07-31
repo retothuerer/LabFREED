@@ -1,10 +1,10 @@
-from enum import Enum
+from enum import StrEnum
 import re
 from labfreed.labfreed_infrastructure import ValidationMsgLevel, _quote_texts
 
 
 
-class ServiceType(Enum):
+class ServiceType(StrEnum):
     USER_HANDOVER_GENERIC = 'userhandover-generic'
     ATTRIBUTE_SERVICE_GENERIC = 'attributes-generic'
     ACTION_GENERIC = "action-generic"
@@ -59,11 +59,7 @@ def _validate_application_intent(intent):
     
 def _validate_service_type(service_type):
     msg_dict = []
-    if isinstance(service_type, ServiceType):
-            service_type= service_type.value
-    else:
-        service_type= service_type
-    allowed_types = [ServiceType.ATTRIBUTE_SERVICE_GENERIC.value, ServiceType.USER_HANDOVER_GENERIC.value, ServiceType.ACTION_GENERIC.value]
+    allowed_types = [ServiceType.ATTRIBUTE_SERVICE_GENERIC, ServiceType.USER_HANDOVER_GENERIC, ServiceType.ACTION_GENERIC]
     if service_type not in allowed_types:
         msg_dict.append( {
                 "level": ValidationMsgLevel.ERROR,

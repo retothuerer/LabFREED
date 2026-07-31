@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 import json
 import logging
 from typing import Any, Protocol
@@ -22,7 +22,7 @@ class NoAuthRequiredAuthenticator(Authenticator):
     def __call__(self, request) -> bool:
         return True
 
-class Webframework(Enum):
+class Webframework(StrEnum):
     FLASK = "flask"
     FASTAPI = 'fastapi'
     
