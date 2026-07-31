@@ -146,7 +146,7 @@ class ResolverConfig(LabFREED_BaseModel):
         return self.model_dump() == other.model_dump()
     
     
-    def evaluate_pac_id(self, pac):
+    def evaluate_pac_id(self, pac, client_info: dict | None = None):
         from labfreed.pac_id_resolver.resolver_config_evaluator import ResolverConfigEvaluator
-        return ResolverConfigEvaluator(self).evaluate(pac)
+        return ResolverConfigEvaluator(self).evaluate(pac, client_info=client_info)
 

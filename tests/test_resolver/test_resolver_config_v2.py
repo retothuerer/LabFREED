@@ -331,6 +331,44 @@ def test_evaluate_pac_id_url_encodes_special_characters_in_placeholder_values():
 
 
 # ---------------------------------------------------------------------------
+# client_info: forward-looking Resolver Context extension (not part of the
+# published v2 spec - see the PAC-ID-Resolver v3 roadmap, "Resolver Context:
+# beyond just the PAC-ID").
+# ---------------------------------------------------------------------------
+
+def test_evaluate_pac_id_client_info_is_usable_in_template_url():
+    rc = ResolverConfig(origin='o')
+    block = ResolverConfigBlock(entries=[_entry(template_url='https://example.com/{$.client_info.location}')])
+    rc.config = [block]
+    result = rc.evaluate_pac_id(_FakePac({'issuer': 'ACME.COM'}), client_info={'location': 'HTTPS://PAC.BUCHI.COM/-MD/C-950/FAKE0000'})
+    assert result.services[0].url == 'https://example.com/HTTPS%3A//PAC.BUCHI.COM/-MD/C-950/FAKE0000'
+
+
+def test_evaluate_pac_id_client_info_is_usable_in_applicable_if():
+    yml = '''
+    origin: my-origin
+    config:
+      - if: $.client_info.language == FR
+        entries:
+          - service_name: French Page
+            application_intents: [view-apinilabs]
+            service_type: userhandover-generic
+            template_url: "https://example.com/fr"
+    '''
+    rc = ResolverConfig.from_yaml(yml)
+    result = rc.evaluate_pac_id(_FakePac({}), client_info={'language': 'FR'})
+    assert [s.service_name for s in result.services] == ['French Page']
+
+
+def test_evaluate_pac_id_without_client_info_leaves_resolver_context_unchanged():
+    rc = ResolverConfig(origin='o')
+    block = ResolverConfigBlock(entries=[_entry(template_url='https://example.com/{$.client_info.location}')])
+    rc.config = [block]
+    result = rc.evaluate_pac_id(_FakePac({'issuer': 'ACME.COM'}))
+    assert result.services[0].url == 'https://example.com/'
+
+
+# ---------------------------------------------------------------------------
 # Security regression: matched PAC-ID content must be treated as inert data,
 # never as part of the evaluated expression (see security review of the
 # eval() in _evaluate_applicable_if).

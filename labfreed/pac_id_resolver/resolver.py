@@ -89,15 +89,36 @@ def _get_issuer_resolver_config(issuer:str):
 
 
 class PAC_ID_Resolver():
-    def __init__(self, resolver_configs:list[ResolverConfig|CIT_v1]=None) -> Self:
-        '''Initialize the resolver with coupling information tables'''
+    def __init__(self, resolver_configs:list[ResolverConfig|CIT_v1]=None, client_info: dict | None = None) -> Self:
+        '''Initialize the resolver with coupling information tables.
+
+        `client_info` is this resolver's default Resolver Context extension (see resolve()) -
+        e.g. an instrument-embedded resolver's own identity/location, which is usually the
+        same across every resolve() call it ever makes. Passing client_info to resolve()
+        itself overrides this default for that one call.'''
         if not resolver_configs:
             resolver_configs = []
         self._resolver_configs = set(resolver_configs)
-            
+        self._client_info = client_info or dict()
         
-    def resolve(self, pac_id:PAC_ID|str, check_service_status=True, use_issuer_resolver_config=True) -> list[ServiceGroup]:
-        '''Resolve a PAC-ID'''
+
+
+    def add_resolver_config(self, resolver_config:ResolverConfig|CIT_v1):
+        self._resolver_configs.add(resolver_config)
+
+    def remove_resolver_config(self, resolver_config:ResolverConfig|CIT_v1):
+        self._resolver_configs.discard(resolver_config)
+
+    def resolve(self, pac_id:PAC_ID|str, check_service_status=True, use_issuer_resolver_config=True,
+                client_info: dict | None = None) -> list[ServiceGroup]:
+        '''Resolve a PAC-ID.
+
+        `client_info` overrides this resolver's own default (set at construction) for this
+        one call - omit it (default) to use that default instead. Either way, the effective
+        value is forwarded to each `ResolverConfig`'s `evaluate_pac_id()` (see there); `CIT_v1`
+        predates and has no concept of it, so it's not passed for those.'''
+        client_info = client_info if client_info is not None else self._client_info
+
         if isinstance(pac_id, str):
             pac_id_catless = PAC_ID.from_url(pac_id, try_pac_cat=False)
             pac_id = PAC_CAT.from_url(pac_id)
@@ -121,7 +142,7 @@ class PAC_ID_Resolver():
                     # cit v1 has no concept of categories and implied keys. It would treat these segments as value segment
                     matches.append(cit.evaluate_pac_id(pac_id_catless))
                 else:
-                    matches.append(cit.evaluate_pac_id(pac_id))
+                    matches.append(cit.evaluate_pac_id(pac_id, client_info=client_info))
             except Exception as e:
                 logging.error(f'Failed to resolve pac {pac_id.to_url()} with cit {cit.origin}')
         
