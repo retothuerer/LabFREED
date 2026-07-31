@@ -313,13 +313,13 @@ reviewed and unskipped.
 
 ---
 
-## Real UCUM unit conversion for `SignalsActionConsumer.update_amount`
+## Real UCUM unit conversion for `SignalsActionBackend.update_amount`
 
 Related to: ["Well-known action handler: `action-generic` params travel as plain
 query params, not through the CIT
 template"](design-choices.md#well-known-action-handler-action-generic-params-travel-as-plain-query-params-not-through-the-cit-template)
 
-`SignalsActionConsumer.update_amount` (`labfreed_experimental/actions/consumers/signals_consumer.py`)
+`SignalsActionBackend.update_amount` (`labfreed_experimental/actions/backends/signals_backend.py`)
 only accepts a small hardcoded whitelist of volume units (`mL`, `L`, `l`, `uL`) and
 converts to mL by a fixed factor - it does not do general UCUM unit conversion (e.g.
 mass units, or arbitrary volume units/prefixes). General conversion is a large enough

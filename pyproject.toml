@@ -54,7 +54,8 @@ units = [
     "ucumvert>=0.3.2"
 ]
 experimental = [
-    "bleak>=2.0.0"
+    "bleak>=2.0.0",
+    "Flask>=3.1.1"
 ]
 
 

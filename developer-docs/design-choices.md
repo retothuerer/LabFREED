@@ -925,7 +925,7 @@ inverted relative to `developer-docs/README.md`'s (stale) setup note.*
 
 **Decision:** the new `labfreed_experimental.actions` package (a fixed set of
 well-known actions - `update-location`, `update-amount`, `container-is-empty` - with a
-Flask HTTP layer dispatching to a pluggable `ActionConsumer` backend) has its resolved
+Flask HTTP layer dispatching to a pluggable `ActionBackend`) has its resolved
 action URL take *only* the CIT's usual PAC-ID-derived substitutions. Anything the
 action itself needs beyond that (the new location's PAC-ID, the UCUM quantity) is
 appended by the caller as ordinary query parameters on top of the resolved URL, outside
@@ -962,7 +962,7 @@ finding holds for the older, deprecated `CIT_v1._find_pattern_in_pac` mechanism.
   else's timeline.
 
 **Impact:** any `action-generic` consumer of this package - not just
-`SignalsActionConsumer` - inherits the same contract: resolve the action's base URL
+`SignalsActionBackend` - inherits the same contract: resolve the action's base URL
 through the CIT as usual, then append whatever extra parameters the specific action
 needs as a query string. If `action-generic`/parameter-passing is ever formalized in
 the published spec, this package's Flask layer (`flask_layer.py`) is the one place
