@@ -48,3 +48,36 @@ owner typed themselves, so provenance depends entirely on process, not on what g
    without an explicit request.
 
 If any of the above is unclear in a given situation, stop and ask rather than guessing.
+
+## Repo structure map
+
+Use this to jump straight to the right place instead of grepping the whole tree cold.
+
+- `labfreed/pac_id/` — PAC-ID core implementation
+- `labfreed/pac_cat/` — PAC-CAT (categorized PAC-ID) implementation
+- `labfreed/pac_id_resolver/` — PAC-ID Resolver: `resolver.py` + `services.py`
+- `labfreed/pac_attributes/` — PAC-ID Attributes: `api_data_models/`, `client/`, `server/`, `pythonic/` (the IRI migration work lives here)
+- `labfreed/trex/` — T-REX serialization, with a `pythonic/` convenience layer
+- `labfreed/qr/` — QR code generation/reading for PAC-IDs
+- `labfreed/well_known_keys/` — key registries split by namespace: `gs1/`, `labfreed/`, `unece/`
+- `labfreed/well_known_extensions/` — extension definitions layered on well-known keys
+- `labfreed/labfreed_extended/` — higher-level app layer (`app/`, `pac_issuer_lib/`) built on the core building blocks
+- `labfreed/labfreed_experimental/` — not-yet-stable features (`actions/`, `pac_disco/`)
+- `labfreed/utilities/` — shared helpers used across the above
+- `tests/` — mirrors the package layout: `test_PAC_ID/`, `test_PAC_CAT/`, `test_TREX/`, `test_resolver/`, `test_attributes/`, `test_actions/`, `test_de_serialization_incl_extension/`, plus `generated_tests/`
+- `examples/` — runnable usage examples, incl. `attribute_server/` and `pac_mettorius_com/`
+- `developer-docs/` — `design-choices.md` (decision log, see the `design-choices` skill), `TODO.md` (backlog)
+- `build_tools/` — scripts incl. `update_readme.py` (see the `update-readme` skill)
+- `plugins/labfreed/` — the public Claude Code plugin synced at release time (see the `release` skill)
+- `spec_versions.yaml` — pinned spec commits checked by the `check-spec-conformance` skill
+- `plans/` — in-flight implementation plans (e.g. the IRI migration)
+
+Repo-specific skills already cover the workflows for most of the above — check `.claude/skills` before hand-rolling a process (versioning, release, test-first, design-choices, update-readme, check-spec-conformance, small-fix).
+
+## Troubleshooting / token discipline
+
+When something isn't working, don't burn tokens on trial-and-error:
+
+- After ~2 failed attempts at the same fix, stop retrying variations. Either read the actual error/root cause directly (full traceback, the specific failing assertion) instead of guessing again, or ask the user.
+- Don't rerun a large test suite or build just to re-read output already captured — grep/tail the existing output first.
+- Don't keep spawning fresh Explore/search agents with slightly reworded queries if the first one came back empty or wrong — narrow the query (specific file/symbol) or ask instead of broadening and retrying.
