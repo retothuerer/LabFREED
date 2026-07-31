@@ -6,6 +6,8 @@ class MetaAttributeKeys(Enum):
     IMAGE = "https://schema.org/image"
     ALIAS = "https://schema.org/alternateName"
     DESCRIPTION = "https://schema.org/description"
+    LOCATION = "https://schema.org/location"
+    
     GROUPKEY = "https://labfreed.org/terms/attribute_group_metadata"
 
     PHONE = 'https://schema.org/telephone'
@@ -50,12 +52,13 @@ class PhysicoChemicalProperties(Enum):
     WATER_SOLUBILITY        = "https://qudt.org/vocab/quantitykind/WaterSolubility"
     PH                      = "https://qudt.org/vocab/quantitykind/PH"
     VISCOSITY               = "https://qudt.org/vocab/quantitykind/Viscosity"
-    CONCENTRATION           = "https://qudt.org/vocab/quantitykind/Concentration"
+    CONCENTRATION           = "https://qudt.org/vocab/quantitykind/AmountOfSubstanceConcentration"
     VOLUME                  = "https://qudt.org/vocab/quantitykind/Volume"
     MASS                    = "https://qudt.org/vocab/quantitykind/Mass"
     LENGTH                  = "https://qudt.org/vocab/quantitykind/Length"
     AREA                    = "https://qudt.org/vocab/quantitykind/Area"
     PRESSURE                = "https://qudt.org/vocab/quantitykind/Pressure"
+    AMBIENT_PRESSURE        = "https://qudt.org/vocab/quantitykind/AmbientPressure"
     TEMPERATURE             = "https://qudt.org/vocab/quantitykind/Temperature"
     VOLUME_FLOW_RATE        = "https://qudt.org/vocab/quantitykind/VolumeFlowRate"
     LOG_KOW                 = "https://qudt.org/vocab/quantitykind/LogOctanolWaterPartitionCoefficient"
