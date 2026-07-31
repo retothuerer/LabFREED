@@ -10,7 +10,9 @@ from rich.table import Table
 from labfreed.labfreed_infrastructure import ValidationMsgLevel
 
 from labfreed.pac_cat.category_base import Category, CategorySegment
-from labfreed.pac_cat.predefined_categories import PredefinedCategory, category_key_to_class_map
+from labfreed.pac_cat.predefined_categories import (
+    Material_Device, PredefinedCategory, Processor_Misc, Processor_Software, category_key_to_class_map
+)
 from labfreed.pac_id.id_segment import IDSegment
 from labfreed.pac_id.pac_id import PAC_ID
 
@@ -32,6 +34,24 @@ class PAC_CAT(PAC_ID):
         return categories
     
     
+
+    @computed_field
+    @property
+    def main_category(self) -> Category | None:
+        '''The primary category - the one the PAC-ID actually refers to (the first category in the identifier)'''
+        categories = self.categories
+        return categories[0] if categories else None
+
+    @computed_field
+    @property
+    def processor(self) -> Category | None:
+        '''The second category in the identifier, if present - PAC-CAT's "second
+        category identifying what system generated/manages this record". Purely
+        positional: whichever category sits there counts, regardless of type (usually
+        -PS/-PX, or a -MD instrument acting as processor). A PAC-ID with only one
+        category has no processor.'''
+        categories = self.categories
+        return categories[1] if categories and len(categories)>1 else None
 
     def get_category(self, key) -> Category:
         """Helper to get a category by key

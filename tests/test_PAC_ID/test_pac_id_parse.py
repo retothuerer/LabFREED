@@ -189,8 +189,7 @@ def test_get_parent_pac_id_without_marker_drops_last_segment():
 
 def test_get_parent_pac_id_returns_none_for_bare_category_plus_one_field():
     '''Dropping the last segment here would leave a bare, field-less category key
-    ("-MD" alone) -- not a meaningful narrower entity, so this identifier already
-    is its own parent, same as the true no-parent case.'''
+    ("-MD" alone) -- not a meaningful narrower entity, so there is no parent.'''
     pac = from_url(valid_base + "-MD/240:B-800" + "*N$TEXT/ABC")
     parent = pac.get_parent_pac_id()
     assert parent is None
