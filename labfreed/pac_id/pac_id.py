@@ -1,6 +1,6 @@
 import re
 from typing_extensions import Self
-from pydantic import Field, conlist, model_validator
+from pydantic import Field, computed_field, conlist, model_validator
 
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel, ValidationMsgLevel
 from labfreed.pac_id.id_segment import IDSegment
@@ -142,6 +142,13 @@ class PAC_ID(LabFREED_BaseModel):
         
     def to_dict(self) -> dict:
         return self.model_dump()
+
+    @computed_field
+    @property
+    def as_url(self) -> str:
+        '''The PAC-ID re-serialized as a URL string, including extensions - matches to_url().
+        Part of the PAC-ID Resolver's Resolver Context JSON contract (`$.as_url`).'''
+        return self.to_url()
     
     def __str__(self):
         return self.to_url()
