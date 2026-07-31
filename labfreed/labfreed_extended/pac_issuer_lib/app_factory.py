@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from functools import cache, partial, partialmethod, wraps
 import ipaddress
 import logging
@@ -12,7 +11,7 @@ from uuid import uuid4
 from jinja2 import ChoiceLoader, FileSystemLoader
 import jinja2
 from labfreed.labfreed_extended.pac_issuer_lib.lib.utils import add_ga_params, add_trace_id_params
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Literal
 
 from flask import Blueprint, Flask, Response, current_app, flash, make_response, render_template, request, send_from_directory, session, url_for, make_response
@@ -21,11 +20,6 @@ import flask_cors
 
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-
-from labfreed.pac_cat.pac_cat import PAC_CAT
-
-from labfreed.pac_attributes.pythonic.py_attributes import pyReference, pyResource
-from labfreed.trex.pythonic import DataTable
 
 from urllib.parse import urlparse
 
@@ -40,6 +34,7 @@ from labfreed.pac_attributes.server.translation_data_sources import TranslationD
 from labfreed.labfreed_extended.app.pac_info.pac_info import PacInfo
 from labfreed.pac_id_resolver.service_availability import check_service
 from labfreed.pac_id_resolver.services import Service
+from labfreed.labfreed_extended.pac_issuer_lib.lib.render_predicates import render_context_utils
 
 
 
@@ -62,9 +57,13 @@ class SiteMeta(BaseModel):
        
     
 
-#TODO: find out why this doesnt work with BaseModel
-@dataclass
-class AttributeData():
+class AttributeData(BaseModel):
+    # AttributeGroupDataSource/TranslationDataSource are plain ABCs, not pydantic
+    # types, so they need arbitrary_types_allowed - without it pydantic can't
+    # generate a schema for them at all (that's what blocked this from being a
+    # BaseModel like its sibling types).
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     data_sources:list[AttributeGroupDataSource]
     default_language:str
     translation_data_sources:list[TranslationDataSource]
@@ -119,11 +118,16 @@ class IssuerFlaskAppFactory():
                                     attribute_server_http_client=attribute_server_http_client)
         app.register_blueprint(bp)
         
+        # origins="*" + supports_credentials=True is a spec-invalid combination
+        # (browsers reject credentialed wildcard-origin CORS outright). These
+        # resources (attribute-server responses, resolver config YAML) are public,
+        # read-only data meant to be fetched cross-origin by anyone - not something
+        # that needs cookies/Authorization sent with the request - so drop
+        # supports_credentials rather than scope origins down.
         flask_cors.CORS(app,
             origins="*",               # or a list of allowed origins
             methods=["GET"],           # list of allowed methods
             allow_headers=["Authorization", "Content-Type"],
-            supports_credentials=True,  # if you need Authorization or cookies
             resources={
                 r"/attributes/*": {},       # pattern-based CORS
                 r"/resolver_config.*": {}
@@ -203,30 +207,6 @@ class IssuerFlaskAppFactory():
             return url_for(endpoint, *args, **kwargs)
         
         
-        @bp.context_processor
-        def inject_helpers():
-            return {"resolve_static_image": resolve_static_image,
-                    "url_for_within_issuer": url_for_within_issuer,
-                    'url_for': url_for_within_issuer
-                    }
-            
-        def register_helpers(_bp):
-            @_bp.context_processor
-            def inject_helpers():
-                return {"resolve_static_image": resolve_static_image,
-                        "url_for_within_issuer": url_for_within_issuer,
-                        'url_for': url_for_within_issuer
-                        }
-                
-        register_helpers(bp)
-            
-        
-        @bp.context_processor
-        def inject_meta():
-            d =   site_meta.model_dump() 
-            return d
-        
-        
         '''
         Set up the attribute server
         =================
@@ -245,7 +225,6 @@ class IssuerFlaskAppFactory():
 
             bp_attribute_server = AttributeFlaskApp.create_attribute_blueprint(request_handler = request_handler)
             bp_attribute_server.url_prefix = '/attributes'
-            register_helpers(bp_attribute_server)
             bp.register_blueprint(bp_attribute_server)
 
 
@@ -337,12 +316,7 @@ class IssuerFlaskAppFactory():
         # add the pac_info analyzer, too
         bp._pac_info_extender = pac_info_extender
         bp._site_meta = site_meta
-        
-        
-        register_helpers(bp_landing_page)
-            
-                        
-                
+
         @bp_landing_page.get('/')
         def index():
             return render_from_bp(bp, 'pac_issuer_error.jinja.html'), 404
@@ -426,17 +400,18 @@ class IssuerFlaskAppFactory():
         @bp_landing_page.get('/info_card')
         def pac_card():
             pac_id = request.args.get('pac_id')                
-            try: 
+            try:
                 p = PAC_ID.from_url(pac_id)
                 pac_valid = True
             except Exception as e:
-                print(e)
+                # Routine: pac_id is arbitrary query-param input, most of which
+                # was never meant to be a valid PAC-ID at all.
+                logging.debug(f"Invalid PAC-ID passed to /info_card: {e}")
                 pac_valid = False
-                
+
             pac_id, is_localhost = turn_local_host_to_valid_pac(pac_id)
-            
+
             if not (pac_valid or is_localhost):
-                issuer
                 return ""
             
             pac_info = app_infrastructure.process_pac(pac_id)
@@ -464,42 +439,41 @@ class IssuerFlaskAppFactory():
         # on local host for testing we need to circumvent the error, which is cause by PAC-ID validation when encountering the local host instead of issuer. 
         # TODO: make this cleaner and more stable
         bp.register_blueprint(bp_landing_page)
-        
-        @bp.get('/route_pac_id')
-        def route_pac_id():
-            pac_id = request.args.get('pac_id')
-            raise NotImplementedError()
-        
-                
-        def render_from_bp(bp, template_name, **context):
-            # Make a new Jinja environment for this bp
+
+        def _build_jinja_env(state):
+            # Runs exactly once, when this blueprint is actually registered on an app
+            # (via Blueprint.record_once) - that's the earliest point current_app/
+            # state.app is available, and everything below is blueprint-constant
+            # (fixed at create_blueprint() time), so building it once here - instead
+            # of on every render_from_bp() call - avoids rebuilding the loader/globals/
+            # template cache from scratch on every single request and card fetch.
             env = jinja2.Environment(
                 loader=bp.jinja_loader,
                 autoescape=jinja2.select_autoescape(['html', 'htm', 'xml', 'xhtml']),
             )
-
-            # Copy Flask globals/context
-            env.globals.update(current_app.jinja_env.globals)
-            
-            trace_id = session.get('trace_id')
-            d = {
+            env.globals.update(state.app.jinja_env.globals)
+            env.globals.update({
                 "url_for_within_issuer": url_for_within_issuer,
                 "resolve_static_image": resolve_static_image,
                 "url_for": url_for_within_issuer,
-                "with_ga_and_trace": lambda url: add_trace_id_params(add_ga_params(url, issuer), trace_id),
                 "check_service_url_for": lambda service_url: url_for(f'{issuer_name}.landing_page.check_service_route', url=service_url),
-            }
-            env.globals.update(d)
-            
-            env.globals.update({'site_meta': bp._site_meta.model_dump()})
-            
+                "site_meta": bp._site_meta.model_dump(),
+            })
             env.globals.update(render_context_utils)
+            bp._jinja_env = env
 
-            tpl = env.get_template(template_name)
-            
-            
-            
-            return tpl.render(**context)
+        bp.record_once(_build_jinja_env)
+
+        def render_from_bp(bp, template_name, **context):
+            # trace_id is read fresh from the session on every call - genuinely
+            # per-request, unlike everything baked into bp._jinja_env above - so it's
+            # passed through render() instead of being a persistent env global.
+            trace_id = session.get('trace_id')
+            tpl = bp._jinja_env.get_template(template_name)
+            return tpl.render(
+                with_ga_and_trace=lambda url: add_trace_id_params(add_ga_params(url, issuer), trace_id),
+                **context,
+            )
         
         
         
@@ -522,22 +496,6 @@ class IssuerFlaskAppFactory():
     
 
 
-def is_pac_id(v:str) -> bool:
-    try:
-        # suppress_validation_errors=True: this is called on arbitrary attribute
-        # values to decide how to render them, most of which were never meant to be
-        # a PAC-ID at all - without it, PAC_CAT.from_url logs a full validation
-        # report for every value that merely looks PAC-ID-shaped (e.g. contains a
-        # '/', like a unit "g/cm3") before raising, which we then just swallow below.
-        PAC_CAT.from_url(v, suppress_validation_errors=True)
-        return 'PAC.' in v.upper()
-    except Exception:
-        return False
-    
-def title_format(s:str) -> str:
-    """Convert snake_case string to NYTimes-style title."""
-    return s.replace('_', ' ').title()
-
 def _is_safe_service_url(url: str) -> bool:
     """Reject loopback/private/link-local/reserved targets before the server issues a
     HEAD request to them - /check_service takes an arbitrary URL from a query param,
@@ -555,16 +513,6 @@ def _is_safe_service_url(url: str) -> bool:
         if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast:
             return False
     return True
-    
-render_context_utils = {            
-            "is_url": lambda s: isinstance(s, str) and urlparse(s).scheme in ('http', 'https') and bool(urlparse(s).netloc),
-            "is_data_table": lambda value: isinstance(value, DataTable),
-            "is_image": lambda s: isinstance(s, pyResource) and s.root.lower().startswith('http') and s.root.lower().endswith(('.jpg','.jpeg','.png','.gif','.bmp','.webp','.svg','.tif','.tiff')),
-            "is_reference":lambda s: is_pac_id(s) or isinstance(s, pyReference),
-            "is_pac_id": is_pac_id,
-            "title_format": title_format,
-            "zip": zip
-        }
     
     
     

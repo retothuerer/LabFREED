@@ -34,11 +34,11 @@ class Labfreed_App_Infrastructure():
         cit = cit_from_str(cit)
         if not cit:
             raise ValueError('the cit could not be parsed. Neither as v1 or v2')
-        self._resolver._resolver_configs.add(cit)
-        
+        self._resolver.add_resolver_config(cit)
+
     def remove_resolver_config(self, resolver_config:str):
         resolver_config = cit_from_str(resolver_config)
-        self._resolver._resolver_configs.discard(resolver_config)
+        self._resolver.remove_resolver_config(resolver_config)
         
         
     def process_pac(self, pac_url) -> PacInfo:

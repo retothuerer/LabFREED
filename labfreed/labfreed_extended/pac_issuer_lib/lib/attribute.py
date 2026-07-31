@@ -14,8 +14,7 @@ from labfreed.pac_attributes.server.translation_data_sources import DictTranslat
 from labfreed.pac_attributes.server.server import AttributeServerRequestHandler
 
 
-from labfreed.pac_attributes.pythonic.py_attributes import pyReference, pyResource
-from labfreed.trex.pythonic import DataTable
+from labfreed.labfreed_extended.pac_issuer_lib.lib.render_predicates import is_data_table, is_image, is_pac_id, is_reference, is_url
 
 
 from labfreed.utilities.translations import Terms, Term
@@ -175,29 +174,17 @@ def is_self_request(url: str) -> bool:
     
     
 def render_template_with_results(pac_id, pac_info=None, cit="", hide_attribute_groups=[], pac_card_url_for=None, route_pac_id_url_for=None):
-    return render_template('pac_info_main.jinja.html', 
-                pac=pac_id, 
-                pac_info = pac_info, 
+    return render_template('pac_info_main.jinja.html',
+                pac=pac_id,
+                pac_info = pac_info,
                 cit = cit,
-                hide_attribute_groups=hide_attribute_groups, 
-                is_data_table = lambda value: isinstance(value, DataTable),
-                is_url = lambda s: isinstance(s, str) and urlparse(s).scheme in ('http', 'https') and bool(urlparse(s).netloc),
-                is_image = lambda s: isinstance(s, pyResource) and s.root.lower().startswith('http') and s.root.lower().endswith(('.jpg','.jpeg','.png','.gif','.bmp','.webp','.svg','.tif','.tiff')),
-                is_reference = lambda s: is_pac_id(s) or isinstance(s, pyReference),
+                hide_attribute_groups=hide_attribute_groups,
+                is_data_table = is_data_table,
+                is_url = is_url,
+                is_image = is_image,
+                is_reference = is_reference,
                 is_pac_id = is_pac_id,
                 pac_card_url_for = pac_card_url_for,
                 route_pac_id_url_for = route_pac_id_url_for
                 )
-    
-def is_pac_id(v:str) -> bool:
-    try:
-        # suppress_validation_errors=True: this is called on arbitrary attribute
-        # values to decide how to render them, most of which were never meant to be
-        # a PAC-ID at all - without it, PAC_CAT.from_url logs a full validation
-        # report for every value that merely looks PAC-ID-shaped (e.g. contains a
-        # '/', like a unit "g/cm3") before raising, which we then just swallow below.
-        PAC_CAT.from_url(v, suppress_validation_errors=True)
-        return 'PAC.' in v.upper()
-    except Exception:
-        return False
 
