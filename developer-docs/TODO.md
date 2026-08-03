@@ -382,3 +382,174 @@ rather than just a base-class swap:
   unchanged (`"flask"`/`"fastapi"`).
 - **`Direction`** (`labfreed/qr/generate_qr.py`) - `class Direction(str, Enum)` ->
   `class Direction(StrEnum)`, cosmetic modernization only, no behavior change.
+
+---
+
+## Three pre-existing bugs found in `labfreed-webtools`' `acme_labs` issuer template overrides
+
+Related to: ["`card.jinja.html` split to fix a double-render on every landing-page
+render"](design-choices.md#cardjinjahtml-split-to-fix-a-double-render-on-every-landing-page-render)
+
+Found while tracing every consumer of `pac_info/card.jinja.html` and
+`pac_info/card-components.jinja.html` during Phase 4 item 8 of the PAC-ID Attributes
+improvement plan. `labfreed-webtools/pac_issuer_demo/acme_labs/templates/pac_info/`
+ships full override copies of these templates plus `pac_info.jinja.html`, loaded ahead
+of the package defaults via `IssuerFlaskAppFactory`'s per-issuer `ChoiceLoader`. None of
+these are touched by the Phase 4 item 8 change (confirmed no interaction either way -
+acme_labs's own files fully shadow the package defaults for that blueprint regardless),
+but they're real, independent bugs worth fixing at some point:
+
+- `acme_labs/templates/pac_info/card.jinja.html` has its own copy of the same
+  double-render bug just fixed at the package level: it defines `info_card(pac_info)`
+  and also calls it at the template's top level, so importing it re-executes the render
+  as a wasted side effect every time.
+- That same file's `{% import 'pac_info/card-components.jinja.html' as card_macros
+  with context %}` is dead - the macro reimplements all its markup inline and never
+  calls `card_macros.*` anywhere. `acme_labs/templates/pac_info/card-components.jinja.html`
+  (a copy of the package's pre-explicit-param version) exists only to be shadowed by
+  this unused import.
+- `acme_labs/templates/pac_info/pac_info.jinja.html` renders a literal leaked debug
+  string, `WE DONT DO REGULAR CARDS HERE`, directly into the live page above the info
+  card.
+
+Not scoped/fixed here - flagging for the user to decide whether/when to clean up,
+matching this plan's established pattern of flagging out-of-scope pre-existing bugs
+(e.g. the `res.files("pac_issuer_lib")` finding) rather than silently fixing them.
+
+---
+
+## `AttributeGroup.group_key`/`group_label` vs. the templates' `ag.key`/`ag.label`, and a `GHS_PICTOGRAM` key mismatch
+
+Related to: ["CLP digital-label skeleton: no dedicated skeleton file, content-model
+decisions, and a `find_attributes()`
+helper"](design-choices.md#clp-digital-label-skeleton-no-dedicated-skeleton-file-content-model-decisions-and-a-find_attributes-helper)
+
+Two separate pre-existing latent bugs found while building a smoke-test fixture for
+Phase 4b, neither fixed (both out of scope, neither introduced by this plan):
+
+- `PacInfo.safety_pictograms` (`app/pac_info/pac_info.py:195-197`) filters
+  `self._all_attributes` for keys containing `"https://labfreed.org/ghs/pictogram/"` -
+  but `RegulatorySafetyKeys.GHS_PICTOGRAM` (`well_known_attribute_keys.py`) is
+  `"https://www.wikidata.org/wiki/Q19360817"`, an unrelated URI. Either the well-known
+  key is wrong (should be a `labfreed.org/ghs/pictogram/...` pattern, presumably one
+  per pictogram code rather than one shared key) or `safety_pictograms`' filter is
+  stale relative to the registry - not clear which without knowing which one real data
+  sources actually populate. Needs the person who wired up a real pictogram-emitting
+  data source to say which is authoritative.
+- `base-components.jinja.html`'s `attribute_group_block(ag)` macro reads
+  `{{ ag.label }}`/`{{ ag.origin }}`, and both `pac_info.jinja.html` and the new
+  `digital_label.jinja.html` filter with `ag.key not in hide_attribute_groups` - but
+  `pyAttributeGroup` (via `ClientAttributeGroup` -> `AttributeGroup`) only has
+  `group_key`/`group_label` fields (`origin` does exist, from `ClientAttributeGroup`).
+  Jinja's default `Undefined` (not `StrictUndefined`) swallows the missing-attribute
+  access silently: `{{ ag.label }}` renders as an empty string instead of raising, and
+  `ag.key not in hide_attribute_groups` is always `True` regardless of `ag`'s actual
+  key, since `ag.key` evaluates to an `Undefined` that never equals anything in that
+  list. Net effect on the *already-shipping* landing page: every attribute-group
+  heading has always rendered with a blank label, and `hide_attribute_groups` has
+  never actually hidden a group. Neither has thrown, so nothing surfaced this until
+  now. Worth deciding: rename the fields (`group_key`->`key`, `group_label`->`label`)
+  or fix the templates to read `group_key`/`group_label` - either works, but it's a
+  real, live, silent behavior gap on production landing pages, not just cosmetic.
+
+---
+
+## One GHS pictogram icon still missing: GHS09 (Environment)
+
+Related to: ["GHS hazard/precautionary statement text + pictogram lookup, sourced
+from UNECE Annex 3"](design-choices.md#ghs-hazardprecautionary-statement-text--pictogram-lookup-sourced-from-unece-annex-3)
+
+8 of the 9 GHS pictograms are now flat in `pac_issuer_lib/static/` (`ghs01.png`
+through `ghs08.png`, sitting alongside `external-link.svg`/`logo.*`/`cat*.svg` -
+**not** in a `ghs/` subdirectory, matching how every other icon in this codebase is
+resolved). The user provided these as PNGs, renamed from their original
+`GHSxx-<description>.png` names both to match `hazard_statement_row()`'s
+`resolve_static_image(code.lower())` lookup and because that rename fixed a real
+mislabeling - the file named `GHS04-corrosive.png` was actually GHS05 (Corrosion),
+not GHS04 (Gas cylinder), per Annex 3 Table A3.4.1. Initially placed under a `ghs/`
+subdirectory, which turned out to silently never resolve at all -
+`resolve_static_image()` (`app_factory.py`) only ever searches flat filenames
+directly in the static root via `folder.iterdir()` (no recursion), and strips any
+directory component from its input via `Path(base_name).stem` before even
+searching - caught by the user testing the real rendered popup ("the flame is not
+found"), not by any of the earlier smoke tests, since those stubbed
+`resolve_static_image` with a trivial lambda that didn't reproduce this. **GHS09
+(Environment) still has no file** - any hazard statement resolving to that
+pictogram (H400/H410/H411, aquatic-toxicity codes) renders a broken image reference
+until it's added at `static/ghs09.png`. Confirmed via the real matching regex - no
+crash, just a missing image.
+
+The external-link icon (`attribute_row`'s `is_url` branch, reusing
+`external-link.svg`) turned out to already be the real file the user meant - no
+placeholder swap needed there after all.
+
+## EUH (EU CLP supplemental) hazard statement codes have no text/pictogram lookup
+
+Related to the same GHS lookup entry above. `ghs_statements.json` is transcribed from
+the UN GHS document (UNECE Annex 3) the user supplied - it doesn't cover EU-specific
+EUH-codes (e.g. `EUH208`), which come from EU CLP Regulation Annex II, a different
+source document. Looking one up via `hazard_statement_text()`/
+`pictogram_codes_for_hazard_statement()` returns nothing and the row falls back to
+showing the bare code - functional, not broken, but incomplete for a fully EU-CLP-
+compliant digital label. Would need that separate Annex II text to close the gap.
+
+---
+
+## GHS statement translations - schema is ready, content isn't
+
+Related to: ["GHS statement text is now keyed per-language (English only, for
+now)"](design-choices.md#ghs-statement-text-is-now-keyed-per-language-english-only-for-now)
+
+`ghs_statements.json` is structured to hold per-language text
+(`hazard_statements`/`precautionary_statements` are `{code: {lang: text}}`), but only
+`"en"` has any content. Adding a language needs an authoritative per-language source
+- the user's own suggestion was EU CLP Annex III, which is officially published in
+every EU language specifically so labels can use the legally correct wording per
+market. Point at (or paste) that source per language the same way the English UNECE
+PDF was supplied, and it can be transcribed the same careful way - don't fabricate
+translations for this table, it's safety-critical regulatory text.
+
+---
+
+## Promote `instrument_demo`'s `call_action()` dispatch helper into this package
+
+Related to: ["Same-process action calls dispatch in-process, not over real
+HTTP"](design-choices.md#same-process-action-calls-dispatch-in-process-not-over-real-http)
+
+`labfreed-webtools/instrument_demo/action_client.py`'s `call_action()` (resolve an
+action via `pac_info.get_action_by_intent()`, dispatch in-process via
+`app.test_client()` when the resolved URL is this app's own base URL, else real HTTP)
+was kept local to that app since it's the only real `action-generic` consumer so far,
+and the helper needs the consuming app's own `Flask` instance/base-URL to work. If a
+second consumer needs the same dispatch logic, consider promoting a generalized version
+into `labfreed_experimental/actions/` itself (see that package's `README.md` for the
+documented shape) so it isn't reimplemented per consumer.
+
+---
+
+## Map T-REX well-known keys to canonical IRIs, mirroring PAC-ID Attributes
+
+Raised alongside the `PAC-ID Resolver` `key` field work: `PAC-ID Attributes` already
+identifies every attribute by a key that is itself an IRI, but `T-REX` keys are
+deliberately short (best practice per the T-REX spec: "a well-known English word or
+abbreviation," or a GS1 AI numeric code) for wire/QR-capacity reasons - an IRI can't go
+on the wire there the way it can for an out-of-band-fetched attribute.
+
+There is no `T-REX`-specific well-known-key registry in the implementation today.
+`labfreed/well_known_keys/labfreed/well_known_keys.py`'s `WellKnownKeys` enum
+(`GTIN`, `BATCH`, `SERIAL`, `SAMPLE_ID`, ...) looks like it could be this, but is
+actually scoped to `PAC-CAT` category/identifier segment keys (used by `id_segment.py`),
+not `T-REX` `key segment`s - and the `gs1`/`unece` subfolders only cover GS1 AI codes and
+UNECE/UCUM units (`T-REX`'s `type` field), not `key`s either. The `T-REX` spec's own
+`N`/`TARE`/`ENV`/`START`/... example table is illustrative only, not backed by any enum.
+
+Idea: a documentation-only mapping (not a wire-format change) from each well-known
+`T-REX` key to its canonical IRI meaning, so a system that speaks IRI-based vocabulary
+natively (like Attributes) can cross-reference "`T-REX` key `X` is the same real-world
+concept as Attribute key `<IRI>`." `WellKnownKeys.as_url()` (`f"labfreed.org/wkk/{self.name}"`)
+is a ready-made precedent for the exact shape this would take - just currently attached
+to the wrong registry.
+
+Not scoped yet - deferred at the user's request (2026-08-03) while working on the
+`PAC-ID Resolver` `key` field; revisit when there's a concrete need to
+cross-reference a `T-REX` key against an IRI vocabulary.

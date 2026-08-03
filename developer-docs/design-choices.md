@@ -1077,3 +1077,707 @@ not just comparison semantics.
 
 *Investigated 2026-07-31, same session as the entry above, once the user asked to
 extend the same treatment to the two enums that had been left out.*
+
+---
+
+## `card-components.jinja.html` macros converted from implicit-context to explicit-parameter style
+
+**Decision:** the info-card macros in
+`labfreed/labfreed_extended/pac_issuer_lib/templates/pac_info/card-components.jinja.html`
+(`card_title`, `card_image`, `card_main`, `card_category_info`, `safety_pictograms`,
+`qualification_state`) took no arguments and instead read a bare `pac_info` name
+resolved from the ambient render context. They're now `card_title(pac_info)`,
+`card_image(pac_info)`, etc., matching the explicit-parameter style
+`base-components.jinja.html`'s macros already used. `card.jinja.html`'s `info_card`
+macro (which calls all of these) was updated to pass `pac_info` through explicitly.
+
+**Why:** this was a direct prerequisite for the upcoming CLP digital-label template
+(Phase 4b of the PAC-ID Attributes improvement plan), which needs to reuse
+`safety_pictograms()` and `card_info_block()` outside the existing card layout. That's
+impossible while they silently depend on `pac_info` happening to be present in
+whatever context they're rendered under - a template that isn't rendering a
+`PacInfo`-shaped page at all has no such variable to depend on.
+
+**Alternatives considered / why not:**
+
+- Merge `card-components.jinja.html` into `base-components.jinja.html` into one macro
+  module, per the originating plan's "consider merging the two files" suggestion -
+  rejected: the two files serve genuinely different roles (`base-components` is
+  generic PAC-attribute rendering reusable anywhere; `card-components` is specifically
+  the info-card widget's layout). Merging would have widened this change's diff and
+  its webtools-coordination surface (see Impact) for no functional benefit over just
+  documenting the split, which the plan offered as an equally acceptable alternative.
+
+**Impact:** no webtools call sites needed updating for this part - `card.jinja.html`
+was the only importer of `card-components.jinja.html` within this repo, and it's
+edited in the same change. See the next entry for the coordination that *was* needed
+in `labfreed-webtools`, and for a related dead-code/bug finding in
+`labfreed-webtools/pac_issuer_demo/acme_labs/` (out of scope, flagged in
+[[developer-docs/TODO.md]]).
+
+*Investigated 2026-07-31, Phase 4 item 8 of the PAC-ID Attributes improvement plan
+(`plans/pac-id-attributes-implementation-is-distributed-pelican.md`), on branch
+`cleanup-labfreed-library-for-release-1.0.0`.*
+
+---
+
+## `card.jinja.html` split to fix a double-render on every landing-page render
+
+**Decision:** `card.jinja.html` used to both *define* the `info_card(pac_info)` macro
+and *call* it at the template's top level (`{{ info_card(pac_info) }}`), so that
+requesting the standalone card directly (`GET /info_card`, the HTMX-fetch route) would
+render it. But `pac_info.jinja.html` also *imports* `card.jinja.html` (`with context`)
+purely to call `card.info_card(pac_info)` explicitly as part of the full landing page -
+and importing a template with `with context` in Jinja instantiates a fresh module by
+running its top-level statements, which re-executes that same top-level
+`{{ info_card(pac_info) }}` call as a side effect, every time. Verified empirically: a
+property-access counter on `pac_info.display_name` (read once per `card_title()` call)
+showed 4 accesses per landing-page render before this fix, 2 after - the final
+rendered HTML was byte-identical in both cases, since the discarded import-side-effect
+render's output is never concatenated into the page. So this was a pure
+wasted-computation bug, not a duplicate-content one.
+
+Fixed by splitting into two files, per the file's now-single job each: `card.jinja.html`
+is macro-only (no top-level render call); a new `card_standalone.jinja.html` is the
+thin wrapper (`{% import 'pac_info/card.jinja.html' as card with context %}` +
+`{{ card.info_card(pac_info) }}`) for the one legitimate direct-render use case.
+
+**Why:** the file was serving two jobs - "macro library" and "standalone page" - and
+only one job should determine whether the top-level statement runs.
+
+**Alternatives considered / why not:**
+
+- Keep one file, but skip the top-level call when a "just importing" flag was set -
+  rejected: needs a context flag threaded through every call site for no benefit over
+  just splitting into two small files, one per job.
+
+**Impact:** two call sites rendered the old combined file by template name and needed
+updating to `card_standalone.jinja.html` - this repo's own
+`app_factory.py`'s `/info_card` route (via `render_from_bp`), and
+`labfreed-webtools/pac_info/bp_pac_info.py`'s `pac_card()` route (via Flask's
+`render_template`) - both updated as part of this change.
+
+While tracing every consumer of these template names to find those two call sites,
+found that `labfreed-webtools/pac_issuer_demo/acme_labs/` ships its own full override
+copies of `card.jinja.html`, `card-components.jinja.html`, and `pac_info.jinja.html`
+(via `IssuerFlaskAppFactory`'s per-issuer custom-resources `ChoiceLoader`). Confirmed
+this change doesn't break or improve anything there either way - acme_labs's own
+override files fully shadow the package defaults for that blueprint regardless of what
+the package does. Three separate pre-existing bugs found in acme_labs's own copies
+along the way (its own independent instance of this same double-render bug, a dead
+unused import, and a leaked debug string rendered into the live page) - not fixed here,
+flagged in [[developer-docs/TODO.md]] instead, matching this plan's established
+pattern of flagging out-of-scope pre-existing bugs rather than silently fixing them.
+
+*Investigated 2026-07-31, Phase 4 item 8 of the PAC-ID Attributes improvement plan
+(`plans/pac-id-attributes-implementation-is-distributed-pelican.md`), on branch
+`cleanup-labfreed-library-for-release-1.0.0`.*
+
+---
+
+## CLP digital-label skeleton: no dedicated skeleton file, content-model decisions, and a `find_attributes()` helper
+
+**Decision:** Phase 4b of the PAC-ID Attributes improvement plan asked for a generic
+skeleton template for CLP's "digital label" (Regulation (EU) 2024/2865). Landed as:
+
+- `labfreed/labfreed_extended/pac_issuer_lib/templates/digital_label/digital_label.jinja.html` -
+  the content, built entirely from the existing `pac_info/base-components.jinja.html`
+  and `pac_info/card-components.jinja.html` macros (no bespoke rendering of its own).
+  Surfaces a "Hazard Information" block (pictograms, signal word, hazard statement,
+  precautionary statement, UFI) immediately after the product-identity block, before
+  falling through to the same services/attributes/attached-data sections
+  `pac_info/pac_info.jinja.html` already renders.
+- **No new skeleton file**, despite the plan's own suggested filename
+  (`digital_label_skeleton.jinja.html`) - `pac_issuer_landing_page_skeleton.jinja.html`
+  turned out to already be fully content-agnostic (just an HTMX loading shell with no
+  reference to `pac_info` at all), so a near-duplicate file would have added nothing.
+  An issuer adopting the digital label reuses that skeleton unchanged and overrides
+  only `pac_issuer_landing_page.jinja.html` (their own copy, via the existing
+  `IssuerFlaskAppFactory` custom-resources `ChoiceLoader` mechanism - same one
+  `acme_labs` already uses) to `{% include "digital_label/digital_label.jinja.html" %}`
+  instead of `{% include "pac_info/pac_info.jinja.html" %}`. No `app_factory.py`
+  routing change was needed for this.
+- A new `find_attributes(attribute_groups, keys)` helper
+  (`lib/render_predicates.py`) looks up specific well-known-key attributes across all
+  of a `PacInfo`'s groups, in caller-specified order, skipping any that aren't present -
+  lets the template pull exactly the handful of fields CLP cares about into a
+  highlighted block regardless of which group the data source put them in. Registered
+  in `render_context_utils` (the same dict `is_url`/`is_reference`/etc. already flow
+  through into `bp._jinja_env.globals` via `_build_jinja_env` - see the previous
+  entry), alongside the `RegulatorySafetyKeys`/`DocumentKeys`/`IdentifierKeys`/
+  `CommercePackagingKeys` enum classes themselves, so the template can reference e.g.
+  `RegulatorySafetyKeys.GHS_SIGNAL_WORD` directly instead of a hand-copied URI string -
+  single source of truth, no drift risk. Caveat: this only reaches templates rendered
+  via `render_from_bp` (every route inside `pac_issuer_lib` itself). A consumer
+  rendering via Flask's own `render_template` - e.g. `lib/attribute.py`'s
+  `render_template_with_results`, used by `labfreed-webtools` - would need to pass
+  `find_attributes`/the enum classes as explicit context kwargs, same as it already
+  does for `is_url`/`is_image`/etc. Not needed for this pass since nothing wires the
+  digital label template into that path yet.
+
+**Why (content-model decisions, confirmed with the user rather than decided solo, per
+the plan's explicit checkpoint):**
+
+- **UFI** (Unique Formula Identifier, mandatory on the label for notified hazardous
+  mixtures) - no well-known key existed. Added `RegulatorySafetyKeys.UFI =
+  "https://www.wikidata.org/wiki/Q61745460"`. Sourced via web search (title-matched
+  "Unique Formula Identifier" on Wikidata, same sourcing pattern as this class's other
+  entries, e.g. `CLP_ANNEX_VI_INDEX_NO`) - not independently re-verified by fetching
+  the Wikidata page itself (`WebFetch` failed in this sandbox both times it was tried).
+  Flagged to the user as a lighter-than-usual verification; they accepted it as-is.
+- **Supplier name/address/phone**: the plan assumed `IdentifierKeys.SUPPLIER` was a
+  single flat key with nowhere to put structured contact info, and asked whether to add
+  a composite key. Turned out not to be the right question - the user's actual design is
+  that `SUPPLIER`'s value should be a **PAC-ID** for the supplier itself, whose own
+  attribute page carries its own name/address/phone. No new key needed:
+  `attribute_row()` already renders any attribute value that resolves as a PAC-ID via
+  the existing `reference()` macro (an HTMX-loaded card), so this works today with zero
+  template-level special-casing - confirmed in the smoke test below.
+- **Package quantity**: `CommercePackagingKeys.QUANTITY` (`schema.org/quantity`)
+  reused as-is - it already lives in the packaging-keys class, no CLP-specific key
+  added.
+- **EUH statements**: reused `RegulatorySafetyKeys.GHS_HAZARD_STATEMENT` rather than a
+  dedicated key - EUH and H-statements render identically (a code + text), and the
+  smoke test below includes one of each under the same key to confirm.
+
+**Alternatives considered / why not:**
+
+- A dedicated `CLP_SUPPLIER_INFO` composite key holding name+address+phone as one
+  structured value - rejected once the PAC-ID-reference design was clarified: it would
+  have duplicated data that already belongs on the supplier's own PAC-ID page, and
+  broken the existing generic reference-rendering path for no benefit.
+- Deduplicating the highlighted hazard/supplier/quantity/SDS attributes out of the
+  generic "Attributes" section further down the page (so nothing appears twice) -
+  not attempted in this pass. `attribute_group_block(ag)` only supports hiding whole
+  groups (`hide_attribute_groups`), not individual attributes within a group, and
+  building a per-attribute exclusion mechanism felt like more machinery than this
+  first skeleton warranted. Flagged in [[developer-docs/TODO.md]] as a known
+  simplification, not a silent gap.
+
+**Verified (not just assumed):** rendered the full template end-to-end via a
+standalone `jinja2.Environment` against a real `PacInfo`/`pyAttributeGroup`/
+`pyAttribute` fixture with a signal word, two hazard statements (one H-, one
+EUH-coded, same key), a precautionary statement, a UFI, a `pyReference`-valued
+supplier, a quantity, and an SDS URL - confirmed no exceptions, the hazard block
+renders first (right after the product-identity card), the supplier value renders
+through the reference-card path (not as plain text), and the SDS URL renders as an
+actual link (via the existing `is_url` predicate).
+
+**Also found while building the smoke-test fixture, unrelated to Phase 4b, not
+fixed:** `PacInfo.safety_pictograms` (`app/pac_info/pac_info.py:195-197`) filters
+attributes whose key contains `"https://labfreed.org/ghs/pictogram/"`, a completely
+different URI from `RegulatorySafetyKeys.GHS_PICTOGRAM`
+(`"https://www.wikidata.org/wiki/Q19360817"`) - the well-known-key registry and the
+actual pictogram-lookup logic disagree on what a pictogram's key looks like. And
+separately, `base-components.jinja.html`'s `attribute_group_block(ag)` macro reads
+`ag.label`/`ag.origin`, and `pac_info.jinja.html`/`digital_label.jinja.html`'s loops
+read `ag.key` - but `pyAttributeGroup` (via `AttributeGroup`) only has `group_label`/
+`group_key` fields, not `label`/`key`. Jinja's default (non-strict) `Undefined`
+swallows this silently - `{{ ag.label }}` renders blank instead of raising, and `ag.key
+not in hide_attribute_groups` is always true - so this has apparently been rendering
+blank group headings and never actually hiding a group on the real landing page all
+along, not just in this new template. Both flagged in
+[[developer-docs/TODO.md]] rather than fixed here - out of scope for Phase 4b, and the
+second one in particular touches code this plan's earlier phases already touched
+without either of us noticing it.
+
+*Investigated 2026-07-31, Phase 4b of the PAC-ID Attributes improvement plan
+(`plans/pac-id-attributes-implementation-is-distributed-pelican.md`), on branch
+`cleanup-labfreed-library-for-release-1.0.0`.*
+
+---
+
+## GHS hazard/precautionary statement text + pictogram lookup, sourced from UNECE Annex 3
+
+**Decision:** hazard and precautionary statement attribute values (`RegulatorySafetyKeys.
+GHS_HAZARD_STATEMENT`/`GHS_PRECAUTIONARY_STATEMENT`) are expected to carry bare codes
+(`"H225"`, `"P210"`, or combined codes like `"H300+H310"`), not pre-formatted text - the
+digital label resolves the code to its official text and (for hazard statements) pictogram
+via a new static lookup table, rather than requiring whoever populates the attribute data to
+also maintain that text themselves. Landed as:
+
+- `labfreed/utilities/ghs/ghs_statements.json` - transcribed directly from the
+  user-provided **UNECE GHS Rev.7 (2017) Annex 3** PDF (the official source, not a
+  third-party summary): all ~72 individual + ~17 combined hazard statement codes (H2xx/
+  H3xx/H4xx), all ~60 individual + ~35 combined precautionary statement codes (P1xx-P5xx),
+  the 9 `GHS0x` pictogram codes, and a `hazard_statement_pictograms` table mapping each
+  H-code to its pictogram(s) + signal word, reconstructed from Annex 3 Section 3's
+  per-hazard-class tables (e.g. "FLAMMABLE LIQUIDS, category 2 -> Flame, Danger, H225").
+- `labfreed/utilities/ghs/ghs_statements.py` - thin cached-loader accessor module.
+  Originally placed alongside `unece_units.py` in `well_known_keys/unece/`, moved to
+  its own `utilities/ghs/` subfolder since it isn't a key registry at all (no keys, no
+  enum) - it's a data+accessor utility, given its own subfolder (rather than sitting
+  flat alongside `translations.py`/`base36.py`) so the `.py`+`.json` pair stays
+  together as a unit. Exposes `hazard_statement_text`/`precautionary_statement_text`
+  (code -> official text), `pictogram_codes_for_hazard_statement` (code -> list of
+  `GHS0x` codes, splitting combined codes and unioning each constituent's pictograms),
+  and `signal_word_for_hazard_statement`.
+- New `hazard_statement_row(code)`/`precautionary_statement_row(code)` macros
+  (`base-components.jinja.html`) render one table row per code: pictogram icon(s) +
+  code + resolved text, used by `digital_label.jinja.html`'s hazard block in place of
+  the generic `attribute_row` for those two specific fields.
+
+**Why:** the same rationale as the earlier UFI/quantity/supplier decisions - keep
+regulatory text and code/pictogram associations as a single maintained-by-us lookup
+table (matching how `well_known_keys/unece/UneceUnits.json` already works for UCUM
+units), not something every issuer's data source has to carry or every attribute
+value has to spell out in full.
+
+**Alternatives considered / why not:**
+
+- An existing PyPI/npm package for this - searched first (`ghs-hazard-pictogram`,
+  `ghs-hazard-pictograms`, `veriCAS`). None fit: the two pictogram packages are icon
+  **asset** libraries (the 9 GHS images), not a code->text->pictogram mapping;
+  `veriCAS` does live PubChem-backed per-substance lookups, a different shape of
+  problem entirely. Rejected in favor of vendoring the official table ourselves.
+- Deriving the table from web search summaries instead of the primary source -
+  rejected once it became clear `WebFetch` couldn't reach any external page in this
+  sandbox (confirmed via repeated real connection failures across 5 different
+  domains, not a one-off) - summarized snippets aren't reliable enough to build a
+  safety-compliance table from. Waited for the user to supply the actual PDF instead.
+
+**Known limitation, not fully resolved:** pictogram assignment is technically per
+**hazard class and category**, not per individual H-code - a handful of codes (H221,
+H229, H261, H272, and the category-3 acute-toxicity codes) are assigned to more than
+one category with a different pictogram/signal word each. `hazard_statement_pictograms`
+picks one default pairing per code (documented in the JSON's own `_comment` key) rather
+than modeling the full classification matrix - correct for the common case, an
+approximation for the rest. Also: **EUH statements** (EU CLP-specific supplemental
+hazard statements, e.g. `EUH208`) aren't in this table at all - they come from EU CLP
+Annex II, a different document than the UN GHS Annex 3 the user provided. Looking one
+up falls back to displaying the bare code with no resolved text or pictogram, rather
+than erroring. Flagged in [[developer-docs/TODO.md]].
+
+**Verified:** re-ran the earlier digital-label smoke test with hazard statement values
+`["H225", "H300+H310", "EUH208 Contains X"]` - confirmed `H225` resolves to its Flame
+pictogram and official text, the combined `H300+H310` resolves to the Skull-and-
+crossbones pictogram and combined text (this caught a real bug on the first pass - see
+below), and the unresolvable `EUH208` falls back to displaying the raw value with no
+exception.
+
+**Bug caught by that verification, fixed same pass:** the first implementation stored
+multi-pictogram entries (only H241 needs this - "Exploding bomb and flame") as a
+single string and split on `" and "` to recover the individual pictogram names. That
+collided with pictogram names that themselves contain "and" - `"Skull and crossbones"`
+split into `["Skull", "crossbones"]`, neither of which matched anything, silently
+dropping the pictogram for every H-code whose pictogram is Skull-and-crossbones
+(H300, H301, H310, H311, H330, H331, and their combined statements). Fixed by storing
+`pictogram` as a proper list in the JSON (`["Exploding bomb", "Flame"]` for H241,
+single-element lists everywhere else) instead of a string to split - removes the
+ambiguity structurally rather than special-casing it.
+
+*Investigated 2026-08-03, on branch `cleanup-labfreed-library-for-release-1.0.0`.*
+
+---
+
+## HTML sanitization for attribute values: `nh3`, an allowlist, and an always-superscript rule
+
+**Decision:** attribute values may contain a small set of inline HTML formatting tags
+(`sub`, `sup`, `i`, `em`, `pre` - e.g. `"C<sub>6</sub>H<sub>12</sub>"`) which now render
+as actual HTML instead of literal escaped text. A new `render_text()` helper
+(`lib/render_predicates.py`) sanitizes the value through `nh3.clean()` with that
+explicit tag allowlist and `attributes={}` (no attributes allowed on any tag, not even
+the allowed ones), then wraps the result in `markupsafe.Markup` so Jinja doesn't
+re-escape it. Wired into `attribute_row`'s plain-text value branch only (not every
+table cell in the codebase - `key_value_table`/`card_info_block` still render plain
+escaped text). Also added: a registered-trademark symbol (`®`) in any value is always
+wrapped in `<sup>®</sup>`, even in a value with no markup around it at all, applied
+before sanitization so the inserted tag still passes through the same allowlist path.
+
+**Why:** the request was specifically "needs to be sanitized... scripts and style and
+other tags can be stripped" - a real XSS surface, not just a formatting nicety. A
+regex-based allowlist (matching literal `<sub>...</sub>` patterns) would be the
+naive approach but is a known-unreliable way to sanitize HTML - it doesn't understand
+nesting, and critically doesn't strip **attributes** on otherwise-allowed tags, e.g.
+`<sub onmouseover="...">` would sail through a regex tag-matcher untouched. `nh3` is a
+real HTML-parser-based sanitizer (Rust/`ammonia`, the same engine PyPI itself uses for
+README rendering) that strips disallowed tags *and* all attributes correctly.
+
+**Alternatives considered / why not:**
+
+- `bleach` - the more historically well-known Python sanitizer, considered first since
+  it's more widely recognized. Not chosen: it wraps `html5lib` and has been in reduced
+  maintenance for a while; `nh3` is the more actively-maintained, faster (compiled),
+  and equally strict modern choice for exactly this "strict allowlist, strip
+  everything else" use case.
+- A regex-based tag allowlist with no dependency at all - rejected outright, see Why
+  above (attribute-based XSS vectors slip through unchanged).
+- Marking the whole value `| safe` in the template and trusting the data source not to
+  send anything dangerous - rejected: attribute values come from arbitrary upstream
+  data sources (an issuer's own attribute server, a supplier's feed), not code this
+  package controls: they're exactly the untrusted-input case autoescaping exists for.
+
+**Verified (not just assumed):** ran `nh3.clean()` directly against a small adversarial
+set before wiring it in - confirmed `<script>...</script>` content is fully removed
+(not just unwrapped), `<sub onmouseover="alert(1)">` keeps the tag but drops the
+attribute, `<a href="javascript:...">` is unwrapped to plain text, and legitimate
+`<sub>`/`<i>` markup passes through unchanged. Re-ran the full digital-label smoke test
+with a value containing a `<script>` tag, a `<sub>` tag, an `<i>` tag, and a bare `®`
+mixed together - confirmed the script and its content disappeared entirely, `<sub>`/
+`<i>` rendered as real HTML, and `®` came out wrapped in `<sup>`.
+
+**Impact:** new dependency, `nh3>=0.2.18`, added to the `extended` extra in
+`pyproject.toml` (the same extra `Flask`/`Flask-Cors` already live in, since this is a
+web-rendering-only concern) - not a core dependency, only pulled in by pip installs
+that opt into `labfreed[extended]`, same as everything else `pac_issuer_lib` needs.
+
+*Investigated 2026-08-03, on branch `cleanup-labfreed-library-for-release-1.0.0`.*
+
+---
+
+## Three attribute-rendering bugs found and fixed while testing real-world data shapes
+
+**Decision:** three separate, real bugs in `lib/render_predicates.py`/
+`base-components.jinja.html` surfaced while testing against realistic values (a CDN
+image URL, a data source's own "code + description" statement text) rather than the
+clean synthetic fixtures used earlier - all fixed:
+
+1. **`is_url()` missed every `pyResource` value.** It required
+   `isinstance(s, str)`, but `pyResource` is a `RootModel[str]` - a URL by
+   construction, but not a `str` instance. Any `pyResource`-typed value that also
+   failed `is_image()`'s extension check (see #2) fell all the way to the plain-text
+   branch - a real link rendered as inert text. Fixed by extracting the URL string
+   from either a `pyResource` or a plain `str` before running the URL check.
+2. **`is_image()`'s extension check broke on query strings.** It matched the
+   suffix of the *entire* value string, but real CDN asset URLs (e.g. carlroth.com's
+   product images) route through a long tracking/context query parameter after the
+   real extension - `...7342.jpg?context=<base64>` doesn't end in `.jpg` as a raw
+   string. Fixed by checking `urlparse(value).path`'s suffix instead of the whole
+   string.
+3. **`is_reference`/`is_url` were checked in the wrong order** in `attribute_row`'s
+   value dispatch (`is_image` -> `is_url` -> `is_reference` -> else). A PAC-ID is
+   itself always a valid URL, so a bare PAC-ID **string** (not wrapped in
+   `pyReference`) always matched `is_url` first and never reached the reference-card
+   path - only `pyReference`-wrapped values (which fail `is_url`'s old `isinstance
+   (s, str)` check) got the card. Reordered to `is_image` -> `is_reference` -> `is_url`
+   -> else, matching the label-side (`th`) dispatch, which already had this right.
+
+**Also fixed, same investigation:** hazard/precautionary statement values are
+expected to be a bare code, but a real data source is more likely to send
+`"H225 - Highly flammable liquid and vapour"` (code + its own copy of the text) than
+a bare `"H225"`. The row macros did an exact dict lookup on the *whole* value, missed,
+and fell back to showing that same whole value in both the code and text columns - a
+visually "duplicated" row, with an empty pictogram cell (a whole-string cache miss
+also fails the pictogram lookup). Fixed with a new `extract_statement_code()`
+(`utilities/ghs/ghs_statements.py`): pulls the leading code(s) off the front,
+lenient about the separator between the code and any trailing text (blank space,
+`-`, `;`, `.`, any run of these) but never treating `+` as that separator, since `+`
+is reserved for joining codes into one combined statement (e.g. `"H300+H310"`). Colon
+is deliberately *not* in the separator set - several P-statements' own official text
+ends in a colon (e.g. `"IF SWALLOWED:"`), so treating it as a strip-me separator would
+corrupt real statement text, not just a data source's redundant copy of it. The row
+macros now show the *clean extracted code* in the code column, and fall back to the
+*original raw value* (not the bare code) in the text column when the extracted code
+doesn't resolve - so an unresolvable code (e.g. an EUH code, see the earlier GHS
+lookup entry) still shows whatever text the data source gave it, rather than a bare
+unexplained code.
+
+**Verified:** re-ran the digital-label smoke test with the exact carlroth.com image
+URL (now renders as an actual `<img>`, confirmed via a fresh `is_image`/`is_url` check
+before and after the fix), a bare PAC-ID string value (confirmed it now reaches
+`reference()`), and hazard statement values written as `"H225 - ..."` and
+`"H314; ..."` (confirmed both resolve to their clean code, correct text, and correct
+pictogram - no more empty/duplicated cells).
+
+*Investigated 2026-08-03, on branch `cleanup-labfreed-library-for-release-1.0.0`.*
+
+---
+
+## Hazard-row pictograms prefer an explicit attribute over the code-derived guess
+
+**Decision:** `hazard_statement_row()` now takes a second `explicit_images` argument
+- a `{GHS0x: image_url}` dict built by a new `explicit_pictogram_images(pac_info)`
+(`lib/render_predicates.py`), which reads whatever pictogram attributes the data
+source directly supplied via the existing `PacInfo.safety_pictograms` mechanism
+(keyed like `"https://labfreed.org/ghs/pictogram/GHS02"` - confirmed against a real
+usage in `examples/pac_mettorius_com/attribute_datasources.py`). For each pictogram a
+row needs, it's looked up in `explicit_images` first; only falls back to the static
+`ghs0x.png` asset (derived from the H-code via `pictogram_codes_for_hazard_statement`)
+when the data source didn't supply that one directly.
+
+**Why:** the code-derived guess has a known, documented ambiguity (a handful of
+H-codes are assigned to more than one hazard category, each with a different
+pictogram) - see the earlier "GHS hazard/precautionary statement..." entry. A data
+source that already knows the substance's actual classification can supply the
+correct pictogram directly with no ambiguity at all; preferring that whenever it's
+available removes the approximation for exactly the cases where better information
+exists, while still degrading gracefully (falls back to the derived guess) when it
+doesn't.
+
+**Verified:** rendered with one attribute group holding both a `GHS_HAZARD_STATEMENT`
+value (`H225`) and an explicit `.../pictogram/GHS02` attribute pointing at a
+made-up custom icon URL, alongside a second hazard statement (`H400`) with no
+matching explicit attribute - confirmed `H225`'s row used the custom URL verbatim, and
+`H400`'s row fell back to the static `ghs09.png` path.
+
+*Investigated 2026-08-03, on branch `cleanup-labfreed-library-for-release-1.0.0`.*
+
+---
+
+## GHS statement text is now keyed per-language (English only, for now)
+
+**Decision:** `ghs_statements.json`'s `hazard_statements`/`precautionary_statements`
+changed from `{code: "text"}` to `{code: {"en": "text"}}`. `hazard_statement_text()`/
+`precautionary_statement_text()` both gained an optional `lang='en'` parameter,
+falling back to English if the requested language isn't present for that code.
+
+**Why:** the user asked for translations to be added, but no verified non-English
+text was available to add safely - fabricating translations for safety-critical
+regulatory text carries real accuracy risk, the same reasoning that applied to
+sourcing the English text itself from the primary UNECE document rather than a
+summary. Landed the schema change now (mechanical, zero risk) so a future language
+can be added as pure data with no further code changes, without pretending to have
+solved translation content that doesn't exist yet.
+
+**Not done:** no actual non-English content. Needs an authoritative per-language
+source the same way the English text did (e.g. EU CLP Annex III, which is officially
+published in every EU language for exactly this purpose) - flagged in
+[[developer-docs/TODO.md]] rather than guessed at.
+
+*Investigated 2026-08-03, on branch `cleanup-labfreed-library-for-release-1.0.0`.*
+
+---
+
+## GHS pictogram icons: flat filenames, not a `ghs/` subdirectory
+
+**Decision:** the GHS pictogram PNGs live directly in `pac_issuer_lib/static/`
+(`ghs01.png`...`ghs08.png`), not under a `static/ghs/` subdirectory as first
+implemented. `hazard_statement_row()` calls `resolve_static_image(code.lower())` -
+no path prefix, no extension.
+
+**Why:** `resolve_static_image()` (`app_factory.py:179`) only ever searches flat
+filenames directly in the static root: it does `Path(base_name).stem` on its input
+(which silently discards any directory component - `Path('ghs/ghs02.png').stem` is
+`'ghs02'`, not `'ghs/ghs02'`) and then matches candidate files via `folder.iterdir()`
+(no recursion into subdirectories) against a regex built from that stripped stem.
+Every other icon in this codebase already relies on this - `card_image()` calls
+`resolve_static_image('cat' + category.key + '.svg')`, a flat name, never a path.
+The first implementation of this feature put the pictogram files under a `ghs/`
+subdirectory and passed `'ghs/' + code + '.png'`, which silently never matched
+anything - not a crash, just a permanently-missing image, since a missing match
+returns `None` and an `<img src="None">` just fails to load like any other broken
+image reference.
+
+**Alternatives considered / why not:**
+
+- Make `resolve_static_image()` support subdirectories - rejected: it's shared
+  infrastructure every other icon call site in this codebase depends on; changing
+  its search behavior is a bigger, riskier change than just following the
+  convention it already has (flat names), especially while this exact area of the
+  code is under active concurrent editing elsewhere in the same session.
+
+**Verified:** this was caught by the user actually testing the real rendered popup
+("the flame is not found"), not by any of this feature's own smoke tests - those all
+stubbed `resolve_static_image` with a trivial `lambda name: f'/static/{name}'` that
+happily accepted a path with a slash in it and never exercised the real function's
+flat-search-only behavior at all. After moving the files and dropping the path
+prefix, re-verified by replicating the real function's exact matching regex against
+the actual static directory directly (rather than via another stub) - confirmed
+`ghs02` -> `ghs02.png`, `ghs09` -> `None` (the one file still missing, as already
+flagged).
+
+*Investigated 2026-08-03, on branch `cleanup-labfreed-library-for-release-1.0.0`.*
+
+---
+
+## Naming cleanup, `digital_label.jinja.html` relocated, and pictograms moved to a deduplicated strip
+
+**Decision:** three cleanups requested together:
+
+1. **`digital_label.jinja.html` moved** from its own `templates/digital_label/`
+   subdirectory into `templates/pac_info/` (alongside `pac_info.jinja.html`,
+   `card.jinja.html`, etc.) - a whole subdirectory for one file wasn't warranted.
+   `pac_issuer_landing_page.jinja.html`'s `{% include %}` path updated to match; the
+   file's own internal imports (`"pac_info/base-components.jinja.html"` etc.) needed
+   no change, since Jinja import paths in this codebase are already always full
+   paths from the template root, not relative to the importing file.
+2. **Two confusingly-named macros renamed**: `service_table_section` ->
+   `service_links`, `services_table` -> `service_group_block`
+   (`base-components.jinja.html`). Neither old name matched what it rendered (both
+   emit `<div>`s, not `<table>`s), and the pairing read backwards - "table" named
+   the *inner* piece, "section" the outer wrapper. `service_group_block` also
+   matches the already-established `_block` naming for a titled wrapper section
+   (`category_block`, `attribute_group_block`). Checked for external call sites
+   first - `service_table_section` had none; `services_table` was called directly
+   by `labfreed-webtools/pac_issuer_demo/acme_labs`'s own `pac_info.jinja.html`
+   override, so that call site was updated too as part of this same change (per
+   this plan's standing policy #3, webtools call-site updates are in scope).
+3. **`card_info_block`'s parameter renamed** `dict` -> `segments`
+   (`card-components.jinja.html`) - naming a parameter after its own builtin type is
+   exactly the kind of naming an LLM tends toward and a human wouldn't choose. Purely
+   internal (the macro is only ever called positionally), so no call-site changes
+   needed - confirmed `labfreed-webtools/pac_issuer_demo/acme_labs`'s own
+   independent copy of this macro (a separate file entirely, not calling into the
+   package's version) is unaffected either way.
+
+**Also, a real design change, not just naming:** hazard/precautionary statement
+pictograms moved from a per-row column to a single deduplicated strip shown once
+above the table. A new `hazard_pictogram_codes(pac_info, attributes)` (`lib/
+render_predicates.py`) collects the pictogram(s) for every hazard/precautionary
+statement value across the given attributes (precautionary codes simply contribute
+none - they have no pictogram of their own) plus whatever's explicitly supplied on
+`pac_info`, puts them in a `set()` to dedupe, and returns them `sorted()` by GHS
+number. A new `pictogram_strip()`/`pictogram_image()` pair of macros
+(`base-components.jinja.html`) render that list once; `hazard_statement_row()`/
+`precautionary_statement_row()` dropped their per-row pictogram cell entirely - both
+are now plain two-column (code, text) rows. This also supersedes the old
+`card_macros.safety_pictograms(pac_info)` call in the hazard section (removed) - the
+new strip is a strict superset of what that showed, since it already folds in
+`pac_info`'s explicitly-supplied pictograms via the existing `explicit_pictogram_
+images` helper.
+
+**Why:** a hazard statement's pictogram is a property of the *substance*, not of any
+individual statement row - several codes routinely share the same one (H300/H310/
+H330 are all Skull-and-crossbones), so repeating it on every row was redundant, and
+sidesteps needing per-row precision for the handful of codes with genuinely
+ambiguous category-dependent pictogram assignment (see the earlier "GHS hazard/
+precautionary statement..." entry) - deduplicating by GHS code rather than by
+statement code makes that ambiguity moot for display purposes.
+
+**CSS follow-up:** `.lf-ghs-pictogram` resized from an inline-text-sized icon
+(`1.5em`, meant to sit next to a code/text column) to a standalone `3rem` icon in a
+new `.lf-ghs-pictogram-strip` flex container - it's the section's main visual
+callout now, not an inline decoration. The now-orphaned `.lf-ghs-pictogram--blank`
+placeholder rule (for the removed per-row empty-pictogram-cell case) was deleted -
+confirmed zero remaining references before removing it.
+
+**Verified:** rendered with `["H225", "H300", "H310", "H330"]` (three of which share
+one pictogram) plus a `P210` - confirmed the strip shows exactly two pictograms
+(Flame, Skull-and-crossbones) in GHS-number order, and every row (both hazard and
+precautionary) is a clean two-column `code | text` pair with no pictogram cell.
+
+*Investigated 2026-08-03, on branch `cleanup-labfreed-library-for-release-1.0.0`.*
+
+---
+
+## GHS statement rows reuse `.lf-th--label`/`.lf-td--val`, not their own classes
+
+**Decision:** `hazard_statement_row()`/`precautionary_statement_row()` now emit
+`<th class="lf-th lf-th--label">{{code}}</th>` / `<td class="lf-td lf-td--val">
+{{text}}</td>`, replacing the custom `lf-ghs-row__code`/`lf-ghs-row__text` classes.
+
+**Why:** every other key/value table in this codebase (`key_value_table`,
+`attribute_row`) already gets a 1/3 vs 2/3 column split and bold labels for free
+from `.lf-table--kv th.lf-th--label { width: 33%; font-weight: 600; }` /
+`.lf-table--kv td.lf-td--val { width: 67%; }` (`styles_pac_info.css`) - a rule that
+already existed. The GHS rows' own `lf-ghs-row__code`/`lf-ghs-row__text` classes
+just never matched that selector, so the table silently fell back to equal-width
+columns instead of matching every other table on the page. Reusing the existing
+classes fixes it with no new CSS at all, rather than duplicating the same
+33%/67% rule under a GHS-specific selector.
+
+**Verified:** rendered a hazard statement row and confirmed the emitted markup uses
+`th.lf-th--label`/`td.lf-td--val` exactly as `attribute_row` does.
+
+*Investigated 2026-08-03, on branch `cleanup-labfreed-library-for-release-1.0.0`.*
+
+---
+
+## Same-process action calls dispatch in-process, not over real HTTP
+
+Related to: ["Well-known action handler: `action-generic` params travel as plain query
+params, not through the CIT
+template"](design-choices.md#well-known-action-handler-action-generic-params-travel-as-plain-query-params-not-through-the-cit-template)
+
+**Decision:** a Flask app that both hosts `labfreed_experimental.actions`' Flask layer
+(`flask_layer.py`) *and* is itself the caller resolving/invoking those actions (e.g.
+`labfreed-webtools`' `instrument_demo`, syncing its own Signals inventory through the
+well-known actions it also serves) should detect when
+`pac_info.get_action_by_intent(intent).url` resolves to its own base URL, and in that
+case dispatch in-process via Werkzeug's/Flask's own test client (`app.test_client()` /
+`werkzeug.test.Client`) instead of a real `requests.post()` back into itself. Anything
+that resolves elsewhere still goes out as a normal HTTP request - the call site doesn't
+need to know or care which path was taken. See the new
+`labfreed_experimental/actions/README.md` for the documented `call_action()` shape any
+such consumer should implement (not shipped by this package itself - see the
+alternatives below).
+
+**Why:** the user reported that this app's real deployment (Azure App Service) "does
+not like to call itself" for this pattern - App Service's default sync-worker pool is
+small/single, so a request handler that blocks waiting on an HTTP call back into the
+same app has no free worker left to serve that inbound request: a real deadlock risk,
+not just wasted overhead. Confirmed (via the Werkzeug/Flask docs, not a live
+reproduction) that Werkzeug's `test.Client` - what `Flask.test_client()` itself
+subclasses - drives a WSGI app directly through the Python call stack: no socket, no
+separate worker, while still exercising the exact same dispatch a real HTTP call would
+(routing, blueprints, before/after-request hooks, error handlers).
+
+**Alternatives considered / why not:**
+- `requests-wsgi-adapter` (`wsgiadapter.WSGIAdapter`, mounted onto a `requests.Session`
+  so the *same* `session.post(url)` call transparently dispatches in-process) - would
+  let call sites use one uniform `requests`-shaped API for both local and remote
+  dispatch, but its PyPI/GitHub listing shows it as unmaintained (last checked
+  2026-08-03); rejected in favor of Werkzeug's own actively-maintained,
+  already-a-dependency mechanism.
+- Always call over real HTTP regardless of destination - rejected because of the
+  self-deadlock risk above.
+- Ship a shared `call_action()` helper directly in this package instead of just
+  documenting the pattern - rejected for now: the helper needs the consuming app's own
+  `Flask` instance and its own notion of "my base URL," and there's only one real
+  consumer (`instrument_demo`) to generalize an API from so far. See
+  `developer-docs/TODO.md`, "Promote `instrument_demo`'s `call_action()` dispatch
+  helper into this package," for revisiting once a second consumer needs it.
+
+**Impact:** only matters for a consumer that is *also* the CIT-resolved destination for
+its own action calls - a pure external caller (e.g. a scanning client resolving someone
+else's actions) always goes out over real HTTP and never hits this code path. The
+concrete implementation of this pattern lives in `labfreed-webtools`'
+`instrument_demo/action_client.py`, deliberately kept local to that app rather than in
+this package (see the alternative above).
+
+*Investigated 2026-08-03, while wiring `instrument_demo` up as a real `action-generic`
+consumer of its own CIT - it previously called `SignalsActionBackend` directly,
+bypassing CIT resolution entirely.*
+
+---
+
+## Issuer-configured contact address (`SiteMeta.contact_address`), alongside the existing supplier-PAC-ID design
+
+**Decision:** `SiteMeta` (`app_factory.py`) gained a new optional field,
+`contact_address: str | None`. Rendered as plain text (via a new
+`.lf-issuer-contact-address { white-space: pre-line; }` rule so a natural
+multi-line address string breaks visually without needing embedded HTML) in its own
+"Supplier Contact" section on the digital label, positioned **below the Safety Data
+Sheet section** (a deliberate placement call, revised from an initial pass that put
+it inside "Supplier & Quantity" further up the page) - separate from, and
+independent of, the existing `SUPPLIER` attribute/PAC-ID-reference rendering in
+"Supplier & Quantity". Neither is required; each shows only if present. No new
+plumbing needed beyond the field itself: `SiteMeta` is already dumped into
+`bp._jinja_env`'s globals once per blueprint (`_build_jinja_env`), so `site_meta.
+contact_address` is automatically available in every template this blueprint
+renders, the same way `navbar.jinja.html` already reads `site_meta.nav_items`.
+
+**Why:** revisits the earlier "supplier should be a PAC-ID" decision - the user
+still endorses that design for the case where the supplier is a *different* entity
+from the issuer (e.g. a distributor's page referencing another company's product,
+where a PAC-ID reference card is the right way to show that other company's own
+name/address/phone). But for the common case where the issuer *is* the supplier
+(a manufacturer running their own PAC-ID issuer site), requiring a whole separate
+PAC-ID and its own populated attributes just to show that same company's own
+address is unnecessary indirection - the issuer can just configure it once, and every
+product page on their site shows it automatically.
+
+**Alternatives considered / why not:**
+
+- A structured `contact_name`/`contact_address`/`contact_phone` split (mirroring
+  `MetaAttributeKeys.PHONE`/`ADDRESS`/`COUNTRY` on the attribute side) - not chosen
+  for this pass: every other `SiteMeta` field (`site_title`, `site_author`, etc.) is
+  a single plain string, and the user's own phrasing was specifically about "the
+  address," not three separate fields. A free-text block the issuer formats
+  themselves (name and phone as extra lines, if wanted) matches that simplicity and
+  is a cheap field to split later if a real need for structure shows up.
+- Rendering `contact_address` through `render_text()` (the sanitizer used for
+  attribute values) - rejected: that helper's allowlist (`sub`/`sup`/`i`/`em`/`pre`,
+  no `<br>`) exists to sanitize *untrusted* attribute data, and would actively fight
+  a multi-line address rather than help. `contact_address` is issuer-owned config,
+  set in the issuer's own Python call to `create_blueprint(site_meta=...)`, not
+  attacker-controlled input - it doesn't need that sanitizer, just Jinja's normal
+  auto-escaping (which it still gets) plus a CSS rule to preserve newlines.
+
+**Verified:** rendered the digital label with both a `SAFETY_DATA_SHEET` attribute
+and `site_meta.contact_address` set - confirmed "Safety Data Sheet" appears earlier
+in the output than "Supplier Contact", and separately confirmed the contact section
+still renders correctly with no `SUPPLIER` attribute present at all (each section's
+visibility is independent, neither requires the other).
+
+*Investigated 2026-08-03, on branch `cleanup-labfreed-library-for-release-1.0.0`.*
