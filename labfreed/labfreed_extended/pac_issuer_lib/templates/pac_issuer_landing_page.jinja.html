@@ -1,12 +1,21 @@
 
 
+{# Category picks the preferred landing-page content: -MS (Material_Substance,
+   i.e. chemicals) gets the CLP digital label; everything else falls back to the
+   generic info page. An issuer that wants a different pairing (or a page for another
+   category, e.g. -MD) overrides this file directly - same mechanism acme_labs already
+   uses for its own templates. See developer-docs/design-choices.md. #}
 {% block page_main_content  %}
 
-<div class="lf-content-container" > 
+<div class="lf-content-container" >
 
-    {% include "pac_info/pac_info.jinja.html" %}
+    {% if pac_info and pac_info.main_category and pac_info.main_category.key == '-MS' %}
+        {% include "pac_info/digital_label.jinja.html" %}
+    {% else %}
+        {% include "pac_info/pac_info.jinja.html" %}
+    {% endif %}
 
-</div>    
+</div>
 {% endblock %}
 
 

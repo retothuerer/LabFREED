@@ -17,7 +17,7 @@
             <section>
             <h4>Services</h4>
             {% for sg in pac_info.user_handovers %}
-            {{ pac_macros.services_table(sg) }}
+            {{ pac_macros.service_group_block(sg) }}
             {% endfor %}
             </section>
         {% endif %}

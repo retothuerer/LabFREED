@@ -1,0 +1,21 @@
+{% extends "main.jinja.html" %}
+
+{% block head_extension%}
+<link rel="stylesheet" type="text/css" href="{{ url_for_within_issuer('static', filename='styles_pac_info.css') }}">
+{% endblock %}
+
+
+{# ========== Template  ==========  #}
+
+    {% block page_main_content  %}
+
+    {% include "digital_label/digital_label.jinja.html" %}
+
+    {% endblock %}
+
+
+  
+
+
+
+

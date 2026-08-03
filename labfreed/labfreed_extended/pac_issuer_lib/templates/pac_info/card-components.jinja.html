@@ -1,11 +1,11 @@
-{% macro card_title() %}    
+{% macro card_title(pac_info) %}
     {% if pac_info.display_name %}
         <span class="lf-info-title">{{ pac_info.display_name }}</span>
     {% endif %}
 {% endmacro %}
 
 
-{% macro card_image() %}
+{% macro card_image(pac_info) %}
     {% if pac_info.image_url %}
             <div class="lf-info-media">
                 <img src="{{ pac_info.image_url }}" alt="" class="lf-info-img">
@@ -19,23 +19,23 @@
         {% endif %}
 {% endmacro %}
 
-{% macro card_main() %}
+{% macro card_main(pac_info) %}
     <div class="lf-info-content">
-        {{ card_image() }}
-        {{ card_category_info() }}
+        {{ card_image(pac_info) }}
+        {{ card_category_info(pac_info) }}
     </div>
 {% endmacro%}
 
-{% macro card_category_info() %} 
+{% macro card_category_info(pac_info) %}
         {% if pac_info.main_category %}
             {% set c =  pac_info.main_category %}
             {{ card_info_block(c.segments_as_dict()) }}
         {% endif %}
 {% endmacro %}
 
-{% macro card_info_block(dict) %}
+{% macro card_info_block(segments) %}
     <div class="lf-info-grid">
-        {% for k, v in dict.items() %}
+        {% for k, v in segments.items() %}
             {% if k != "key" %}
                 <div class="lf-info-item">
                 <div class="lf-info-key">
@@ -49,10 +49,7 @@
 {% endmacro%}
 
 
-
-
-
-{% macro safety_pictograms() %}
+{% macro safety_pictograms(pac_info) %}
     {% if pac_info.safety_pictograms %}
         <div class="lf-info-pictos">
         {% for p in pac_info.safety_pictograms.values() %}
@@ -66,18 +63,8 @@
 {% endmacro %}
 
 
-{% macro qualification_state() %}
+{% macro qualification_state(pac_info) %}
     {% if pac_info.qualification_state %}
     {{pac_info.qualification_state.label }}: {{pac_info.qualification_state.value }}
     {% endif %}
 {% endmacro %}
-
-
-
-
-
-
-
-
-
-

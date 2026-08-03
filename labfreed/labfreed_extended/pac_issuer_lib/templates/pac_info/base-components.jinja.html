@@ -26,7 +26,10 @@
 {%- endmacro -%}
 
 
-{%- macro service_table_section(services) %}
+{# Renamed from service_table_section/services_table - neither name matched what
+   they render (both emit <div>s, not <table>s), and the pairing read backwards
+   (the "table" was the inner piece, the "section" wrapped it). #}
+{%- macro service_links(services) %}
     <div class="lf-services">
     {%- for s in services -%}
         <a href="{{ with_ga_and_trace(s.url) }}" target="_blank" rel="noopener" class="lf-service"
@@ -38,10 +41,10 @@
     </div>
 {%- endmacro -%}
 
-{%- macro services_table(user_handover_group) -%}
+{%- macro service_group_block(user_handover_group) -%}
 <div class="lf-section lf-section--services">
     <div class="lf-origin-hint"> from {{ user_handover_group.origin }}</div>
-    {{ service_table_section(user_handover_group.services)}}
+    {{ service_links(user_handover_group.services)}}
 </div>
 {%- endmacro -%}
 
@@ -57,12 +60,17 @@
         >
 
         {% if display_label %}
+            {# The card above is the primary content; the label is always a real link
+               too, on top of it - route_pac_id_url_for lets an issuer route it through
+               their own page instead of linking straight to the PAC-ID's own URL. #}
             {% if route_pac_id_url_for is defined %}
-            <a class="lf-reference" a href="{{route_pac_id_url_for(pac_id=value)}}" target="_default">
+            <a class="lf-reference" href="{{route_pac_id_url_for(pac_id=value)}}" target="_default">
                 {{ label or value }}
             </a>
             {% else %}
+            <a class="lf-reference" href="{{ value }}" target="_blank" rel="noopener">
                 {{ label or value }}
+            </a>
             {% endif %}
         {% endif %}
 
@@ -96,12 +104,21 @@
                     <img src="{{ value|e }}" alt="{{ label|e }}" class="lf-attr-image">
                     <figcaption class="lf-figure__caption sr-only">{{ label }}</figcaption>
                 </figure>
-            {%- elif is_url(value) -%}
-                <a href="{{ value|e }}" target="_blank" rel="noopener" class="lf-link">{{ value }}</a>
             {%- elif is_reference(value) -%}
+                {# Checked before is_url - a PAC-ID is itself a valid URL, so a
+                   bare (non-pyReference) PAC-ID string would otherwise always hit
+                   the generic link branch below and never reach the card. #}
                 {{ reference(value)}}
+            {%- elif is_url(value) -%}
+                {# Same icon+label format as service_links' <a> elements -
+                   reuses its classes rather than a parallel set, since the look is
+                   meant to be identical. #}
+                <a href="{{ value|e }}" target="_blank" rel="noopener" class="lf-service">
+                    <img src="{{ resolve_static_image('external-link.svg') }}" alt="" class="lf-service__icon">
+                    <span class="lf-service__name">{{ value }}</span>
+                </a>
             {%- else -%}
-                <span class="lf-text">{{ value }}</span>
+                <span class="lf-text">{{ render_text(value) }}</span>
             {%- endif -%}
             {% if not loop.last %}<br>{% endif %}
         {% endfor%}
@@ -170,6 +187,63 @@
     {%- endfor -%}
     </div>
 {%- endmacro -%}
+
+{# One pictogram <img>, preferring an explicitly-supplied image over the
+   code-derived guess (see explicit_pictogram_images/hazard_pictogram_codes in
+   lib/render_predicates.py). resolve_static_image() only searches flat filenames
+   directly in the static root (Path(base_name).stem strips any directory
+   component before it even searches) - no subdirectory, no extension needed, it
+   tries svg/png/jpg/jpeg/webp itself. #}
+{%- macro pictogram_image(code, explicit_images=dict()) -%}
+  {%- if code in explicit_images -%}
+    <img src="{{ explicit_images[code] }}" alt="{{ pictogram_name(code) }}" class="lf-ghs-pictogram">
+  {%- else -%}
+    <img src="{{ resolve_static_image(code.lower()) }}" alt="{{ pictogram_name(code) }}" class="lf-ghs-pictogram">
+  {%- endif -%}
+{%- endmacro -%}
+
+
+{# Shown once above the hazard/precautionary statement table (see
+   hazard_pictogram_codes) rather than repeated per row - a hazard statement's
+   pictogram is a property of the substance as a whole, and several codes
+   commonly share the same one (e.g. H300/H310/H330 are all Skull-and-crossbones). #}
+{%- macro pictogram_strip(codes, explicit_images=dict()) -%}
+  {%- if codes -%}
+    <div class="lf-ghs-pictogram-strip">
+      {%- for code in codes -%}
+        {{ pictogram_image(code, explicit_images) }}
+      {%- endfor -%}
+    </div>
+  {%- endif -%}
+{%- endmacro -%}
+
+
+{# GHS hazard/precautionary statement rows - code beside its full text, resolved
+   from labfreed/well_known_keys/unece/ghs_statements.json (UNECE GHS Rev.7 Annex 3)
+   rather than requiring the attribute value to carry the full text itself. Falls
+   back to showing the raw value if the code isn't in that table (e.g. an
+   EU-specific EUH code, which isn't part of the UN GHS document this was sourced
+   from) - see developer-docs/design-choices.md. #}
+{# th/td classes match every other key/value table (key_value_table, attribute_row) -
+   same 1/3-2/3 column widths and label bolding from .lf-table--kv, for free, no
+   GHS-specific CSS needed. #}
+{%- macro hazard_statement_row(raw_value) -%}
+  {%- set code = extract_statement_code(raw_value) -%}
+  <tr class="lf-ghs-row">
+    <th class="lf-th lf-th--label">{{ code }}</th>
+    <td class="lf-td lf-td--val">{{ hazard_statement_text(code) or raw_value }}</td>
+  </tr>
+{%- endmacro -%}
+
+
+{%- macro precautionary_statement_row(raw_value) -%}
+  {%- set code = extract_statement_code(raw_value) -%}
+  <tr class="lf-ghs-row">
+    <th class="lf-th lf-th--label">{{ code }}</th>
+    <td class="lf-td lf-td--val">{{ precautionary_statement_text(code) or raw_value }}</td>
+  </tr>
+{%- endmacro -%}
+
 
 {%- macro attached_data_trex(name, trex) %}
     <div class="lf-subsection">

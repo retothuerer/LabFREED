@@ -146,8 +146,41 @@
     display:block
 }
 
+/* A row's title/label is sometimes a link itself (is_url(a.key)/is_reference(a.key) in
+   attribute_row) - kept plain black/no-underline rather than the usual blue-underline
+   link look, so it still reads as a label first. Scoped to .lf-th specifically so
+   .lf-reference links in value cells (.lf-td) keep their normal link styling. */
+.lf-th a {
+    color: black;
+    text-decoration: none;
+}
+
 .lf-attr-image {
     width: 30px;
+}
+
+/* One deduplicated strip of GHS pictograms shown once above the hazard/
+   precautionary statement table (see hazard_pictogram_codes), not repeated per
+   row - sized larger than an inline text icon since this is the label's main
+   visual hazard callout. */
+.lf-ghs-pictogram-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.lf-ghs-pictogram {
+    height: 3rem;
+    width: 3rem;
+    object-fit: contain;
+}
+
+/* SiteMeta.contact_address is a plain string, not HTML - the issuer writes it as a
+   natural multi-line address, and this turns those newlines into visual line
+   breaks instead of collapsing them the way normal inline text would. */
+.lf-issuer-contact-address {
+    white-space: pre-line;
 }
 
 /* Services laid out as equal-width grid columns */

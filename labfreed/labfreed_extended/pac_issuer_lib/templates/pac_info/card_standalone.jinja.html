@@ -1,0 +1,6 @@
+{# Renders the info card on its own - used by the /info_card HTMX-fetch route.
+   Kept separate from card.jinja.html's macro definition: importing that file to reuse
+   the macro must not also re-render a full card as an import side effect. #}
+{% import 'pac_info/card.jinja.html' as card with context %}
+
+{{ card.info_card(pac_info) }}

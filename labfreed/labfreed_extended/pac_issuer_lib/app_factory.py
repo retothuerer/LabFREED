@@ -25,7 +25,7 @@ from urllib.parse import urlparse
 
 from labfreed import PAC_ID
 from labfreed.labfreed_extended.app.app_infrastructure import Labfreed_App_Infrastructure
-from labfreed.pac_attributes.pythonic.attribute_server_factory import AttributeFlaskApp
+from labfreed.labfreed_extended.pac_issuer_lib.lib.attribute_server_factory import AttributeFlaskApp
 from labfreed.pac_attributes.server.server import AttributeServerRequestHandler
 
 from labfreed.pac_attributes.server.attribute_data_sources import AttributeGroupDataSource
@@ -54,6 +54,13 @@ class SiteMeta(BaseModel):
     site_description:str = "LabFREED Starter Kit Page"
     site_author:str = "Unknown"
     nav_items:list[NavItem]|None = None
+    # Free text (the issuer can include a name/phone as extra lines if they want) -
+    # rendered on the digital label as this issuer's own supplier contact address,
+    # for the common case where the issuer is itself the product's supplier. This is
+    # separate from a SUPPLIER attribute value being a PAC-ID reference to some other
+    # entity (a distributor listing another manufacturer's product) - both can be
+    # shown; neither is required.
+    contact_address:str|None = None
        
     
 
@@ -172,6 +179,7 @@ class IssuerFlaskAppFactory():
             if candidate.exists():
                 return send_from_directory(custom_static, filename)
             return send_from_directory(default_static, filename)
+
         
         
         @cache
@@ -327,7 +335,7 @@ class IssuerFlaskAppFactory():
         def pac_issuer_landingpage(path):
             base = request.blueprint.replace('.landing_page','')
             slow_content_url = base + '/slow_content/' + path 
-
+            
             return render_from_bp(bp,
                         "pac_issuer_landing_page_skeleton.jinja.html",
                         slow_content_url=slow_content_url
@@ -362,7 +370,7 @@ class IssuerFlaskAppFactory():
             
             trace_id = uuid4() # used to trace calls to links ( espeially action links)
             session['trace_id']= trace_id
-            
+
             return render_from_bp(
                         bp,
                         "pac_issuer_landing_page.jinja.html",
@@ -418,7 +426,7 @@ class IssuerFlaskAppFactory():
             if a := bp._pac_info_extender:
                 a:PacInfoExtender
                 pac_info = a.extend(pac_info)
-            response = render_from_bp(bp, 'pac_info/card.jinja.html',
+            response = render_from_bp(bp, 'pac_info/card_standalone.jinja.html',
                                       pac_info=pac_info,
                                       **request.args
                                       )

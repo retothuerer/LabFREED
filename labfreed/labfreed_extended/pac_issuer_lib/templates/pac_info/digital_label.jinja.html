@@ -1,0 +1,181 @@
+{# CLP "digital label" content - Regulation (EU) 2024/2865 amending CLP (EC) 1272/2008.
+   A voluntary, complementary-to-the-physical-label page reachable via a data carrier
+   (QR/2D barcode) on the physical label - generating that data carrier is out of
+   scope here (see pac_id_generator), this is only the landing page it points to,
+   same role pac_issuer_landing_page.jinja.html already plays for the generic case.
+
+   No skeleton file of its own: pac_issuer_landing_page_skeleton.jinja.html is already
+   fully content-agnostic (just an HTMX loading shell), so an issuer adopting this
+   reuses it unchanged and only overrides pac_issuer_landing_page.jinja.html's content
+   to `{% include "pac_info/digital_label.jinja.html" %}` instead of
+   `pac_info/pac_info.jinja.html` - see developer-docs/design-choices.md. Lives
+   alongside pac_info.jinja.html rather than its own subdirectory, since it's a
+   single file.
+
+   Built entirely from the existing pac_info macro library - no rendering logic of
+   its own beyond picking which attributes to surface where. #}
+{% import "pac_info/base-components.jinja.html" as pac_macros with context %}
+{% import "pac_info/card-components.jinja.html" as card_macros %}
+
+{% block head_extension %}
+<link rel="stylesheet" type="text/css" href="{{ url_for_within_issuer('static', filename='styles_pac_info.css') }}">
+{% endblock %}
+
+{% if pac_info %}
+<section class="lf-results lf-digital-label">
+
+    {# ---- Product identification ---- #}
+    <section class="lf-info-card">
+        {{ card_macros.card_title(pac_info) }}
+        {{ card_macros.card_main(pac_info) }}
+        {{ card_macros.qualification_state(pac_info) }}
+    </section>
+
+    {# ---- Hazard information, surfaced first: matches what a user expects
+           immediately after scanning the data carrier, not buried in a generic
+           attribute table indistinguishable from any other attribute group.
+           Hazard/precautionary statement codes get their own table (code beside its
+           pictogram(s) and full text - see base-components.jinja.html's
+           hazard_statement_row/precautionary_statement_row), rather than the generic
+           attribute_row used for signal word and UFI. ---- #}
+    {% set signal_word_attrs = find_attributes(pac_info.attribute_groups, [RegulatorySafetyKeys.GHS_SIGNAL_WORD]) %}
+    {% set hazard_stmt_attrs = find_attributes(pac_info.attribute_groups, [RegulatorySafetyKeys.GHS_HAZARD_STATEMENT]) %}
+    {% set precautionary_stmt_attrs = find_attributes(pac_info.attribute_groups, [RegulatorySafetyKeys.GHS_PRECAUTIONARY_STATEMENT]) %}
+    {% set ufi_attrs = find_attributes(pac_info.attribute_groups, [RegulatorySafetyKeys.UFI]) %}
+    {# Pictograms are a property of the substance as a whole, not of any one
+       statement row - pulled once from every hazard/precautionary code (a set
+       dedupes, e.g. H300/H310/H330 sharing Skull-and-crossbones), sorted by GHS
+       number, and shown as a single strip above the table instead of repeated
+       per row. Supersedes the old plain safety_pictograms() display - this is a
+       strict superset (same explicit attributes, plus codes derived from the
+       statements themselves). #}
+    {% set explicit_images = explicit_pictogram_images(pac_info) %}
+    {% set pictogram_codes = hazard_pictogram_codes(pac_info, hazard_stmt_attrs + precautionary_stmt_attrs) %}
+    {% if pictogram_codes or signal_word_attrs or hazard_stmt_attrs or precautionary_stmt_attrs or ufi_attrs %}
+    <section class="lf-section lf-section--hazard">
+        <h4 class="lf-section__title">Hazard Information</h4>
+        {{ pac_macros.pictogram_strip(pictogram_codes, explicit_images) }}
+        {% if signal_word_attrs %}
+        <table class="lf-table lf-table--kv">
+            <tbody>
+                {% for a in signal_word_attrs %}{{ pac_macros.attribute_row(a) }}{% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+        {% if hazard_stmt_attrs %}
+        <table class="lf-table lf-table--kv lf-ghs-statements">
+            <tbody>
+                {% for a in hazard_stmt_attrs %}
+                    {% for value in a.value_list %}{{ pac_macros.hazard_statement_row(value) }}{% endfor %}
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+        {% if precautionary_stmt_attrs %}
+        <table class="lf-table lf-table--kv lf-ghs-statements">
+            <tbody>
+                {% for a in precautionary_stmt_attrs %}
+                    {% for value in a.value_list %}{{ pac_macros.precautionary_statement_row(value) }}{% endfor %}
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+        {% if ufi_attrs %}
+        <table class="lf-table lf-table--kv">
+            <tbody>
+                {% for a in ufi_attrs %}{{ pac_macros.attribute_row(a) }}{% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </section>
+    {% endif %}
+
+    {# ---- Supplier & quantity. SUPPLIER's value is expected to be a PAC-ID for the
+           supplier itself (their own name/address/phone live on their own PAC-ID's
+           attributes) - attribute_row() already renders a reference card for any
+           attribute value that resolves as a PAC-ID, no extra handling needed.
+           This issuer's own configured contact_address (SiteMeta) - for the common
+           case where the issuer *is* the supplier - is a separate block, below the
+           safety data sheet. ---- #}
+    {% set supplier_attrs = find_attributes(pac_info.attribute_groups, [
+        IdentifierKeys.SUPPLIER,
+        CommercePackagingKeys.QUANTITY,
+    ]) %}
+    {% if supplier_attrs %}
+    <section class="lf-section lf-section--supplier">
+        <h4 class="lf-section__title">Supplier &amp; Quantity</h4>
+        <table class="lf-table lf-table--kv">
+            <tbody>
+                {% for a in supplier_attrs %}{{ pac_macros.attribute_row(a) }}{% endfor %}
+            </tbody>
+        </table>
+    </section>
+    {% endif %}
+
+    {# ---- Safety data sheet ---- #}
+    {% set sds_attrs = find_attributes(pac_info.attribute_groups, [DocumentKeys.SAFETY_DATA_SHEET]) %}
+    {% if sds_attrs %}
+    <section class="lf-section lf-section--sds">
+        <h4 class="lf-section__title">Safety Data Sheet</h4>
+        <table class="lf-table lf-table--kv">
+            <tbody>
+                {% for a in sds_attrs %}{{ pac_macros.attribute_row(a) }}{% endfor %}
+            </tbody>
+        </table>
+    </section>
+    {% endif %}
+
+    {# ---- Supplier contact address, below the SDS per the user's placement call -
+           this issuer's own configured address (SiteMeta), not attribute data. Only
+           the per-issuer pac_issuer_demo apps (IssuerFlaskAppFactory) supply
+           site_meta as a Jinja global - other consumers of this template (e.g.
+           instrument_demo, which has no "issuer site" concept at all) don't, so this
+           is guarded the same way pac_card_url_for/route_pac_id_url_for are
+           elsewhere in these templates rather than assuming every caller has it. ---- #}
+    {% if site_meta is defined and site_meta.contact_address %}
+    <section class="lf-section lf-section--contact">
+        <h4 class="lf-section__title">Supplier Contact</h4>
+        {# Plain text, not render_text() - that helper's tag allowlist (sub/sup/i/em/
+           pre) is for sanitizing untrusted attribute values, not issuer-owned config;
+           it also has no <br>, so it'd fight a multi-line address rather than help.
+           Auto-escaped by Jinja same as any other value; newlines become visual line
+           breaks via CSS white-space: pre-line instead. #}
+        <p class="lf-issuer-contact-address">{{ site_meta.contact_address }}</p>
+    </section>
+    {% endif %}
+
+    {# ---- Services ---- #}
+    {% if pac_info.user_handovers %}
+        <section>
+        <h4>Services</h4>
+        {% for sg in pac_info.user_handovers %}
+            {{ pac_macros.service_group_block(sg) }}
+        {% endfor %}
+        </section>
+    {% endif %}
+
+    {# ---- All attributes. Note: the hazard/supplier/quantity/SDS attributes
+           highlighted above will also appear again here, since they're ordinary
+           members of pac_info.attribute_groups like any other attribute -
+           deliberately not deduped in this first pass, see design-choices.md. ---- #}
+    {% if pac_info.attribute_groups %}
+        <section>
+        <h4>Attributes</h4>
+        {% for ag in pac_info.attribute_groups.values() %}
+            {% if ag.key not in hide_attribute_groups %}
+                {{ pac_macros.attribute_group_block(ag) }}
+            {% endif %}
+        {% endfor %}
+        </section>
+    {% endif %}
+
+    {# ---- Attached data (T-REX) ---- #}
+    {% if pac_info.attached_data %}
+        <section>
+            <h4 class="lf-section__title">Attached Data (T-REX)</h4>
+            {{ pac_macros.attached_data_block(pac_info.attached_data) }}
+        </section>
+    {% endif %}
+
+</section>
+{% endif %}

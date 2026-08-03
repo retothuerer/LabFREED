@@ -1,21 +1,16 @@
-{% import 'pac_info/card-components.jinja.html' as card_macros with context%}
+{% import 'pac_info/card-components.jinja.html' as card_macros %}
 
-
-{# The full card #}
+{# The full info card, as a macro only - see card_standalone.jinja.html to render it directly. #}
 {% macro info_card(pac_info) %}
 
     <section class="lf-info-card">
-        {{ card_macros.card_title() }}
-        
-        {{ card_macros.card_main() }}
+        {{ card_macros.card_title(pac_info) }}
 
-        {{ card_macros.safety_pictograms() }}
+        {{ card_macros.card_main(pac_info) }}
 
-        {{ card_macros.qualification_state() }}
+        {{ card_macros.safety_pictograms(pac_info) }}
+
+        {{ card_macros.qualification_state(pac_info) }}
     </section>
 
 {% endmacro %}
-
-
-
-{{ info_card(pac_info) }}

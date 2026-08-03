@@ -2,12 +2,12 @@
 import logging
 from flask import render_template, request
 from labfreed.pac_attributes.api_data_models.request import AttributeRequestData
-from labfreed.pac_attributes.api_data_models.response import AttributeGroup
+from labfreed.pac_attributes.api_data_models.response import Spec_AttributeGroup
 from labfreed.pac_cat.pac_cat import PAC_CAT
 from labfreed.pac_cat.predefined_categories import Material_Device, Material_Consumable, Material_Substance
 
 
-from labfreed.pac_attributes.pythonic.py_attributes import pyAttributes, pyAttribute
+from labfreed.pac_attributes.facade.py_attributes import Attributes, Attribute
 from labfreed.pac_attributes.server.attribute_data_sources import AttributeGroupDataSource
 from labfreed.pac_attributes.server.translation_data_sources import DictTranslationDataSource
 
@@ -70,12 +70,12 @@ class DynamicDemoAttributeGroup(AttributeGroupDataSource):
         )
 
     
-    def attributes(self, subject_id: str) -> AttributeGroup:
+    def attributes(self, subject_id: str) -> Spec_AttributeGroup:
         if not self._pac_filter_predicate(subject_id):
             return None
-        
-        attributes = pyAttributes( [pyAttribute(key=d[0], value=d[1]) for d in self._data] ).to_payload_attributes()
-        return AttributeGroup(group_key=self.attribute_group_key,
+
+        attributes = Attributes( [Attribute(key=d[0], value=d[1]) for d in self._data] ).to_payload_attributes()
+        return Spec_AttributeGroup(group_key=self.attribute_group_key,
                               attributes=attributes)
         
         
