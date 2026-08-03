@@ -12,7 +12,7 @@ from labfreed.pac_attributes.well_known_attribute_keys import (
 )
 from labfreed.pac_cat.pac_cat import PAC_CAT
 from labfreed.trex.facade import DataTable
-from labfreed.well_known_keys.unece.ghs_statements import (
+from labfreed.utilities.ghs.ghs_statements import (
     extract_statement_code,
     hazard_statement_text,
     pictogram_codes_for_hazard_statement,
