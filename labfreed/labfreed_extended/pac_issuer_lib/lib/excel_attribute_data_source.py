@@ -7,7 +7,7 @@ from typing import Optional, Tuple, List, Dict
 from cachetools import TTLCache, cachedmethod
 
 from labfreed.pac_attributes.api_data_models.response import Spec_AttributeGroup
-from labfreed.pac_attributes.facade.py_attributes import Attribute, Attributes
+from labfreed.pac_attributes.facade.attributes import Attribute, Attributes
 from labfreed.pac_attributes.server.server import AttributeGroupDataSource
 
 try:

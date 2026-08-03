@@ -1,6 +1,6 @@
 import pytest
 
-from labfreed.trex.facade.pyTREX import T_REX
+from labfreed.trex.facade.t_rex import T_REX
 from labfreed.utilities.quantity import Quantity
 
 

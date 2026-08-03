@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod, abstractproperty
 from typing import Callable
 import requests
+from deprecated import deprecated
 from labfreed.labfreed_infrastructure import LabFREED_ValidationError
 from labfreed.pac_attributes.api_data_models.response import Spec_Attribute, Spec_AttributeGroup
 from labfreed.pac_cat.pac_cat import PAC_CAT
@@ -82,7 +83,7 @@ class AttributeGroupDataSource(ABC):
         return keys
 
 
-class Dict_DataSource(AttributeGroupDataSource):
+class Spec_Dict_DataSource(AttributeGroupDataSource):
     def __init__(self, data:dict[str, dict[str, Spec_Attribute]], *args, **kwargs):
         if not all([isinstance(e, dict) for e in data.values()]):
             raise ValueError('Invalid data')
@@ -110,6 +111,11 @@ class Dict_DataSource(AttributeGroupDataSource):
 
         return Spec_AttributeGroup(group_key=self.attribute_group_key,
                               attributes=attributes)
+
+
+@deprecated("Use Spec_Dict_DataSource")
+class Dict_DataSource(Spec_Dict_DataSource):
+    '''Deprecated alias for Spec_Dict_DataSource - kept for backward compatibility.'''
 
 
 class RemoteAttributeDataSource(AttributeGroupDataSource):

@@ -1,7 +1,7 @@
 import pytest
 
 from labfreed.trex import Spec_T_REX
-from labfreed.trex.facade.pyTREX import T_REX
+from labfreed.trex.facade.t_rex import T_REX
 
 
 def test_empty_value_becomes_none_for_every_type():

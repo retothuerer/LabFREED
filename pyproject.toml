@@ -47,7 +47,8 @@ dev = [
 extended = [
     "Flask>=3.1.1",
     "Flask-Cors>=6.0.2",
-    "openpyxl>=3.1.5"
+    "openpyxl>=3.1.5",
+    "nh3>=0.2.18"
 ]
 units = [
     "pint>=0.25.0",

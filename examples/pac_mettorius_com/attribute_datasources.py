@@ -7,8 +7,8 @@ from labfreed.pac_attributes.well_known_attribute_keys import MetaAttributeKeys,
 from labfreed.pac_cat.pac_cat import PAC_CAT
 from labfreed.pac_cat.predefined_categories import Material_Device
 
-from labfreed.pac_attributes.facade.py_dict_data_source import pyDict_DataSource
-from labfreed.pac_attributes.facade.py_attributes import Attributes, Attribute, Reference, Resource
+from labfreed.pac_attributes.facade.dict_data_source import Dict_DataSource
+from labfreed.pac_attributes.facade.attributes import Attributes, Attribute, Reference, Resource
 from labfreed.pac_attributes.server.translation_data_sources import DictTranslationDataSource
 from labfreed.utilities.quantity import Quantity, CommonQuantityUnit
 
@@ -39,7 +39,7 @@ Create a datasource. For this demo let's use a Dict_DataSource, and configure it
 NOTE: Such a metadata source is good practice to include
 '''
 
-safety_ds = pyDict_DataSource(
+safety_ds = Dict_DataSource(
     attribute_group_key="https://labfreed.org/safety",
     include_extensions=False,
     data={
@@ -78,7 +78,7 @@ translation_data_sources.append(
 
 
 
-supplier_meta_data_ds = pyDict_DataSource(
+supplier_meta_data_ds = Dict_DataSource(
     attribute_group_key="https://labfreed.org/supplier-data",
     pac_to_key=product_number_from_pac_url,
     data={
@@ -105,7 +105,7 @@ data_sources.append(supplier_meta_data_ds)
 
 
 
-my_definitions_ds =  pyDict_DataSource(
+my_definitions_ds =  Dict_DataSource(
     attribute_group_key="https://mettorius.com/definitions",
     data={
         "HTTPS://PAC.METTORIUS.COM/-DS/BOILING-POINT/DEFINITION": Attributes([

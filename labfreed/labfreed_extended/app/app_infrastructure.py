@@ -5,7 +5,7 @@ import requests
 
 from labfreed.labfreed_extended.app.pac_info.pac_info import PacInfo
 from labfreed.pac_attributes.client.client import AttributeClient, http_attribute_request_default_callback_factory
-from labfreed.pac_attributes.facade.py_attributes import AttributeGroup
+from labfreed.pac_attributes.facade.attributes import AttributeGroup
 
 from labfreed.pac_id.pac_id import PAC_ID
 from labfreed.pac_id_resolver.resolver import PAC_ID_Resolver, cit_from_str

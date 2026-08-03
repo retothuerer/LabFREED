@@ -3,7 +3,7 @@ from urllib.parse import urlparse
 import nh3
 from markupsafe import Markup
 
-from labfreed.pac_attributes.facade.py_attributes import Reference, Resource
+from labfreed.pac_attributes.facade.attributes import Reference, Resource
 from labfreed.pac_attributes.well_known_attribute_keys import (
     CommercePackagingKeys,
     DocumentKeys,

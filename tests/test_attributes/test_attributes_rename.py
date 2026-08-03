@@ -7,7 +7,7 @@ from labfreed.pac_attributes.api_data_models.response import (
     Attribute as OldAttribute,
     AttributeGroup as OldAttributeGroup,
 )
-from labfreed.pac_attributes.facade.py_attributes import (
+from labfreed.pac_attributes.facade.attributes import (
     Attribute,
     AttributeGroup,
     Attributes,
@@ -19,6 +19,14 @@ from labfreed.pac_attributes.facade.py_attributes import (
     pyReference,
     pyResource,
 )
+from labfreed.pac_attributes.server.attribute_data_sources import (
+    Spec_Dict_DataSource,
+    Dict_DataSource as OldServerDict_DataSource,
+)
+from labfreed.pac_attributes.facade.dict_data_source import (
+    Dict_DataSource,
+    pyDict_DataSource,
+)
 
 
 # Covers the pac_attributes/facade rename: core Attribute/AttributeGroup -> Spec_Attribute/
@@ -26,6 +34,11 @@ from labfreed.pac_attributes.facade.py_attributes import (
 # pyAttributeGroup/pyAttributes/pyReference/pyResource -> Attribute/AttributeGroup/
 # Attributes/Reference/Resource (old py* names kept as deprecated aliases). See
 # design-choices.md for the "flip the plain name onto the wrapper" reasoning.
+#
+# Dict_DataSource follows the same wrapper rename, but the plain name was already taken
+# by the server-side class working with raw Spec_Attribute dicts - that class became
+# Spec_Dict_DataSource (old name kept as a deprecated alias) to free up Dict_DataSource
+# for the facade wrapper (formerly pyDict_DataSource, now also a deprecated alias).
 
 def test_spec_attribute_is_the_renamed_core_type():
     attr = Spec_Attribute(key='k', label='l', items=[])
@@ -96,3 +109,30 @@ def test_old_pyreference_and_pyresource_still_work_and_warn():
         res = pyResource('https://example.com/y')
     assert isinstance(res, pyResource)
     assert isinstance(res, Resource)
+
+
+def test_spec_dict_data_source_is_the_renamed_core_type():
+    ds = Spec_Dict_DataSource(attribute_group_key='g', data={})
+    assert isinstance(ds, Spec_Dict_DataSource)
+
+
+def test_old_server_dict_data_source_name_still_works_and_warns():
+    with pytest.deprecated_call():
+        ds = OldServerDict_DataSource(attribute_group_key='g', data={})
+    assert isinstance(ds, OldServerDict_DataSource)
+    assert isinstance(ds, Spec_Dict_DataSource)
+
+
+def test_dict_data_source_is_the_renamed_facade_wrapper_type():
+    ds = Dict_DataSource(attribute_group_key='g', data={'subj': Attributes([Attribute(key='k', values='v')])})
+    assert isinstance(ds, Dict_DataSource)
+    assert isinstance(ds, Spec_Dict_DataSource)
+    group = ds.attributes('subj')
+    assert isinstance(group, Spec_AttributeGroup)
+
+
+def test_old_pydict_data_source_name_still_works_and_warns():
+    with pytest.deprecated_call():
+        ds = pyDict_DataSource(attribute_group_key='g', data={'subj': Attributes([Attribute(key='k', values='v')])})
+    assert isinstance(ds, pyDict_DataSource)
+    assert isinstance(ds, Dict_DataSource)

@@ -3,8 +3,8 @@ from datetime import datetime
 from labfreed.pac_attributes.api_data_models.request import AttributeRequestData
 from labfreed.pac_attributes.api_data_models.response import AttributeResponsePayload
 from labfreed.pac_attributes.client.client import AttributeClient
-from labfreed.pac_attributes.facade.py_attributes import Attribute, Attributes, Reference
-from labfreed.pac_attributes.facade.py_dict_data_source import pyDict_DataSource
+from labfreed.pac_attributes.facade.attributes import Attribute, Attributes, Reference
+from labfreed.pac_attributes.facade.dict_data_source import Dict_DataSource
 from labfreed.pac_attributes.server.server import AttributeServerRequestHandler
 from labfreed.pac_attributes.server.translation_data_sources import DictTranslationDataSource
 from labfreed.utilities.translations import Term, Terms
@@ -18,7 +18,7 @@ ALIQUOT_PAC_ID = "HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/+ACMELABS.C
 
 
 def _build_handler():
-    data_source = pyDict_DataSource(
+    data_source = Dict_DataSource(
         attribute_group_key="ProductionData",
         data={
             NORMAL_PAC_ID: Attributes([

@@ -172,8 +172,8 @@ This shows the core data model only: an in-memory data source, served in-process
 For an actual deployable server and a PAC-ID landing page built on the same classes, see
 [Setting up a PAC-ID Landing Page](examples/pac_mettorius_com/README.md).
 '''
-from labfreed.pac_attributes.facade.py_attributes import Attribute, Attributes, Resource  # noqa: E402
-from labfreed.pac_attributes.facade.py_dict_data_source import pyDict_DataSource  # noqa: E402
+from labfreed.pac_attributes.facade.attributes import Attribute, Attributes, Resource  # noqa: E402
+from labfreed.pac_attributes.facade.dict_data_source import Dict_DataSource  # noqa: E402
 from labfreed.pac_attributes.well_known_attribute_keys import MetaAttributeKeys  # noqa: E402
 from labfreed.pac_attributes.server.translation_data_sources import DictTranslationDataSource  # noqa: E402
 from labfreed.pac_attributes.server.server import AttributeServerRequestHandler  # noqa: E402
@@ -182,7 +182,7 @@ from labfreed.utilities.translations import Terms, Term  # noqa: E402
 
 # Attributes for one PAC-ID. A data source could just as well read this from a database, an Excel sheet, or anywhere else.
 pac_str = 'HTTPS://PAC.METTORIUS.COM/-MD/BAL500/000001'
-data_source = pyDict_DataSource(
+data_source = Dict_DataSource(
     attribute_group_key=MetaAttributeKeys.GROUPKEY,
     data={
         pac_str: Attributes([

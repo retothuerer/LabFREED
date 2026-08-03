@@ -4,8 +4,8 @@ import os
 import random
 
 from flask import Request
-from labfreed.pac_attributes.facade.py_attributes import Attribute, Attributes, Reference, Resource
-from labfreed.pac_attributes.facade.py_dict_data_source import pyDict_DataSource
+from labfreed.pac_attributes.facade.attributes import Attribute, Attributes, Reference, Resource
+from labfreed.pac_attributes.facade.dict_data_source import Dict_DataSource
 from labfreed.pac_cat.pac_cat import PAC_CAT
 from labfreed.pac_cat.predefined_categories import Material_Device
 from labfreed.utilities.translations import Terms, Term
@@ -39,7 +39,7 @@ Create a datasource. For this demo let's use a Dict_DataSource, and configure it
 NOTE: Such a metadata source is good practice to include
 '''
 data_sources.append(
-    pyDict_DataSource( 
+    Dict_DataSource( 
         attribute_group_key=MetaAttributeKeys.GROUPKEY,
         include_extensions=False,
         data = {

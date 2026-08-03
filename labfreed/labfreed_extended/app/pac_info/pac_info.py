@@ -3,7 +3,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pydantic import BaseModel, Field
-from labfreed.pac_attributes.facade.py_attributes import Attribute, AttributeGroup, Attributes, Reference, Resource
+from labfreed.pac_attributes.facade.attributes import Attribute, AttributeGroup, Attributes, Reference, Resource
 from labfreed.pac_attributes.well_known_attribute_keys import MetaAttributeKeys
 from labfreed.pac_cat.pac_cat import PAC_CAT
 from labfreed.pac_cat.predefined_categories import PredefinedCategory
@@ -11,7 +11,7 @@ from labfreed.pac_id.pac_id import PAC_ID
 from labfreed.pac_id_resolver.services import ServiceGroup, Service
 from labfreed.labfreed_extended.app.formatted_print import StringIOLineBreak
 from labfreed.trex.facade.data_table import DataTable
-from labfreed.trex.facade.pyTREX import T_REX
+from labfreed.trex.facade.t_rex import T_REX
 from labfreed.well_known_extensions.display_name_extension import DisplayNameExtension
 from enum import Enum
 

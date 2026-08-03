@@ -1,7 +1,7 @@
 import pytest
 
 from labfreed.pac_attributes.client.client_attribute_group import ClientAttributeGroup
-from labfreed.pac_attributes.facade.py_attributes import Attribute, AttributeGroup, Attributes
+from labfreed.pac_attributes.facade.attributes import Attribute, AttributeGroup, Attributes
 
 
 def test_from_attribute_group_round_trip_preserves_all_fields():

@@ -1,7 +1,7 @@
 import pytest
 
 from labfreed.trex.trex import Spec_T_REX, TREX
-from labfreed.trex.facade.pyTREX import T_REX, pyTREX
+from labfreed.trex.facade.t_rex import T_REX, pyTREX
 
 
 # Covers the trex/facade rename: TREX (spec-literal core) -> Spec_T_REX, with TREX kept

@@ -7,7 +7,7 @@ from labfreed.pac_cat.pac_cat import PAC_CAT
 from labfreed.pac_cat.predefined_categories import Material_Device, Material_Consumable, Material_Substance
 
 
-from labfreed.pac_attributes.facade.py_attributes import Attributes, Attribute
+from labfreed.pac_attributes.facade.attributes import Attributes, Attribute
 from labfreed.pac_attributes.server.attribute_data_sources import AttributeGroupDataSource
 from labfreed.pac_attributes.server.translation_data_sources import DictTranslationDataSource
 

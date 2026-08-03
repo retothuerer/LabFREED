@@ -25,7 +25,6 @@ def from_url(url):
     return PAC_CAT.from_url(url, suppress_validation_errors=True)
 
 
-@pytest.mark.skip(reason="NOT REVIEWED")
 def test_main_category_is_the_first_category():
     ''' `categories` re-parses on every access (no caching), and full model equality is
     unreliable here too (ValidationMessage.source_id=id(self) breaks == for any object

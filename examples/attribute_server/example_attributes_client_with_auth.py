@@ -14,7 +14,7 @@ from flask import Request
 
 from labfreed.pac_attributes.api_data_models.response import Spec_Attribute, TextAttributeItemsElement
 from labfreed.labfreed_extended.pac_issuer_lib.lib.attribute_server_factory import AttributeServerFactory, Webframework
-from labfreed.pac_attributes.server.attribute_data_sources import Dict_DataSource
+from labfreed.pac_attributes.server.attribute_data_sources import Spec_Dict_DataSource
 from labfreed.pac_attributes.server.translation_data_sources import DictTranslationDataSource
 from labfreed.pac_attributes.well_known_attribute_keys import MetaAttributeKeys
 from labfreed.utilities.translations import Terms, Term
@@ -24,7 +24,7 @@ from labfreed.pac_attributes.client.client import AttributeClient, authenticated
 
 PAC_STR = 'HTTPS://PAC.METTORIUS.COM/-MD/BAL500/000001'
 
-data_source = Dict_DataSource(
+data_source = Spec_Dict_DataSource(
     attribute_group_key=MetaAttributeKeys.GROUPKEY,
     data={
         PAC_STR: {

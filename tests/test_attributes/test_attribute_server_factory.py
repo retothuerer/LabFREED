@@ -6,8 +6,8 @@ from labfreed.labfreed_extended.pac_issuer_lib.lib.attribute_server_factory impo
     NoAuthRequiredAuthenticator,
     Webframework,
 )
-from labfreed.pac_attributes.facade.py_attributes import Attribute, Attributes
-from labfreed.pac_attributes.facade.py_dict_data_source import pyDict_DataSource
+from labfreed.pac_attributes.facade.attributes import Attribute, Attributes
+from labfreed.pac_attributes.facade.dict_data_source import Dict_DataSource
 from labfreed.pac_attributes.server.translation_data_sources import DictTranslationDataSource
 from labfreed.utilities.translations import Term, Terms
 
@@ -16,7 +16,7 @@ TRAILING_SLASH_PAC_ID = "HTTPS://PAC.METTORIUS.COM/-MD/BAL500/12345/"
 
 
 def _build_test_client():
-    data_source = pyDict_DataSource(
+    data_source = Dict_DataSource(
         attribute_group_key="ProductionData",
         data={
             NORMAL_PAC_ID: Attributes([Attribute(key="MfgDate", value=datetime(2015, 10, 1))]),
