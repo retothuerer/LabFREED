@@ -89,9 +89,9 @@ TREX can conveniently be created from a python dictionary.
 Note that utility types for Quantity (number with unit) and table are needed
 '''
 from datetime import datetime  # noqa: E402
-from labfreed.trex.pythonic import pyTREX  # noqa: E402
-from labfreed.trex.pythonic import DataTable  # noqa: E402
-from labfreed.trex.pythonic import Quantity  # noqa: E402
+from labfreed.trex.facade import T_REX  # noqa: E402
+from labfreed.trex.facade import DataTable  # noqa: E402
+from labfreed.trex.facade import Quantity  # noqa: E402
 from labfreed.utilities.quantity import CommonQuantityUnit  # noqa: E402
 
 # Value segments of different type
@@ -103,7 +103,7 @@ segments = {
                 'COMMENT': 'FOO',
                 'COMMENT2':'£'
             }
-mydata = pyTREX(segments)
+mydata = T_REX(segments)
 
 # Create a table
 table = DataTable(col_names=['DURATION', 'Date', 'OK', 'COMMENT'])
@@ -172,8 +172,8 @@ This shows the core data model only: an in-memory data source, served in-process
 For an actual deployable server and a PAC-ID landing page built on the same classes, see
 [Setting up a PAC-ID Landing Page](examples/pac_mettorius_com/README.md).
 '''
-from labfreed.pac_attributes.pythonic.py_attributes import pyAttribute, pyAttributes, pyResource  # noqa: E402
-from labfreed.pac_attributes.pythonic.py_dict_data_source import pyDict_DataSource  # noqa: E402
+from labfreed.pac_attributes.facade.py_attributes import Attribute, Attributes, Resource  # noqa: E402
+from labfreed.pac_attributes.facade.py_dict_data_source import pyDict_DataSource  # noqa: E402
 from labfreed.pac_attributes.well_known_attribute_keys import MetaAttributeKeys  # noqa: E402
 from labfreed.pac_attributes.server.translation_data_sources import DictTranslationDataSource  # noqa: E402
 from labfreed.pac_attributes.server.server import AttributeServerRequestHandler  # noqa: E402
@@ -185,9 +185,9 @@ pac_str = 'HTTPS://PAC.METTORIUS.COM/-MD/BAL500/000001'
 data_source = pyDict_DataSource(
     attribute_group_key=MetaAttributeKeys.GROUPKEY,
     data={
-        pac_str: pyAttributes([
-            pyAttribute(key=MetaAttributeKeys.DISPLAYNAME, value="My Balance"),
-            pyAttribute(key=MetaAttributeKeys.IMAGE, value=pyResource("https://picsum.photos/id/82/200")),
+        pac_str: Attributes([
+            Attribute(key=MetaAttributeKeys.DISPLAYNAME, value="My Balance"),
+            Attribute(key=MetaAttributeKeys.IMAGE, value=Resource("https://picsum.photos/id/82/200")),
         ])
     }
 )
@@ -211,7 +211,7 @@ Querying works the same whether the handler above is embedded in a Flask app or,
 client = AttributeClient(http_post_callback=local_attribute_request_callback_factory(handler))
 attribute_groups = client.get_attributes(server_url='', pac_id=pac_str)
 for group in attribute_groups:
-    for attr in pyAttributes.from_payload_attributes(group.attributes):
+    for attr in Attributes.from_payload_attributes(group.attributes):
         values = ', '.join(str(v) for v in attr.value_list)
         print(f'{attr.label}: {values}')
 

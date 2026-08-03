@@ -9,7 +9,7 @@ from typing import Literal
 import logging
 
 from labfreed.pac_attributes.api_data_models.request import AttributeRequestData
-from labfreed.pac_attributes.api_data_models.response import AttributeResponsePayload, AttributesOfItem, ReferenceAttributeItemsElement, AttributeGroup
+from labfreed.pac_attributes.api_data_models.response import AttributeResponsePayload, AttributesOfItem, ReferenceAttributeItemsElement, Spec_AttributeGroup
 from labfreed.pac_attributes.api_data_models.server_capabilities_response import ServerCapabilities
 from labfreed.pac_attributes.server.attribute_data_sources import AttributeGroupDataSource
 from labfreed.pac_attributes.server.translation_data_sources import TranslationDataSource
@@ -134,7 +134,7 @@ class AttributeServerRequestHandler():
                                  attribute_groups=attribute_groups)
         
             
-    def _remove_duplicate_attributes(self, attribute_groups:list[AttributeGroup]) -> list[AttributeGroup]:
+    def _remove_duplicate_attributes(self, attribute_groups:list[Spec_AttributeGroup]) -> list[Spec_AttributeGroup]:
         keep_attributes = self._keep_duplicate_attributes_config
         match keep_attributes:
             case "last":

@@ -11,7 +11,7 @@ import requests
 from pydantic import ValidationError
 
 from labfreed.pac_attributes.api_data_models.request import AttributeRequestData
-from labfreed.pac_attributes.api_data_models.response import AttributeGroup, AttributeResponsePayload
+from labfreed.pac_attributes.api_data_models.response import Spec_AttributeGroup, AttributeResponsePayload
 from labfreed.pac_attributes.client.auth import AuthRule, PatternMatchedAuth
 from labfreed.pac_attributes.client.client_attribute_group import ClientAttributeGroup
 from labfreed.pac_attributes.server.server import AttributeServerRequestHandler
@@ -119,7 +119,7 @@ class AttributeClient():
                        pac_id:PAC_ID|str ,
                        restrict_to_attribute_groups:list[str]|None=None,
                        language_preferences:list[str]|None=None
-                       ) -> list[AttributeGroup]:
+                       ) -> list[Spec_AttributeGroup]:
         """Requests the attributes for one subject id from one attribute server. Always
         makes a fresh request via http_post_callback - there is no caching here.
 

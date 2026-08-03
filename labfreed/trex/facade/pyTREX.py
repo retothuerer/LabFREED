@@ -4,35 +4,36 @@ import logging
 import re
 from typing import Self
 
+from deprecated import deprecated
 from pydantic import RootModel
 from labfreed.well_known_keys.unece import ucum_bridge
 from labfreed.well_known_keys.unece.unece_units import unece_units
-from labfreed.trex.pythonic.data_table import DataTable
+from labfreed.trex.facade.data_table import DataTable
 from labfreed.utilities.base36 import from_base36, base36, to_base36
 
 from labfreed.utilities.quantity import Quantity
 from labfreed.trex.table_segment import ColumnHeader, TableSegment
-from labfreed.trex.trex import TREX
+from labfreed.trex.trex import Spec_T_REX
 from labfreed.trex.trex_base_models import AlphanumericValue, BinaryValue, BoolValue, DateValue, ErrorValue, NumericValue, TextValue
 from labfreed.trex.value_segments import BoolSegment, ErrorSegment, TextSegment, NumericSegment, AlphanumericSegment, DateSegment, ValueSegment
 
 
-class pyTREX(RootModel[dict[str, Quantity | datetime | time | date | bool | str | base36 | DataTable]]):
-    ''' A wrapper around dict, which knows how to convert to and from TREX. 
+class T_REX(RootModel[dict[str, Quantity | datetime | time | date | bool | str | base36 | DataTable]]):
+    ''' A wrapper around dict, which knows how to convert to and from Spec_T_REX.
         It restricts the types allowed as values. Keys must be str.
     '''
     model_config = {'arbitrary_types_allowed':True} # needed to allow Quantity and DataTable w/o implementing the pydantic schema
     '''@private'''
 
-    
+
     @classmethod
-    def from_trex(cls, trex:TREX) -> Self:
-        '''Creates a pyTREX from a TREX'''
+    def from_trex(cls, trex:Spec_T_REX) -> Self:
+        '''Creates a T_REX from a Spec_T_REX'''
         return {seg.key: _trex_segment_to_python_type(seg) for seg in trex.segments}
-             
-             
-    def to_trex(self) -> TREX:
-        '''Creates a TREX'''
+
+
+    def to_trex(self) -> Spec_T_REX:
+        '''Creates a Spec_T_REX'''
         segments = list()
         for k, v in self.root.items():
             if v is None:
@@ -107,8 +108,8 @@ class pyTREX(RootModel[dict[str, Quantity | datetime | time | date | bool | str 
                             r.append(_text_value_from_python_type(e))
                     data.append(r)
                 segments.append(TableSegment(key=k, column_headers=headers, data=data))
-        return TREX(segments=segments)
-    
+        return Spec_T_REX(segments=segments)
+
     # make the usual dict methods available, for convenience
     def __getitem__(self, key): return self.root[key]
     def __setitem__(self, key, value): self.root[key] = value
@@ -120,9 +121,13 @@ class pyTREX(RootModel[dict[str, Quantity | datetime | time | date | bool | str 
     def __contains__(self, key): return key in self.root
     def __iter__(self): return iter(self.root)
     def __len__(self): return len(self.root)
-    
-  
-  
+
+
+@deprecated("Use T_REX")
+class pyTREX(T_REX):
+    '''Deprecated alias for T_REX - kept for backward compatibility.'''
+
+
 # Helper functions to convert python types to TREX types
 
 def unece_unit_code_from_quantity(q:Quantity):

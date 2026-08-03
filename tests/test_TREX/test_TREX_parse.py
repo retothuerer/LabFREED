@@ -1,17 +1,17 @@
 import pytest
 
-from labfreed.trex import TREX, TableSegment
+from labfreed.trex import Spec_T_REX, TableSegment
 
 
 def trex_deserialization_helper(trex_str):
-    trex = TREX.deserialize(trex_str)
+    trex = Spec_T_REX.deserialize(trex_str)
     return trex
 
 
     
 def test_trex_parse():
     trex_str = 'A$T.A:ASDFAS+B$T.B:T'
-    trex = TREX.deserialize(trex_str)
+    trex = Spec_T_REX.deserialize(trex_str)
     seg = trex.get_segment('A')
     assert seg.type == 'T.A'
     assert seg.value == 'ASDFAS'

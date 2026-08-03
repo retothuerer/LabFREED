@@ -8,8 +8,8 @@ from deprecated import deprecated
 from pydantic import RootModel, field_validator, model_validator
 
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel
-from labfreed.pac_attributes.api_data_models.response import (Attribute, AttributeItemsElementBase, AttributeGroup, 
-                                                              BoolAttributeItemsElement, DateTimeAttributeItemsElement, NumericAttributeItemsElement,  
+from labfreed.pac_attributes.api_data_models.response import (Spec_Attribute, AttributeItemsElementBase, Spec_AttributeGroup,
+                                                              BoolAttributeItemsElement, DateTimeAttributeItemsElement, NumericAttributeItemsElement,
                                                               ObjectAttributeItemsElement, ReferenceAttributeItemsElement,  ResourceAttributeItemsElement,
                                                               TextAttributeItemsElement)
 from labfreed.pac_attributes.client.client_attribute_group import ClientAttributeGroup
@@ -18,23 +18,33 @@ from labfreed.utilities.quantity import Quantity
 
 
 
-class pyReference(RootModel[str]):
+class Reference(RootModel[str]):
 
     def __str__(self):
         return str(self.root)
-    
-class pyResource(RootModel[str]):
+
+class Resource(RootModel[str]):
 
     def __str__(self):
         return str(self.root)
+
+
+@deprecated("Use Reference")
+class pyReference(Reference):
+    '''Deprecated alias for Reference - kept for backward compatibility.'''
+
+
+@deprecated("Use Resource")
+class pyResource(Resource):
+    '''Deprecated alias for Resource - kept for backward compatibility.'''
 
 
 # the allowed scalar types
-AllowedValue = str | bool | datetime | pyReference | pyResource | Quantity | int | float | dict | object
+AllowedValue = str | bool | datetime | Reference | Resource | Quantity | int | float | dict | object
 # homogeneous list of those
 AllowedList = list[AllowedValue]
 
-class pyAttribute(LabFREED_BaseModel):
+class Attribute(LabFREED_BaseModel):
     key:str
     label:str = ""
     values: AllowedValue | AllowedList
@@ -69,20 +79,24 @@ class pyAttribute(LabFREED_BaseModel):
             return v.value
         else:
             return v
-        
-    
 
-class pyAttributes(RootModel[list[pyAttribute]]):
-    def to_payload_attributes(self) -> dict[str, Attribute]:
+
+@deprecated("Use Attribute")
+class pyAttribute(Attribute):
+    '''Deprecated alias for Attribute - kept for backward compatibility.'''
+
+
+class Attributes(RootModel[list[Attribute]]):
+    def to_payload_attributes(self) -> dict[str, Spec_Attribute]:
         out = {}
         for e in self.root:
             payload_attr = self._attribute_to_attribute_payload_type(e)
             out.update({e.key: payload_attr})
         return out
-    
-            
-    @staticmethod        
-    def _attribute_to_attribute_payload_type(attribute:pyAttribute) -> AttributeItemsElementBase:
+
+
+    @staticmethod
+    def _attribute_to_attribute_payload_type(attribute:Attribute) -> AttributeItemsElementBase:
         items = []
         for value in attribute.value_list:
             
@@ -118,10 +132,10 @@ class pyAttributes(RootModel[list[pyAttribute]]):
                 else:
                     items.append(TextAttributeItemsElement(value=value))
 
-            elif isinstance(value, pyReference):
+            elif isinstance(value, Reference):
                 items.append(ReferenceAttributeItemsElement(value=value.root))
 
-            elif isinstance(value, pyResource):
+            elif isinstance(value, Resource):
                 items.append(ResourceAttributeItemsElement(value=value.root))
                 
             elif isinstance(value, PAC_ID):
@@ -139,25 +153,24 @@ class pyAttributes(RootModel[list[pyAttribute]]):
         if not all(type(e) is type(items[0]) for e in items):
             logging.warning("Not all elements in items have the same type. This might cause unexpected behaviour in clients.")
         
-        attr = Attribute(key=attribute.key,
+        attr = Spec_Attribute(key=attribute.key,
                          label= attribute.label,
                          items=items)
         return attr
-            
-  
-        
+
+
     @staticmethod
-    def from_payload_attributes(attributes:dict[str, Attribute]) -> 'pyAttributes':
+    def from_payload_attributes(attributes:dict[str, Spec_Attribute]) -> 'Attributes':
         out = list()
         for a in attributes.values():
             values = []
             for v in a.items:
                 match v:
                     case ReferenceAttributeItemsElement() :
-                        values.append(pyReference(v.value))
-                        
+                        values.append(Reference(v.value))
+
                     case ResourceAttributeItemsElement() :
-                        values.append(pyResource(v.value))
+                        values.append(Resource(v.value))
                         
                     case NumericAttributeItemsElement() :
                         # v._unit already went through response.py's own (non-fatal, WARNING-level)
@@ -177,20 +190,29 @@ class pyAttributes(RootModel[list[pyAttribute]]):
                     case ObjectAttributeItemsElement() :
                         values.append(v.value)
    
-            attr = pyAttribute(key=a.key, 
+            attr = Attribute(key=a.key,
                             label=a.label,
                             values=values
             )
             out.append(attr )
         return out
-            
-            
-        
-class pyAttributeGroup(ClientAttributeGroup):
-    attributes:dict[str,pyAttribute]
-    
-    @staticmethod
-    def from_attribute_group(attribute_group:AttributeGroup):
+
+
+@deprecated("Use Attributes")
+class pyAttributes(Attributes):
+    '''Deprecated alias for Attributes - kept for backward compatibility.'''
+
+
+class AttributeGroup(ClientAttributeGroup):
+    attributes:dict[str,Attribute]
+
+    @classmethod
+    def from_attribute_group(cls, attribute_group:Spec_AttributeGroup):
         data = attribute_group.model_dump()
-        data["attributes"] = {a.key: a for a in pyAttributes.from_payload_attributes(attribute_group.attributes)}
-        return pyAttributeGroup(**data)
+        data["attributes"] = {a.key: a for a in Attributes.from_payload_attributes(attribute_group.attributes)}
+        return cls(**data)
+
+
+@deprecated("Use AttributeGroup")
+class pyAttributeGroup(AttributeGroup):
+    '''Deprecated alias for AttributeGroup - kept for backward compatibility.'''

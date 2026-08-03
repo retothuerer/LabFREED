@@ -1,15 +1,15 @@
 import pytest
 
 from labfreed.pac_attributes.client.client_attribute_group import ClientAttributeGroup
-from labfreed.pac_attributes.pythonic.py_attributes import pyAttribute, pyAttributeGroup, pyAttributes
+from labfreed.pac_attributes.facade.py_attributes import Attribute, AttributeGroup, Attributes
 
 
 def test_from_attribute_group_round_trip_preserves_all_fields():
-    # pyAttributeGroup.from_attribute_group has zero existing coverage; this locks in
+    # AttributeGroup.from_attribute_group has zero existing coverage; this locks in
     # its current, correct behavior across the vars() -> model_dump() refactor (see
     # design-choices.md).
-    payload_attributes = pyAttributes([
-        pyAttribute(key='https://example.com/foo', value='bar'),
+    payload_attributes = Attributes([
+        Attribute(key='https://example.com/foo', value='bar'),
     ]).to_payload_attributes()
 
     source = ClientAttributeGroup(
@@ -20,7 +20,7 @@ def test_from_attribute_group_round_trip_preserves_all_fields():
         language='en',
     )
 
-    result = pyAttributeGroup.from_attribute_group(source)
+    result = AttributeGroup.from_attribute_group(source)
 
     assert result.group_key == 'group1'
     assert result.group_label == 'Group One'

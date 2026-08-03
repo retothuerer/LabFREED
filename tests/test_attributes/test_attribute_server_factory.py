@@ -1,13 +1,13 @@
 from datetime import datetime
 from urllib.parse import quote
 
-from labfreed.pac_attributes.pythonic.attribute_server_factory import (
+from labfreed.labfreed_extended.pac_issuer_lib.lib.attribute_server_factory import (
     AttributeServerFactory,
     NoAuthRequiredAuthenticator,
     Webframework,
 )
-from labfreed.pac_attributes.pythonic.py_attributes import pyAttribute, pyAttributes
-from labfreed.pac_attributes.pythonic.py_dict_data_source import pyDict_DataSource
+from labfreed.pac_attributes.facade.py_attributes import Attribute, Attributes
+from labfreed.pac_attributes.facade.py_dict_data_source import pyDict_DataSource
 from labfreed.pac_attributes.server.translation_data_sources import DictTranslationDataSource
 from labfreed.utilities.translations import Term, Terms
 
@@ -19,8 +19,8 @@ def _build_test_client():
     data_source = pyDict_DataSource(
         attribute_group_key="ProductionData",
         data={
-            NORMAL_PAC_ID: pyAttributes([pyAttribute(key="MfgDate", value=datetime(2015, 10, 1))]),
-            TRAILING_SLASH_PAC_ID: pyAttributes([pyAttribute(key="MfgDate", value=datetime(2020, 1, 1))]),
+            NORMAL_PAC_ID: Attributes([Attribute(key="MfgDate", value=datetime(2015, 10, 1))]),
+            TRAILING_SLASH_PAC_ID: Attributes([Attribute(key="MfgDate", value=datetime(2020, 1, 1))]),
         },
     )
     translations = Terms(terms=[Term.create("MfgDate", [("en", "Manufacturing date")])])

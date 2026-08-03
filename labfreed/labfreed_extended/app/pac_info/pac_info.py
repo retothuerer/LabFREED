@@ -3,15 +3,15 @@ from pathlib import Path
 from urllib.parse import urlparse
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pydantic import BaseModel, Field
-from labfreed.pac_attributes.pythonic.py_attributes import pyAttribute, pyAttributeGroup, pyAttributes, pyReference, pyResource
+from labfreed.pac_attributes.facade.py_attributes import Attribute, AttributeGroup, Attributes, Reference, Resource
 from labfreed.pac_attributes.well_known_attribute_keys import MetaAttributeKeys
 from labfreed.pac_cat.pac_cat import PAC_CAT
 from labfreed.pac_cat.predefined_categories import PredefinedCategory
 from labfreed.pac_id.pac_id import PAC_ID
 from labfreed.pac_id_resolver.services import ServiceGroup, Service
 from labfreed.labfreed_extended.app.formatted_print import StringIOLineBreak
-from labfreed.trex.pythonic.data_table import DataTable
-from labfreed.trex.pythonic.pyTREX import pyTREX
+from labfreed.trex.facade.data_table import DataTable
+from labfreed.trex.facade.pyTREX import T_REX
 from labfreed.well_known_extensions.display_name_extension import DisplayNameExtension
 from enum import Enum
 
@@ -21,7 +21,7 @@ class PacInfo(BaseModel):
 
     user_handovers: list[ServiceGroup] = Field(default_factory=list)
     actions: list[ServiceGroup] = Field(default_factory=list)
-    attribute_groups:dict[str, pyAttributeGroup] = Field(default_factory=dict)
+    attribute_groups:dict[str, AttributeGroup] = Field(default_factory=dict)
     
     
     # info about pac-id
@@ -53,18 +53,18 @@ class PacInfo(BaseModel):
     # attached data
         
     @cached_property
-    def attached_data(self) -> dict[str, pyTREX]:
-        return { trex_ext.name: pyTREX.from_trex(trex=trex_ext.trex) for trex_ext in self.pac_id.get_extension_of_type('TREX')}
+    def attached_data(self) -> dict[str, T_REX]:
+        return { trex_ext.name: T_REX.from_trex(trex=trex_ext.trex) for trex_ext in self.pac_id.get_extension_of_type('TREX')}
 
-    
+
     @cached_property
-    def summary(self) -> pyTREX:
-        return pyTREX.from_trex(self.pac_id.get_extension('SUM').trex)
-    
-    
+    def summary(self) -> T_REX:
+        return T_REX.from_trex(self.pac_id.get_extension('SUM').trex)
+
+
     @cached_property
-    def status(self) -> pyTREX:
-        return pyTREX.from_trex(self.pac_id.get_extension('STATUS').trex)
+    def status(self) -> T_REX:
+        return T_REX.from_trex(self.pac_id.get_extension('STATUS').trex)
 
         
         
@@ -106,8 +106,38 @@ class PacInfo(BaseModel):
             else:
                 # only exact match
                 return intent in intents
-    
-    
+
+
+    # key identifies *what a service is* via a shared, IRI-anchored vocabulary term
+    # (e.g. "this is a Material Safety Data Sheet") - the same "key" concept PAC-ID
+    # Attributes already uses (see get_attribute/get_attributes below) - unlike
+    # application_intents (a short, free-text string identifying *which use case*
+    # picks it). Exact match only, since IRIs aren't meant to be fuzzy-matched the way
+    # dash-separated intents are (see get_user_handovers_by_intent's partial_match).
+
+    def get_user_handovers_by_key(self, key:str) -> list[Service]:
+        if isinstance(key, Enum):
+            key = key.value
+        return [s for sg in self.user_handovers for s in sg.services if s.key == key]
+
+    def get_user_handover_by_key(self, key:str, mode="first"):
+        if isinstance(key, Enum):
+            key = key.value
+        handovers = self.get_user_handovers_by_key(key)
+        return self._pick_from_list(handovers, mode)
+
+    def get_actions_by_key(self, key:str) -> list[Service]:
+        if isinstance(key, Enum):
+            key = key.value
+        return [s for sg in self.actions for s in sg.services if s.key == key]
+
+    def get_action_by_key(self, key:str, mode="first"):
+        if isinstance(key, Enum):
+            key = key.value
+        actions = self.get_actions_by_key(key)
+        return self._pick_from_list(actions, mode)
+
+
     @cached_property
     def important_handovers(self) -> list[Service]:
         return self.get_user_handovers_by_intent('important')
@@ -125,14 +155,14 @@ class PacInfo(BaseModel):
      # Attributes   
         
     @cached_property
-    def _all_attributes(self) -> dict[str, pyAttribute]:
+    def _all_attributes(self) -> dict[str, Attribute]:
         out = {}
         for ag in self.attribute_groups.values():
             out.update(ag.attributes)   
         return out
     
         
-    def get_attributes(self, key:str) -> list[pyAttribute]:
+    def get_attributes(self, key:str) -> list[Attribute]:
         # capture the common mistake of forgetting to access key of enum
         if isinstance(key, Enum):
             key = key.value    
@@ -164,7 +194,7 @@ class PacInfo(BaseModel):
         image_attr = self._all_attributes.get(MetaAttributeKeys.IMAGE)
         if not image_attr:
             return None
-        if isinstance(image_attr.values, pyResource):
+        if isinstance(image_attr.values, Resource):
             return image_attr.values.root
         if isinstance(image_attr.values, str):
             return image_attr.values
@@ -192,13 +222,13 @@ class PacInfo(BaseModel):
     
     
     @cached_property
-    def safety_pictograms(self) -> dict[str, pyAttribute]:
+    def safety_pictograms(self) -> dict[str, Attribute]:
         pictogram_attributes = {k: a for k, a in self._all_attributes.items() if "https://labfreed.org/ghs/pictogram/" in a.key}
         return pictogram_attributes    
     
     
     @cached_property
-    def qualification_state(self) -> pyAttribute:
+    def qualification_state(self) -> Attribute:
         if state := self._all_attributes.get("https://labfreed.org/qualification/status"): 
             return state
 
@@ -247,7 +277,7 @@ class PacInfo(BaseModel):
         for ag in self.attribute_groups.values():  
             printout.title2(f'{ag.group_label} (from {ag.origin})')
             for v in ag.attributes.values():
-                v:pyAttribute
+                v:Attribute
                 #print(f'{k}: ({v.label})           :: {v.value}  ')
                 printout.key_value(v.label, ', '.join([str(e) for e in v.value_list]))
       

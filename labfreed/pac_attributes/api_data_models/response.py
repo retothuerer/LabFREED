@@ -176,18 +176,22 @@ AttributeItemsElement = Annotated[
     
 
            
-class Attribute(LabFREED_BaseModel):
+class Spec_Attribute(LabFREED_BaseModel):
     key: str|None = Field(exclude=True)
     label: str = ""
     items: list[AttributeItemsElement]
-    
-     
 
-class AttributeGroup(LabFREED_BaseModel):
+
+@deprecated("Use Spec_Attribute")
+class Attribute(Spec_Attribute):
+    '''Deprecated alias for Spec_Attribute - kept for backward compatibility.'''
+
+
+class Spec_AttributeGroup(LabFREED_BaseModel):
     group_key: str
     group_label: str = ""
-    attributes: dict[str, Attribute]
-    
+    attributes: dict[str, Spec_Attribute]
+
     @field_validator("attributes", mode="before")
     @classmethod
     def set_attribute_keys(cls, v):
@@ -200,17 +204,21 @@ class AttributeGroup(LabFREED_BaseModel):
                 # raw input dict -> inject key if missing
                 out[k] = {**a, "key": a.get("key") or k}
             else:
-                # already an Attribute (or something pydantic can parse)
+                # already a Spec_Attribute (or something pydantic can parse)
                 out[k] = a
         return out
-       
+
+
+@deprecated("Use Spec_AttributeGroup")
+class AttributeGroup(Spec_AttributeGroup):
+    '''Deprecated alias for Spec_AttributeGroup - kept for backward compatibility.'''
 
 
 
 
 class AttributesOfItem(LabFREED_BaseModel):
     id: str
-    attribute_groups: list[AttributeGroup]
+    attribute_groups: list[Spec_AttributeGroup]
 
     @model_validator(mode="before")
     @classmethod

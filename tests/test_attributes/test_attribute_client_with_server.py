@@ -3,8 +3,8 @@ from datetime import datetime
 from labfreed.pac_attributes.api_data_models.request import AttributeRequestData
 from labfreed.pac_attributes.api_data_models.response import AttributeResponsePayload
 from labfreed.pac_attributes.client.client import AttributeClient
-from labfreed.pac_attributes.pythonic.py_attributes import pyAttribute, pyAttributes, pyReference
-from labfreed.pac_attributes.pythonic.py_dict_data_source import pyDict_DataSource
+from labfreed.pac_attributes.facade.py_attributes import Attribute, Attributes, Reference
+from labfreed.pac_attributes.facade.py_dict_data_source import pyDict_DataSource
 from labfreed.pac_attributes.server.server import AttributeServerRequestHandler
 from labfreed.pac_attributes.server.translation_data_sources import DictTranslationDataSource
 from labfreed.utilities.translations import Term, Terms
@@ -21,24 +21,24 @@ def _build_handler():
     data_source = pyDict_DataSource(
         attribute_group_key="ProductionData",
         data={
-            NORMAL_PAC_ID: pyAttributes([
-                pyAttribute(key="MfgDate", value=datetime(2015, 10, 1, 10, 12)),
-                pyAttribute(key="CalWeight", value=pyReference(CAL_PAC_ID)),
+            NORMAL_PAC_ID: Attributes([
+                Attribute(key="MfgDate", value=datetime(2015, 10, 1, 10, 12)),
+                Attribute(key="CalWeight", value=Reference(CAL_PAC_ID)),
             ]),
-            CAL_PAC_ID: pyAttributes([
-                pyAttribute(key="NominalWeight", value="50 g"),
+            CAL_PAC_ID: Attributes([
+                Attribute(key="NominalWeight", value="50 g"),
             ]),
-            TRAILING_SLASH_PAC_ID: pyAttributes([
-                pyAttribute(key="MfgDate", value=datetime(2020, 1, 1)),
+            TRAILING_SLASH_PAC_ID: Attributes([
+                Attribute(key="MfgDate", value=datetime(2020, 1, 1)),
             ]),
-            GENERIC_IRI: pyAttributes([
-                pyAttribute(key="MfgDate", value=datetime(2021, 1, 1)),
+            GENERIC_IRI: Attributes([
+                Attribute(key="MfgDate", value=datetime(2021, 1, 1)),
             ]),
-            SUBSTANCE_PAC_ID: pyAttributes([
-                pyAttribute(key="MfgDate", value=datetime(2022, 3, 1)),
+            SUBSTANCE_PAC_ID: Attributes([
+                Attribute(key="MfgDate", value=datetime(2022, 3, 1)),
             ]),
-            ALIQUOT_PAC_ID: pyAttributes([
-                pyAttribute(key="MfgDate", value=datetime(2023, 5, 1)),
+            ALIQUOT_PAC_ID: Attributes([
+                Attribute(key="MfgDate", value=datetime(2023, 5, 1)),
             ]),
         },
     )

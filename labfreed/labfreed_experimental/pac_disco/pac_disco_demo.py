@@ -4,8 +4,8 @@ import sys
 from bleak.backends.device import BLEDevice
 
 from labfreed.pac_id.pac_id import PAC_ID
-from labfreed.trex.pythonic import pyTREX
-from labfreed.trex.trex import TREX
+from labfreed.trex.facade import T_REX
+from labfreed.trex.trex import Spec_T_REX
 from labfreed.labfreed_experimental.pac_disco.ble_uuid import PAC_Characteristics, ServiceUUID
 
 
@@ -87,7 +87,7 @@ async def handle_pac_id(device: BLEDevice, pac_id_url: str) -> None:
         # a nasty hack to account for BUCHI R-300 sending an experimental pac-id, which is no longer valid
         pac_id_url = pac_id_url.replace('RNR', '21') 
         pac_id = PAC_ID.from_url(pac_id_url)
-        summary = pyTREX.from_trex(pac_id.get_extension("SUM").trex)
+        summary = T_REX.from_trex(pac_id.get_extension("SUM").trex)
             
         sum_lines = '\n  '.join([f"{k}:  {v}" for k,v in summary.items()])  
         prompt = (

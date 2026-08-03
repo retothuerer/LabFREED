@@ -5,8 +5,8 @@ kinda unsystematically covers a lot of things. mainly makes sure it runs without
 from datetime import datetime
 
 import requests_cache  # noqa: E402
-from labfreed.trex.pythonic.pyTREX import pyTREX  # noqa: E402
-from labfreed.trex.pythonic.data_table import DataTable  # noqa: E402
+from labfreed.trex.facade.pyTREX import T_REX  # noqa: E402
+from labfreed.trex.facade.data_table import DataTable  # noqa: E402
 from labfreed.utilities.quantity import Quantity  # noqa: E402
 from labfreed.labfreed_infrastructure import LabFREED_ValidationError  # noqa: E402
 from labfreed import PAC_ID, LabFREED_ValidationError  # noqa: E402, F811
@@ -100,7 +100,7 @@ def test_create_pac_id_with_extensions():
                     'COMMENT': 'FOO',
                     'COMMENT2':'£'
                 }
-    mydata = pyTREX(segments) 
+    mydata = T_REX(segments)
 
     # Create a table
     table = DataTable(col_names=['DURATION', 'Date', 'OK', 'COMMENT'])

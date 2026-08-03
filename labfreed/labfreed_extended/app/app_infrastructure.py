@@ -5,7 +5,7 @@ import requests
 
 from labfreed.labfreed_extended.app.pac_info.pac_info import PacInfo
 from labfreed.pac_attributes.client.client import AttributeClient, http_attribute_request_default_callback_factory
-from labfreed.pac_attributes.pythonic.py_attributes import pyAttributeGroup
+from labfreed.pac_attributes.facade.py_attributes import AttributeGroup
 
 from labfreed.pac_id.pac_id import PAC_ID
 from labfreed.pac_id_resolver.resolver import PAC_ID_Resolver, cit_from_str
@@ -73,7 +73,7 @@ class Labfreed_App_Infrastructure():
         for sg in service_groups:  
             attributes_urls = [s.url  for s in sg.services if s.service_type == 'attributes-generic']
             for url in attributes_urls:
-                ags = {ag.group_key: pyAttributeGroup.from_attribute_group(ag) for ag in self._attribute_client.get_attributes(url, pac_id=pac.to_url(include_extensions=False), language_preferences=self._language_preferences)}
+                ags = {ag.group_key: AttributeGroup.from_attribute_group(ag) for ag in self._attribute_client.get_attributes(url, pac_id=pac.to_url(include_extensions=False), language_preferences=self._language_preferences)}
                 if ags:
                     attribute_groups.update(ags)
         pac_info.attribute_groups = attribute_groups

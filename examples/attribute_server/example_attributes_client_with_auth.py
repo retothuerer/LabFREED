@@ -12,8 +12,8 @@ import time
 
 from flask import Request
 
-from labfreed.pac_attributes.api_data_models.response import Attribute, TextAttributeItemsElement
-from labfreed.pac_attributes.pythonic.attribute_server_factory import AttributeServerFactory, Webframework
+from labfreed.pac_attributes.api_data_models.response import Spec_Attribute, TextAttributeItemsElement
+from labfreed.labfreed_extended.pac_issuer_lib.lib.attribute_server_factory import AttributeServerFactory, Webframework
 from labfreed.pac_attributes.server.attribute_data_sources import Dict_DataSource
 from labfreed.pac_attributes.server.translation_data_sources import DictTranslationDataSource
 from labfreed.pac_attributes.well_known_attribute_keys import MetaAttributeKeys
@@ -28,7 +28,7 @@ data_source = Dict_DataSource(
     attribute_group_key=MetaAttributeKeys.GROUPKEY,
     data={
         PAC_STR: {
-            MetaAttributeKeys.DISPLAYNAME: Attribute(
+            MetaAttributeKeys.DISPLAYNAME: Spec_Attribute(
                 key=MetaAttributeKeys.DISPLAYNAME,
                 label='Display Name',
                 items=[TextAttributeItemsElement(value='My Balance')],

@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod, abstractproperty
 from typing import Callable
 import requests
 from labfreed.labfreed_infrastructure import LabFREED_ValidationError
-from labfreed.pac_attributes.api_data_models.response import Attribute, AttributeGroup
+from labfreed.pac_attributes.api_data_models.response import Spec_Attribute, Spec_AttributeGroup
 from labfreed.pac_cat.pac_cat import PAC_CAT
 
 
@@ -48,7 +48,7 @@ class AttributeGroupDataSource(ABC):
         pass
 
     @abstractmethod
-    def attributes(self, subject_id: str) -> 'AttributeGroup|list[AttributeGroup]|None':
+    def attributes(self, subject_id: str) -> 'Spec_AttributeGroup|list[Spec_AttributeGroup]|None':
         pass
 
     def _canonicalize(self, subject_id: str) -> str:
@@ -83,7 +83,7 @@ class AttributeGroupDataSource(ABC):
 
 
 class Dict_DataSource(AttributeGroupDataSource):
-    def __init__(self, data:dict[str, dict[str, Attribute]], *args, **kwargs):
+    def __init__(self, data:dict[str, dict[str, Spec_Attribute]], *args, **kwargs):
         if not all([isinstance(e, dict) for e in data.values()]):
             raise ValueError('Invalid data')
 
@@ -96,7 +96,7 @@ class Dict_DataSource(AttributeGroupDataSource):
         return list(set([a.key for attributes in self._data.values() for a in attributes.values()]))
 
 
-    def attributes(self, subject_id: str) -> AttributeGroup:
+    def attributes(self, subject_id: str) -> Spec_AttributeGroup:
         attributes = None
         for key in self._lookup_keys(subject_id):
             attributes = self._data.get(key)
@@ -108,7 +108,7 @@ class Dict_DataSource(AttributeGroupDataSource):
             else:
                 return None
 
-        return AttributeGroup(group_key=self.attribute_group_key,
+        return Spec_AttributeGroup(group_key=self.attribute_group_key,
                               attributes=attributes)
 
 
@@ -158,7 +158,7 @@ class RemoteAttributeDataSource(AttributeGroupDataSource):
         # ahead of time - nothing to declare for the translation-completeness check.
         return []
 
-    def attributes(self, subject_id: str) -> list[AttributeGroup]:
+    def attributes(self, subject_id: str) -> list[Spec_AttributeGroup]:
         canonical = self._canonicalize(subject_id)
         remote_subject_id = self._pac_to_key(canonical) if self._pac_to_key else canonical
         return list(self._client.get_attributes(self._base_url, pac_id=remote_subject_id,

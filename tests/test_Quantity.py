@@ -1,6 +1,6 @@
 import pytest
 
-from labfreed.trex.pythonic.pyTREX import pyTREX
+from labfreed.trex.facade.pyTREX import T_REX
 from labfreed.utilities.quantity import Quantity
 
 
@@ -20,9 +20,9 @@ def test_unambiguous_unit_roundtrips_through_trex_unchanged(unit):
     # kg/m/s/K/Cel each match exactly one UNECE code, so the round trip must return the exact
     # same UCUM string, not just a physically equal one.
     original = Quantity(value=2, unit=unit)
-    data = pyTREX({'X': original})
+    data = T_REX({'X': original})
     trex = data.to_trex()
-    restored = pyTREX.from_trex(trex)['X']
+    restored = T_REX.from_trex(trex)['X']
     assert restored.value == original.value
     assert restored.unit == unit
 
@@ -32,9 +32,9 @@ def test_compound_unit_roundtrips_to_a_physically_equal_ucum_unit(unit):
     # these each match more than one UNECE code (UCUM has no canonical form) - the round trip
     # is only guaranteed to preserve the physical quantity, not the exact unit string.
     original = Quantity(value=3, unit=unit)
-    data = pyTREX({'X': original})
+    data = T_REX({'X': original})
     trex = data.to_trex()
-    restored = pyTREX.from_trex(trex)['X']
+    restored = T_REX.from_trex(trex)['X']
     assert restored.value == original.value
     assert _same_physical_quantity(restored.unit, unit)
 
@@ -43,9 +43,9 @@ def test_roundtrip_of_simple_unit_works_without_units_extra(without_ucum_support
     # kg's UNECE code is found by the existing exact-string fast path, which needs no
     # dependency - this must keep working even with the optional extra absent.
     original = Quantity(value=5, unit='kg')
-    data = pyTREX({'X': original})
+    data = T_REX({'X': original})
     trex = data.to_trex()
-    restored = pyTREX.from_trex(trex)['X']
+    restored = T_REX.from_trex(trex)['X']
     assert restored.unit == 'kg'
 
 

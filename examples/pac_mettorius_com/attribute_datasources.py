@@ -7,8 +7,8 @@ from labfreed.pac_attributes.well_known_attribute_keys import MetaAttributeKeys,
 from labfreed.pac_cat.pac_cat import PAC_CAT
 from labfreed.pac_cat.predefined_categories import Material_Device
 
-from labfreed.pac_attributes.pythonic.py_dict_data_source import pyDict_DataSource
-from labfreed.pac_attributes.pythonic.py_attributes import pyAttributes, pyAttribute, pyReference, pyResource
+from labfreed.pac_attributes.facade.py_dict_data_source import pyDict_DataSource
+from labfreed.pac_attributes.facade.py_attributes import Attributes, Attribute, Reference, Resource
 from labfreed.pac_attributes.server.translation_data_sources import DictTranslationDataSource
 from labfreed.utilities.quantity import Quantity, CommonQuantityUnit
 
@@ -43,13 +43,13 @@ safety_ds = pyDict_DataSource(
     attribute_group_key="https://labfreed.org/safety",
     include_extensions=False,
     data={
-        "HTTPS://PAC.METTORIUS.COM/-MS/BALCLEAN": pyAttributes([
-            pyAttribute(key=MetaAttributeKeys.DISPLAYNAME, value="Bal Clean Safety Information"),
-            pyAttribute(key="https://labfreed.org/ghs/signal-word", value="Danger"),
-            pyAttribute(key="https://labfreed.org/ghs/h/H225", value="Highly flammable liquid and vapour"),
-            pyAttribute(key="https://labfreed.org/ghs/h/EUH066", value="Repeated exposure may cause skin dryness or cracking"),
-            pyAttribute(key="https://labfreed.org/ghs/p/P210", value="Keep away from heat, sparks, open flames and hot surfaces — No smoking"),
-            pyAttribute(key="https://labfreed.org/ghs/pictogram/GHS02", value=pyResource("https://www.unece.org/fileadmin/_migrated/RTE/RTEmagicC_160a419206.gif.gif"))
+        "HTTPS://PAC.METTORIUS.COM/-MS/BALCLEAN": Attributes([
+            Attribute(key=MetaAttributeKeys.DISPLAYNAME, value="Bal Clean Safety Information"),
+            Attribute(key="https://labfreed.org/ghs/signal-word", value="Danger"),
+            Attribute(key="https://labfreed.org/ghs/h/H225", value="Highly flammable liquid and vapour"),
+            Attribute(key="https://labfreed.org/ghs/h/EUH066", value="Repeated exposure may cause skin dryness or cracking"),
+            Attribute(key="https://labfreed.org/ghs/p/P210", value="Keep away from heat, sparks, open flames and hot surfaces — No smoking"),
+            Attribute(key="https://labfreed.org/ghs/pictogram/GHS02", value=Resource("https://www.unece.org/fileadmin/_migrated/RTE/RTEmagicC_160a419206.gif.gif"))
         ])
     }
 )
@@ -82,21 +82,21 @@ supplier_meta_data_ds = pyDict_DataSource(
     attribute_group_key="https://labfreed.org/supplier-data",
     pac_to_key=product_number_from_pac_url,
     data={
-        "BAL500": pyAttributes([
-            pyAttribute(key=MetaAttributeKeys.IMAGE, value=pyResource(f"{static_url_prefix}/BAL500.png")),
-            pyAttribute(key="https://mettorius.com/terms/cleaning-agent", value=pyReference("HTTPS://PAC.METTORIUS.COM/-MS/BALCLEAN"))
+        "BAL500": Attributes([
+            Attribute(key=MetaAttributeKeys.IMAGE, value=Resource(f"{static_url_prefix}/BAL500.png")),
+            Attribute(key="https://mettorius.com/terms/cleaning-agent", value=Reference("HTTPS://PAC.METTORIUS.COM/-MS/BALCLEAN"))
         ]),
-        "BALCLEAN": pyAttributes([
-            pyAttribute(key=MetaAttributeKeys.IMAGE, value=pyResource(f"{static_url_prefix}/bal-clean.png")),
-            pyAttribute(key=MetaAttributeKeys.DISPLAYNAME, value="Bal Clean - The best balance cleaner"),
-            pyAttribute(key='HTTPS://PAC.METTORIUS.COM/-DS/BOILING-POINT/DEFINITION', value=Quantity(value=307, unit=CommonQuantityUnit.TEMPERATURE_KELVIN))
+        "BALCLEAN": Attributes([
+            Attribute(key=MetaAttributeKeys.IMAGE, value=Resource(f"{static_url_prefix}/bal-clean.png")),
+            Attribute(key=MetaAttributeKeys.DISPLAYNAME, value="Bal Clean - The best balance cleaner"),
+            Attribute(key='HTTPS://PAC.METTORIUS.COM/-DS/BOILING-POINT/DEFINITION', value=Quantity(value=307, unit=CommonQuantityUnit.TEMPERATURE_KELVIN))
         ]),
-        "CALWEIGH": pyAttributes([
-            pyAttribute(key=MetaAttributeKeys.IMAGE, value=pyResource(f"{static_url_prefix}/cal-weights.png"))
+        "CALWEIGH": Attributes([
+            Attribute(key=MetaAttributeKeys.IMAGE, value=Resource(f"{static_url_prefix}/cal-weights.png"))
         ]),      
-        "HTTPS://PAC.METTORIUS.COM/-DS/DEF/BP": pyAttributes([
-                pyAttribute(key=PhysicoChemicalProperties.PRESSURE, value=Quantity(value=500, unit='mbar')),
-                pyAttribute(key='abc', value="AAAAAA")
+        "HTTPS://PAC.METTORIUS.COM/-DS/DEF/BP": Attributes([
+                Attribute(key=PhysicoChemicalProperties.PRESSURE, value=Quantity(value=500, unit='mbar')),
+                Attribute(key='abc', value="AAAAAA")
             ]),
         
     }
@@ -108,9 +108,9 @@ data_sources.append(supplier_meta_data_ds)
 my_definitions_ds =  pyDict_DataSource(
     attribute_group_key="https://mettorius.com/definitions",
     data={
-        "HTTPS://PAC.METTORIUS.COM/-DS/BOILING-POINT/DEFINITION": pyAttributes([
-                pyAttribute(key=MetaAttributeKeys.DISPLAYNAME, value="Boilingpoint 500 mbar"),
-                pyAttribute(key=PhysicoChemicalProperties.PRESSURE, value=Quantity(value=500, unit=CommonQuantityUnit.PRESSURE_MILLIBAR))
+        "HTTPS://PAC.METTORIUS.COM/-DS/BOILING-POINT/DEFINITION": Attributes([
+                Attribute(key=MetaAttributeKeys.DISPLAYNAME, value="Boilingpoint 500 mbar"),
+                Attribute(key=PhysicoChemicalProperties.PRESSURE, value=Quantity(value=500, unit=CommonQuantityUnit.PRESSURE_MILLIBAR))
             ]),
 
     }
@@ -148,7 +148,7 @@ ds = DynamicDemoAttributeGroup(
         ("https://labfreed.org/terms/example/TextAttribute",                random.choice(["Foo", "Bar"]),                                                                  [('en', 'Text Attribute'), ('fr', 'Attribut text')]),
         # unit can be a CommonQuantityUnit member or a plain UCUM string - both work
         ("https://labfreed.org/terms/example/NumericAttribute",             Quantity(value=round(random.uniform(0, 100), 2), unit=random.choice([CommonQuantityUnit.LENGTH_METER, "kg", CommonQuantityUnit.CONCENTRATION_MOLAR])),     [('en', 'Numeric Attribute'), ('fr', 'Attribut numérique')]),
-        ("https://labfreed.org/terms/example/ReferenceAttribute",           pyReference("HTTPS://PAC.METTORIUS.COM/-MD/CALWEIGH/A00002"),                                   [('en', 'Reference Attribute'), ('fr', 'Attribut de référence')]),
+        ("https://labfreed.org/terms/example/ReferenceAttribute",           Reference("HTTPS://PAC.METTORIUS.COM/-MD/CALWEIGH/A00002"),                                   [('en', 'Reference Attribute'), ('fr', 'Attribut de référence')]),
         ("https://labfreed.org/terms/example/DateTimeAttribute",            datetime.now(tz=timezone.utc),                                                                  [('en', 'Date Attribute'), ('fr', 'Attribut date')] ),
         ("https://labfreed.org/terms/example/BoolAttribute",                random.choice([True, False]),                                                                   [('en', 'Boolean Attribute'), ('fr', 'Attribut date')]),
         ("https://labfreed.org/terms/example/ObjectAttribute",              {"k1": 1, "k2": {"a": "bar", "b": "foo"}, "k3": [0, 1, 2]},                                     [('en', 'Object Attribute (LAST RESORT)'), ('fr', "Attribut d'objet (DERNIER RECOURS)")])
