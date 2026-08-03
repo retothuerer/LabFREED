@@ -1,4 +1,4 @@
-"""consumer.py is just request/response DTOs (ActionResult and its three subclasses) -
+"""backend.py is just request/response DTOs (ActionResult and its three subclasses) -
 these tests just pin down their defaults: a bare success needs nothing but `ok=True`,
 and each subclass's extra field defaults to something falsy/None rather than being
 required, since a failed action (ok=False) won't have a location_name/display_amount/
@@ -6,7 +6,7 @@ disposed flag to report.
 """
 import pytest
 
-from labfreed.labfreed_experimental.actions.consumer import (
+from labfreed.labfreed_experimental.actions.backend import (
     ActionResult,
     ContainerIsEmptyResult,
     UpdateAmountResult,

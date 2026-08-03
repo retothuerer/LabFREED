@@ -3,7 +3,7 @@ from unittest.mock import patch
 import pytest
 from openpyxl import Workbook
 
-from labfreed.pac_attributes.pythonic.excel_attribute_data_source import LocalExcelAttributeDataSource
+from labfreed.labfreed_extended.pac_issuer_lib.lib.excel_attribute_data_source import LocalExcelAttributeDataSource
 
 TRAILING_SLASH_PAC_ID = "HTTPS://PAC.METTORIUS.COM/-MD/BAL500/12345/"
 
@@ -79,7 +79,7 @@ def test_two_instances_with_different_ttls_dont_stomp_each_others_cache(tmp_path
     )
 
     with patch(
-        "labfreed.pac_attributes.pythonic.excel_attribute_data_source.load_workbook"
+        "labfreed.labfreed_extended.pac_issuer_lib.lib.excel_attribute_data_source.load_workbook"
     ) as mock_load:
         source_a.attributes("KEY_A")
     mock_load.assert_not_called()  # still within source_a's own long TTL, no re-read

@@ -3,7 +3,7 @@ that read their parameters from the query string, appended by the caller on top 
 the resolved CIT url (see developer-docs/design-choices.md, "Well-known action
 handler: action-generic params travel as plain query params, not through the CIT
 template", for why there's no other mechanism today) and dispatch to whatever
-ActionConsumer it's given. These tests use a fake, in-memory consumer (no real Signals
+ActionBackend it's given. These tests use a fake, in-memory backend (no real Signals
 Notebook involved) built via Flask's own test_client(), the same way
 tests/test_attributes/test_attribute_server_factory.py already tests the sibling
 attribute-server Flask layer.
@@ -11,7 +11,7 @@ attribute-server Flask layer.
 import pytest
 from flask import Flask
 
-from labfreed.labfreed_experimental.actions.consumer import (
+from labfreed.labfreed_experimental.actions.backend import (
     ContainerIsEmptyResult,
     UpdateAmountResult,
     UpdateLocationResult,
@@ -22,7 +22,7 @@ PAC_ID = 'HTTPS://PAC.GIVAUDAN.COM/-MS/AMYLASE/9876'
 LOCATION_PAC_ID = 'HTTPS://PAC.BUCHI.COM/-MD/C-950/FAKE0000'
 
 
-class FakeConsumer:
+class FakeBackend:
     """Records every call it receives and returns whatever result was queued for it."""
 
     def __init__(self):
@@ -44,52 +44,52 @@ class FakeConsumer:
         return self.container_is_empty_result
 
 
-def _build_test_client(consumer):
+def _build_test_client(backend):
     app = Flask(__name__)
-    app.register_blueprint(create_actions_blueprint(consumer))
+    app.register_blueprint(create_actions_blueprint(backend))
     return app.test_client()
 
 
-def test_update_location_dispatches_to_the_consumer_with_both_pac_ids():
-    consumer = FakeConsumer()
-    client = _build_test_client(consumer)
+def test_update_location_dispatches_to_the_backend_with_both_pac_ids():
+    backend = FakeBackend()
+    client = _build_test_client(backend)
 
     resp = client.post('/actions/update_location', query_string={'pac_id': PAC_ID, 'location': LOCATION_PAC_ID})
 
     assert resp.status_code == 200
-    assert resp.get_json() == consumer.update_location_result.model_dump()
-    assert consumer.calls == [('update_location', PAC_ID, LOCATION_PAC_ID)]
+    assert resp.get_json() == backend.update_location_result.model_dump()
+    assert backend.calls == [('update_location', PAC_ID, LOCATION_PAC_ID)]
 
 
-def test_update_amount_dispatches_to_the_consumer_with_the_quantity_string():
-    consumer = FakeConsumer()
-    client = _build_test_client(consumer)
+def test_update_amount_dispatches_to_the_backend_with_the_quantity_string():
+    backend = FakeBackend()
+    client = _build_test_client(backend)
 
     resp = client.post('/actions/update_amount', query_string={'pac_id': PAC_ID, 'amount': '250 mL'})
 
     assert resp.status_code == 200
-    assert resp.get_json() == consumer.update_amount_result.model_dump()
-    assert consumer.calls == [('update_amount', PAC_ID, '250 mL')]
+    assert resp.get_json() == backend.update_amount_result.model_dump()
+    assert backend.calls == [('update_amount', PAC_ID, '250 mL')]
 
 
-def test_container_is_empty_dispatches_to_the_consumer_with_just_the_pac_id():
-    consumer = FakeConsumer()
-    client = _build_test_client(consumer)
+def test_container_is_empty_dispatches_to_the_backend_with_just_the_pac_id():
+    backend = FakeBackend()
+    client = _build_test_client(backend)
 
     resp = client.post('/actions/container_is_empty', query_string={'pac_id': PAC_ID})
 
     assert resp.status_code == 200
-    assert resp.get_json() == consumer.container_is_empty_result.model_dump()
-    assert consumer.calls == [('container_is_empty', PAC_ID)]
+    assert resp.get_json() == backend.container_is_empty_result.model_dump()
+    assert backend.calls == [('container_is_empty', PAC_ID)]
 
 
-def test_a_consumer_reported_failure_still_comes_back_as_200_with_ok_false():
+def test_a_backend_reported_failure_still_comes_back_as_200_with_ok_false():
     """The JSON envelope (ok/error) is the error channel, not the HTTP status - a
     caller always gets a 200 with a body it can inspect, whether the action
     succeeded or not."""
-    consumer = FakeConsumer()
-    consumer.update_location_result = UpdateLocationResult(ok=False, error="no AVAILABLE container found")
-    client = _build_test_client(consumer)
+    backend = FakeBackend()
+    backend.update_location_result = UpdateLocationResult(ok=False, error="no AVAILABLE container found")
+    client = _build_test_client(backend)
 
     resp = client.post('/actions/update_location', query_string={'pac_id': PAC_ID, 'location': LOCATION_PAC_ID})
 
@@ -98,11 +98,11 @@ def test_a_consumer_reported_failure_still_comes_back_as_200_with_ok_false():
                                 'previous_location_pac_id': None, 'location_name': None}
 
 
-def test_missing_pac_id_is_a_400_and_never_reaches_the_consumer():
-    consumer = FakeConsumer()
-    client = _build_test_client(consumer)
+def test_missing_pac_id_is_a_400_and_never_reaches_the_backend():
+    backend = FakeBackend()
+    client = _build_test_client(backend)
 
     resp = client.post('/actions/update_amount', query_string={'amount': '250 mL'})
 
     assert resp.status_code == 400
-    assert consumer.calls == []
+    assert backend.calls == []
