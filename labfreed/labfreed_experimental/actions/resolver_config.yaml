@@ -1,0 +1,21 @@
+schema_version: "2.0"
+origin: LabFREED well-known actions
+
+# The one canonical CIT for the three well-known actions in consumer.py - always the
+# same, except for ${BASE_URL}. A consuming app substitutes its own base url (where
+# create_actions_blueprint() is mounted) and adds this via add_resolver_config().
+config:
+- if: True
+  entries:
+  - service_name: Update Location
+    application_intents: [update-location]
+    service_type: action-generic
+    template_url: "${BASE_URL}/actions/update_location"
+  - service_name: Update Amount
+    application_intents: [update-amount]
+    service_type: action-generic
+    template_url: "${BASE_URL}/actions/update_amount"
+  - service_name: Container Is Empty
+    application_intents: [container-is-empty]
+    service_type: action-generic
+    template_url: "${BASE_URL}/actions/container_is_empty"
