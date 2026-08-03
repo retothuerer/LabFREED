@@ -111,6 +111,7 @@ class RegulatorySafetyKeys(StrEnum):
     KOSHER                       = "https://www.wikidata.org/wiki/Q1076110"
     VEGAN                        = "https://www.wikidata.org/wiki/Q899696"
     ACCEPTANCE_QUALITY_LIMIT     = "https://www.wikidata.org/wiki/Q4672371"
+    UNIQUE_FORMULA_IDENTIFIER    = "https://www.wikidata.org/wiki/Q61745460"
 
 
 class StorageHandlingShippingKeys(StrEnum):
