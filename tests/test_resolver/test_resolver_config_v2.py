@@ -102,6 +102,34 @@ def test_service_type_invalid_value_is_flagged():
 
 
 # ---------------------------------------------------------------------------
+# ResolverConfigEntry.key validation
+# ---------------------------------------------------------------------------
+
+def test_key_absent_has_no_errors():
+    e = ResolverConfigEntry(**_entry())
+    assert e.key is None
+    assert e.errors() == []
+
+
+def test_key_valid_iri_has_no_errors():
+    # PAC-ID Attributes' own recommended key for "Safety Data Sheet" (well_known_keys.md,
+    # "Documents" section) - key reuses the same external vocabularies Attributes
+    # already sources its keys from, rather than a LabFREED-specific namespace.
+    e = ResolverConfigEntry(**_entry(key='https://www.wikidata.org/wiki/Q222067'))
+    assert e.errors() == []
+
+
+def test_key_without_scheme_is_flagged():
+    e = ResolverConfigEntry(**_entry(key='msds'))
+    assert any('absolute IRI' in m.msg for m in e.errors())
+
+
+def test_key_with_whitespace_is_flagged():
+    e = ResolverConfigEntry(**_entry(key='https://www.wikidata.org/wiki/Q222067 msds'))
+    assert any('absolute IRI' in m.msg for m in e.errors())
+
+
+# ---------------------------------------------------------------------------
 # ResolverConfigBlock.applicable_if defaulting
 # ---------------------------------------------------------------------------
 
@@ -328,6 +356,22 @@ def test_evaluate_pac_id_url_encodes_special_characters_in_placeholder_values():
     rc.config = [block]
     result = rc.evaluate_pac_id(_FakePac({'q': 'a b&c=d'}))
     assert result.services[0].url == 'https://example.com/a%20b%26c%3Dd'
+
+
+def test_evaluate_pac_id_propagates_key_to_resolved_service():
+    rc = ResolverConfig(origin='o')
+    block = ResolverConfigBlock(entries=[_entry(key='https://www.wikidata.org/wiki/Q222067')])
+    rc.config = [block]
+    result = rc.evaluate_pac_id(_FakePac({}))
+    assert result.services[0].key == 'https://www.wikidata.org/wiki/Q222067'
+
+
+def test_evaluate_pac_id_resolved_service_key_defaults_to_none_when_absent():
+    rc = ResolverConfig(origin='o')
+    block = ResolverConfigBlock(entries=[_entry()])
+    rc.config = [block]
+    result = rc.evaluate_pac_id(_FakePac({}))
+    assert result.services[0].key is None
 
 
 # ---------------------------------------------------------------------------

@@ -19,6 +19,7 @@ class Service(LabFREED_BaseModel):
     application_intents:list[str]
     service_type:str
     url:str
+    key: str | None = None
     status:ServiceStatus =ServiceStatus.UNKNOWN
 
 

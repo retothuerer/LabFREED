@@ -20,7 +20,24 @@ class ResolverConfigEntry(LabFREED_BaseModel):
     application_intents:list[str]
     service_type:ServiceType |str
     template_url:str
-    
+    key: str | None = Field(default=None)
+
+    @model_validator(mode='after')
+    def _validate_key(self):
+        # key classifies *what this entry is* (e.g. "this is a Material Safety Data
+        # Sheet") via a shared, IRI-anchored vocabulary term - the same "key" concept
+        # PAC-ID Attributes already uses for its own attribute keys - as opposed to
+        # application_intents (a short, free-text string identifying *which use case
+        # picks this entry*). The two are orthogonal, see README.md's "Key".
+        if self.key is not None and not re.match(r'^[a-zA-Z][a-zA-Z0-9+.\-]*:\S+$', self.key):
+            self._add_validation_message(
+                level=ValidationMsgLevel.ERROR,
+                source=f'Service {self.service_name}',
+                msg=f'key must be an absolute IRI (e.g. "https://www.wikidata.org/wiki/Q222067" for "Safety Data Sheet", per PAC-ID Attributes\' well_known_keys.md), got {self.key!r}',
+                highlight_sub=[self.key]
+            )
+        return self
+
     @model_validator(mode='after')
     def _validate_service_name(self):
         # service_name

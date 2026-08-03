@@ -60,7 +60,8 @@ class ResolverConfigEvaluator:
                                                         service_name=e.service_name,
                                                         application_intents=e.application_intents,
                                                         service_type=e.service_type,
-                                                        url = url
+                                                        url = url,
+                                                        key=e.key,
                                     )
                               )
         return resolver_config_evaluated
