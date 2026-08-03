@@ -1,6 +1,6 @@
 {
   "name": "labfreed",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Reference knowledge and code quickstart for writing Python against the labfreed package (LabFREED building blocks: PAC-ID, PAC-CAT, T-REX, PAC-ID Resolver, PAC-ID Attributes).",
   "author": {
     "name": "Reto Thürer",

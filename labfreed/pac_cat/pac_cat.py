@@ -53,7 +53,7 @@ class PAC_CAT(PAC_ID):
         categories = self.categories
         return categories[1] if categories and len(categories)>1 else None
 
-    def get_category(self, key) -> Category:
+    def get_category(self, key) -> Category | None:
         """Helper to get a category by key
         """
         tmp = [c for c in self.categories if c.key == key]

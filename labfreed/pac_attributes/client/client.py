@@ -116,16 +116,17 @@ class AttributeClient():
 
     def get_attributes(self,
                        server_url:str,
-                       pac_id:PAC_ID|str ,
+                       subject_id:PAC_ID|str|None=None,
                        restrict_to_attribute_groups:list[str]|None=None,
-                       language_preferences:list[str]|None=None
+                       language_preferences:list[str]|None=None,
+                       **kwargs
                        ) -> list[Spec_AttributeGroup]:
         """Requests the attributes for one subject id from one attribute server. Always
         makes a fresh request via http_post_callback - there is no caching here.
 
         Args:
             server_url (str): the attribute server's base URL.
-            pac_id (PAC_ID | str): the subject id to request attributes for. A PAC_ID
+            subject_id (PAC_ID | str): the subject id to request attributes for. A PAC_ID
                 instance is canonicalized via to_url(); a plain string is sent as-is.
             restrict_to_attribute_groups (list[str] | None, optional): if given, only
                 request these attribute group keys. Defaults to None (all groups).
@@ -141,12 +142,26 @@ class AttributeClient():
         Returns:
             list[ClientAttributeGroup]: attribute groups for the subject id
         """
+        if 'pac_id' in kwargs:
+            warnings.warn(
+                "The 'pac_id' keyword argument to get_attributes() is deprecated, use 'subject_id' instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            legacy_subject_id = kwargs.pop('pac_id')
+            if subject_id is None:
+                subject_id = legacy_subject_id
+        if kwargs:
+            raise TypeError(f"get_attributes() got unexpected keyword arguments: {sorted(kwargs)}")
+        if subject_id is None:
+            raise TypeError("get_attributes() missing required argument: 'subject_id'")
+
         # per PAC-ID-Attributes spec, subject_id only has to be an IRI - preferably, but not
         # necessarily, a PAC-ID. A PAC_ID instance is still canonicalized via to_url() (as
         # before); a plain string is sent through as-is. Routing an arbitrary IRI through
         # PAC_ID.from_url().to_url() would mangle it (e.g. injects a "PAC." issuer prefix),
         # so we deliberately don't parse/reserialize string input here.
-        subject_id = pac_id.to_url() if isinstance(pac_id, PAC_ID) else pac_id
+        subject_id = subject_id.to_url() if isinstance(subject_id, PAC_ID) else subject_id
 
         # no valid data found in cache > request to server
         attribute_request_body = AttributeRequestData(subject_id=subject_id,

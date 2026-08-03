@@ -22,7 +22,7 @@ pip install labfreed[extended]
 A plain Python module exposing two module-level names, `data_sources` and `translation_data_sources`, picked up via
 `attribute_data_from_module(module, default_language)`. A few different kinds of data source are mixed together here:
 
-- `pyDict_DataSource` — attributes hard-coded as Python objects, keyed by PAC-ID (or, via `pac_to_key=...`, by
+- `Dict_DataSource` — attributes hard-coded as Python objects, keyed by PAC-ID (or, via `pac_to_key=...`, by
   something derived from it — e.g. `product_number_from_pac_url` so one entry covers every serial number of a
   `BAL500`).
 - `DynamicDemoAttributeGroup` — attributes computed on the fly, restricted to matching PAC-IDs via a predicate
@@ -31,7 +31,7 @@ A plain Python module exposing two module-level names, `data_sources` and `trans
 If you'd rather maintain attributes in a spreadsheet than in Python, `LocalExcelAttributeDataSource` (see
 `examples/attribute_server/example_attributes_server.py`) reads them from a static `.xlsx` file instead — first
 column is the lookup key, header row is the attribute keys. That's the "static files" option for a data source; it's
-an alternative to `Dict`/`pyDict_DataSource`, not something the attribute server requires.
+an alternative to `Dict_DataSource`, not something the attribute server requires.
 
 Every attribute key used in a data source needs a translation, or `AttributeServerRequestHandler` warns at startup —
 see `DictTranslationDataSource` calls throughout the file.

@@ -1,5 +1,5 @@
 
-from abc import ABC, abstractproperty
+from abc import ABC, abstractmethod
 
 from pydantic import computed_field, model_validator
 
@@ -11,7 +11,8 @@ class ExtensionBase(ABC):
     type: str|None
 
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def data(self) -> str:
         raise NotImplementedError("Subclasses must implement 'data'")
     

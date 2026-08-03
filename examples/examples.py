@@ -209,7 +209,7 @@ handler = AttributeServerRequestHandler(data_sources=[data_source], translation_
 Querying works the same whether the handler above is embedded in a Flask app or, as here, called in-process.
 '''
 client = AttributeClient(http_post_callback=local_attribute_request_callback_factory(handler))
-attribute_groups = client.get_attributes(server_url='', pac_id=pac_str)
+attribute_groups = client.get_attributes(server_url='', subject_id=pac_str)
 for group in attribute_groups:
     for attr in Attributes.from_payload_attributes(group.attributes):
         values = ', '.join(str(v) for v in attr.value_list)

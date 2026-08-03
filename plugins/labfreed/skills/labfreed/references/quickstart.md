@@ -75,12 +75,12 @@ print(pac.to_url())  # HTTPS://PAC.METTORIUS.COM/21:1234
 
 ## Create a T-REX payload from a plain dict
 
-`pyTREX` is the Pythonic convenience layer -- build it from a dict, then call
-`.to_trex()` to get the actual spec-conformant T-REX object.
+`T_REX` is the pythonic facade layer -- build it from a dict, then call `.to_trex()` to
+get the actual spec-conformant T-REX object.
 
 ```python
 from datetime import datetime
-from labfreed.trex.pythonic import pyTREX, DataTable, Quantity
+from labfreed.trex.facade import T_REX, DataTable, Quantity
 
 segments = {
     'STOP': datetime(2024, 5, 5, 13, 6),
@@ -88,7 +88,7 @@ segments = {
     'OK': False,
     'COMMENT': 'FOO',
 }
-mydata = pyTREX(segments)
+mydata = T_REX(segments)
 
 table = DataTable(col_names=['DURATION', 'DATE', 'OK', 'COMMENT'])
 table.append([Quantity(value=1, unit='h'), datetime.now(), True, 'FOO'])
@@ -110,16 +110,17 @@ print(pac.to_url())  # HTTPS://PAC.METTORIUS.COM/21:1234*MYTREX$TREX/STOP$T.D:..
 
 ## PAC-ID Resolver: resolve a PAC-ID to service links
 
-See the terminology note in `concepts.md` -- `load_cit` / `resolver_configs` is the
-current PAC-ID Resolver API; expect the naming to keep shifting toward
-"resolver config" terms as the CIT -> resolver-config rename lands.
+See the terminology note in `concepts.md` -- `load_cit` still works (it's the CIT v1
+loading path, now deprecated in favor of `ResolverConfig.from_yaml(...)`) but
+`resolver_configs=` is the current parameter name either way.
 
 ```python
 import os
 import requests_cache
 from labfreed import PAC_ID_Resolver, load_cit
+from labfreed.pac_id_resolver.service_availability import check_service_group
 
-cit = load_cit('path/to/cit_or_resolver_config.yaml')
+cit = load_cit('path/to/cit_or_resolver_config.yaml')  # DeprecationWarning: use ResolverConfig.from_yaml(...)
 cit.print_validation_messages()  # a config can be invalid too -- check before using it
 
 pac_str = 'HTTPS://PAC.METTORIUS.COM/-MS/X3511/CAS:7732-18-5'
@@ -127,7 +128,7 @@ service_groups = PAC_ID_Resolver(resolver_configs=[cit]).resolve(pac_str, check_
 
 cached_session = requests_cache.CachedSession(backend='memory', expire_after=60)
 for sg in service_groups:
-    sg.update_states(cached_session)  # needs network access to the resolver service(s)
+    check_service_group(sg, cached_session)  # needs network access to the resolver service(s)
     sg.print()
 ```
 
@@ -138,8 +139,8 @@ Flask/network involved. For a real deployable server built on the same classes, 
 `examples/pac_mettorius_com/README.md` in the repo.
 
 ```python
-from labfreed.pac_attributes.pythonic.py_attributes import pyAttribute, pyAttributes, pyResource
-from labfreed.pac_attributes.pythonic.py_dict_data_source import pyDict_DataSource
+from labfreed.pac_attributes.facade.attributes import Attribute, Attributes, Resource
+from labfreed.pac_attributes.facade.dict_data_source import Dict_DataSource
 from labfreed.pac_attributes.well_known_attribute_keys import MetaAttributeKeys
 from labfreed.pac_attributes.server.translation_data_sources import DictTranslationDataSource
 from labfreed.pac_attributes.server.server import AttributeServerRequestHandler
@@ -149,12 +150,13 @@ from labfreed.utilities.translations import Terms, Term
 pac_str = 'HTTPS://PAC.METTORIUS.COM/-MD/BAL500/000001'
 
 # A data source could just as well read this from a database, an Excel sheet, or anywhere else.
-data_source = pyDict_DataSource(
-    attribute_group_key=MetaAttributeKeys.GROUPKEY.value,
+# MetaAttributeKeys members are StrEnum -- usable directly wherever a str is expected, no .value needed.
+data_source = Dict_DataSource(
+    attribute_group_key=MetaAttributeKeys.GROUPKEY,
     data={
-        pac_str: pyAttributes([
-            pyAttribute(key=MetaAttributeKeys.DISPLAYNAME.value, value="My Balance"),
-            pyAttribute(key=MetaAttributeKeys.IMAGE.value, value=pyResource("https://picsum.photos/id/82/200")),
+        pac_str: Attributes([
+            Attribute(key=MetaAttributeKeys.DISPLAYNAME, value="My Balance"),
+            Attribute(key=MetaAttributeKeys.IMAGE, value=Resource("https://picsum.photos/id/82/200")),
         ])
     }
 )
@@ -163,9 +165,9 @@ data_source = pyDict_DataSource(
 translations = DictTranslationDataSource(
     supported_languages={'en'},
     data=Terms(terms=[
-        Term.create(MetaAttributeKeys.GROUPKEY.value, [('en', 'Meta Data')]),
-        Term.create(MetaAttributeKeys.DISPLAYNAME.value, [('en', 'Display Name')]),
-        Term.create(MetaAttributeKeys.IMAGE.value, [('en', 'Image')]),
+        Term.create(MetaAttributeKeys.GROUPKEY, [('en', 'Meta Data')]),
+        Term.create(MetaAttributeKeys.DISPLAYNAME, [('en', 'Display Name')]),
+        Term.create(MetaAttributeKeys.IMAGE, [('en', 'Image')]),
     ])
 )
 
@@ -174,9 +176,9 @@ handler = AttributeServerRequestHandler(data_sources=[data_source], translation_
 
 # Querying works the same whether the handler is embedded in a Flask app or called in-process, as here
 client = AttributeClient(http_post_callback=local_attribute_request_callback_factory(handler))
-attribute_groups = client.get_attributes(server_url='', pac_id=pac_str)
+attribute_groups = client.get_attributes(server_url='', subject_id=pac_str)
 for group in attribute_groups:
-    for attr in pyAttributes.from_payload_attributes(group.attributes):
+    for attr in Attributes.from_payload_attributes(group.attributes):
         values = ', '.join(str(v) for v in attr.value_list)
         print(f'{attr.label}: {values}')
 ```

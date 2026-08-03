@@ -88,7 +88,7 @@ client = AttributeClient(
     http_post_callback=authenticated_http_attribute_request_callback_factory(rules)
 )
 
-attribute_groups = client.get_attributes(server_url=SERVER_URL, pac_id=PAC_STR)
+attribute_groups = client.get_attributes(server_url=SERVER_URL, subject_id=PAC_STR)
 for group in attribute_groups:
     for attr in group.attributes.values():
         values = ', '.join(str(item.value) for item in attr.items)

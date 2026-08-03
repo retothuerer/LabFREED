@@ -138,11 +138,17 @@ Given a scanned/typed PAC-ID, resolves it to links/information about the identif
 object, configurable per object type/category. The reference implementation supports
 combining multiple resolver configs and doing service-URL discovery/reachability checks.
 
-**Terminology in flux**: this building block's central mechanism used to be called the
-**Coupling Information Table (CIT)** -- CIT v1 stable, CIT v2 draft. As of the package's
-v1.0.0 release this is being renamed to "resolver configuration"; you may see both terms
-(`load_cit`, `resolver_configs=...`) in the same codebase during the transition. Don't
-assume one has fully replaced the other without checking current code/docs.
+**Terminology, post-v1.0.0**: this building block's central mechanism used to be called
+the **Coupling Information Table (CIT)** -- CIT v1 stable, CIT v2 draft. As of v1.0.0 the
+rename to "resolver configuration" (`ResolverConfig`/`ResolverConfigEntry`) has landed:
+`load_cit()` still works and still returns a usable config, but its CIT v1 code path is
+now formally deprecated (fires a `DeprecationWarning` even on a successful load) --
+prefer `ResolverConfig.from_yaml(...)` in new code. `resolver_configs=...` (the parameter
+name used across the resolver API) is current terminology either way. `ResolverConfigEntry`/
+`Service` also gained a new optional `key` field in v1.0.0: an absolute IRI identifying what
+an entry semantically *is* (e.g. "this is a Material Safety Data Sheet"), separate from
+`application_intents` (which use case selects it) -- `PacInfo.get_user_handover(s)_by_key()`/
+`get_action(s)_by_key()` look entries up by it.
 
 ## PAC-ID Attributes
 "Lightweight mechanism to provide metadata about an item."

@@ -43,7 +43,6 @@ class IdentifierKeys(StrEnum):
 class PhysicoChemicalProperties(StrEnum):
     BOILINGPOINT            = "https://qudt.org/vocab/quantitykind/BoilingPoint"
     MELTINGPOINT            = "https://qudt.org/vocab/quantitykind/MeltingPoint"
-    POLARITY                = "https://labfreed.org/dummy/polarity"
     DENSITY                 = "https://qudt.org/vocab/quantitykind/Density"
     RELATIVE_DENSITY        = "https://qudt.org/vocab/quantitykind/RelativeMassDensity"
     MOLARMASS               = "https://qudt.org/vocab/quantitykind/MolarMass"

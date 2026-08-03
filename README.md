@@ -161,7 +161,7 @@ pac.print_validation_messages()
 >> Validation Results                                                              
 >> ┌──────────────────────────────────────────────────────────────────────────────┐
 >> │ **RECOMMENDATION** in id segment value bal500                                │
->> │ Characters 'l','a','b' should not be used., Characters SHOULD be limited to  │
+>> │ Characters 'a','b','l' should not be used., Characters SHOULD be limited to  │
 >> │ upper case letters (A-Z), numbers (0-9), '-' and '+'                         │
 >> │                                                                              │
 >> │ HTTPS://PAC.METTORIUS.COM/-MD/👉bal👈500/@1234                               │
@@ -173,7 +173,19 @@ pac.print_validation_messages()
 >> │ HTTPS://PAC.METTORIUS.COM/-MD/bal500/👉@👈1234                               │
 >> ├──────────────────────────────────────────────────────────────────────────────┤
 >> │ **RECOMMENDATION** in id segment value bal500                                │
->> │ Characters 'l','a','b' should not be used., Characters SHOULD be limited to  │
+>> │ Characters 'a','b','l' should not be used., Characters SHOULD be limited to  │
+>> │ upper case letters (A-Z), numbers (0-9), '-' and '+'                         │
+>> │                                                                              │
+>> │ HTTPS://PAC.METTORIUS.COM/-MD/👉bal👈500/@1234                               │
+>> ├──────────────────────────────────────────────────────────────────────────────┤
+>> │ **RECOMMENDATION** in id segment value @1234                                 │
+>> │ Characters '@' should not be used., Characters SHOULD be limited to upper    │
+>> │ case letters (A-Z), numbers (0-9), '-' and '+'                               │
+>> │                                                                              │
+>> │ HTTPS://PAC.METTORIUS.COM/-MD/bal500/👉@👈1234                               │
+>> ├──────────────────────────────────────────────────────────────────────────────┤
+>> │ **RECOMMENDATION** in id segment value bal500                                │
+>> │ Characters 'a','b','l' should not be used., Characters SHOULD be limited to  │
 >> │ upper case letters (A-Z), numbers (0-9), '-' and '+'                         │
 >> │                                                                              │
 >> │ HTTPS://PAC.METTORIUS.COM/-MD/👉bal👈500/@1234                               │
@@ -275,19 +287,21 @@ Note that utility types for Quantity (number with unit) and table are needed
 
 ```python
 from datetime import datetime  
-from labfreed.trex.pythonic import pyTREX  
-from labfreed.trex.pythonic import DataTable  
-from labfreed.trex.pythonic import Quantity  
+from labfreed.trex.facade import T_REX  
+from labfreed.trex.facade import DataTable  
+from labfreed.trex.facade import Quantity  
+from labfreed.utilities.quantity import CommonQuantityUnit  
 
 # Value segments of different type
+# unit can be set from the CommonQuantityUnit enum (TEMP) or as a plain UCUM string (DURATION below)
 segments = {
                 'STOP': datetime(year=2024,month=5,day=5,hour=13,minute=6),
-                'TEMP': Quantity(value=10.15, unit= 'K'),
+                'TEMP': Quantity(value=10.15, unit=CommonQuantityUnit.TEMPERATURE_KELVIN),
                 'OK':False,
                 'COMMENT': 'FOO',
                 'COMMENT2':'£'
             }
-mydata = pyTREX(segments) 
+mydata = T_REX(segments)
 
 # Create a table
 table = DataTable(col_names=['DURATION', 'Date', 'OK', 'COMMENT'])
@@ -308,7 +322,7 @@ trex.print_validation_messages()
 >> Validation Results                                            
 >> ┌────────────────────────────────────────────────────────────┐
 >> │ **ERROR** in TREX table column Date                        │
->> │ Column header key contains invalid characters: 'e','a','t' │
+>> │ Column header key contains invalid characters: 'a','t','e' │
 >> │                                                            │
 >> │ STOP$T.D:20240505T1306                                     │
 >> │ +TEMP$KEL:10.15                                            │
@@ -316,9 +330,9 @@ trex.print_validation_messages()
 >> │ +COMMENT$T.A:FOO                                           │
 >> │ +COMMENT2$T.T:12G3                                         │
 >> │ +TABLE$$DURATION$HUR:D👉ate👈$T.D:OK$T.B:COMMENT$T.A::     │
->> │  1:20260729T025139.639:T:FOO::                             │
->> │  1.1:20260729T025139.639:T:BAR::                           │
->> │  1.3:20260729T025139.639:F:BLUBB                           │
+>> │  1:20260803T073633.966:T:FOO::                             │
+>> │  1.1:20260803T073633.966:T:BAR::                           │
+>> │  1.3:20260803T073633.968:F:BLUBB                           │
 >> └────────────────────────────────────────────────────────────┘
 ```
 #### Combine PAC-ID and TREX and serialize
@@ -330,12 +344,13 @@ pac_str = pac.to_url()
 print(pac_str)
 ```
 ```text
->> HTTPS://PAC.METTORIUS.COM/21:1234*MYTREX$TREX/STOP$T.D:20240505T1306+TEMP$KEL:10.15+OK$T.B:F+COMMENT$T.A:FOO+COMMENT2$T.T:12G3+TABLE$$DURATION$HUR:Date$T.D:OK$T.B:COMMENT$T.A::1:20260729T025139.639:T:FOO::1.1:20260729T025139.639:T:BAR::1.3:20260729T025139.639:F:BLUBB
+>> HTTPS://PAC.METTORIUS.COM/21:1234*MYTREX$TREX/STOP$T.D:20240505T1306+TEMP$KEL:10.15+OK$T.B:F+COMMENT$T.A:FOO+COMMENT2$T.T:12G3+TABLE$$DURATION$HUR:Date$T.D:OK$T.B:COMMENT$T.A::1:20260803T073633.966:T:FOO::1.1:20260803T073633.966:T:BAR::1.3:20260803T073633.968:F:BLUBB
 ```
-### PAC-ID Resolver
+## PAC-ID Resolver
 
 ```python
 from labfreed import PAC_ID_Resolver, load_cit  
+from labfreed.pac_id_resolver.service_availability import check_service_group  
 import requests_cache
 
 # Get a CIT
@@ -359,13 +374,24 @@ pac_str = 'HTTPS://PAC.METTORIUS.COM/-MS/X3511/CAS:7732-18-5'
 service_groups = PAC_ID_Resolver(resolver_configs=[cit, cit2]).resolve(pac_str, check_service_status=False)
 cached_session = requests_cache.CachedSession(backend='memory', expire_after=60)
 for sg in service_groups:
-    sg.update_states(cached_session)
+    check_service_group(sg, cached_session)
     sg.print()
 ```
 ```text
->> [Error during execution: No Internet Connection]
+>> Services from origin 'MY_COMPANY                        
+>> ┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┓
+>> ┃ Service Name        ┃ URL                  ┃ Service Type        ┃ Reachable ┃
+>> ┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━┩
+>> │ Chemical Management │ https://chem-manage… │ userhandover-gener… │ UNKNOWN   │
+>> └─────────────────────┴──────────────────────┴─────────────────────┴───────────┘
+>>                          Services from origin 'PERSONAL                         
+>> ┏━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┓
+>> ┃ Service Name ┃ URL                        ┃ Service Type         ┃ Reachable ┃
+>> ┡━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━┩
+>> │ CAS Search   │ https://pubchem.ncbi.nlm.… │ userhandover-generic │ UNKNOWN   │
+>> └──────────────┴────────────────────────────┴──────────────────────┴───────────┘
 ```
-### PAC-ID Attributes
+## PAC-ID Attributes
 Attributes attach lightweight metadata -- e.g. a display name, an image, a calibration due date -- to a PAC-ID,
 without baking it into the identifier itself.
 
@@ -374,8 +400,8 @@ For an actual deployable server and a PAC-ID landing page built on the same clas
 [Setting up a PAC-ID Landing Page](examples/pac_mettorius_com/README.md).
 
 ```python
-from labfreed.pac_attributes.pythonic.py_attributes import pyAttribute, pyAttributes, pyResource  
-from labfreed.pac_attributes.pythonic.py_dict_data_source import pyDict_DataSource  
+from labfreed.pac_attributes.facade.attributes import Attribute, Attributes, Resource  
+from labfreed.pac_attributes.facade.dict_data_source import Dict_DataSource  
 from labfreed.pac_attributes.well_known_attribute_keys import MetaAttributeKeys  
 from labfreed.pac_attributes.server.translation_data_sources import DictTranslationDataSource  
 from labfreed.pac_attributes.server.server import AttributeServerRequestHandler  
@@ -384,12 +410,12 @@ from labfreed.utilities.translations import Terms, Term
 
 # Attributes for one PAC-ID. A data source could just as well read this from a database, an Excel sheet, or anywhere else.
 pac_str = 'HTTPS://PAC.METTORIUS.COM/-MD/BAL500/000001'
-data_source = pyDict_DataSource(
-    attribute_group_key=MetaAttributeKeys.GROUPKEY.value,
+data_source = Dict_DataSource(
+    attribute_group_key=MetaAttributeKeys.GROUPKEY,
     data={
-        pac_str: pyAttributes([
-            pyAttribute(key=MetaAttributeKeys.DISPLAYNAME.value, value="My Balance"),
-            pyAttribute(key=MetaAttributeKeys.IMAGE.value, value=pyResource("https://picsum.photos/id/82/200")),
+        pac_str: Attributes([
+            Attribute(key=MetaAttributeKeys.DISPLAYNAME, value="My Balance"),
+            Attribute(key=MetaAttributeKeys.IMAGE, value=Resource("https://picsum.photos/id/82/200")),
         ])
     }
 )
@@ -398,9 +424,9 @@ data_source = pyDict_DataSource(
 translations = DictTranslationDataSource(
     supported_languages={'en'},
     data=Terms(terms=[
-        Term.create(MetaAttributeKeys.GROUPKEY.value, [('en', 'Meta Data')]),
-        Term.create(MetaAttributeKeys.DISPLAYNAME.value, [('en', 'Display Name')]),
-        Term.create(MetaAttributeKeys.IMAGE.value, [('en', 'Image')]),
+        Term.create(MetaAttributeKeys.GROUPKEY, [('en', 'Meta Data')]),
+        Term.create(MetaAttributeKeys.DISPLAYNAME, [('en', 'Display Name')]),
+        Term.create(MetaAttributeKeys.IMAGE, [('en', 'Image')]),
     ])
 )
 
@@ -411,9 +437,9 @@ Querying works the same whether the handler above is embedded in a Flask app or,
 
 ```python
 client = AttributeClient(http_post_callback=local_attribute_request_callback_factory(handler))
-attribute_groups = client.get_attributes(server_url='', pac_id=pac_str)
+attribute_groups = client.get_attributes(server_url='', subject_id=pac_str)
 for group in attribute_groups:
-    for attr in pyAttributes.from_payload_attributes(group.attributes):
+    for attr in Attributes.from_payload_attributes(group.attributes):
         values = ', '.join(str(v) for v in attr.value_list)
         print(f'{attr.label}: {values}')
 ```
@@ -456,6 +482,7 @@ real release ships.
 ### v1.0.0
 PAC-ID
 - supporting PAC.LI issuer
+- BREAKING: `WellKnownKeys` and `GS1ApplicationIdentifier` now derive from `StrEnum` instead of `Enum` (same treatment as the PAC-ID Attributes key enums below); `id_segment.py`'s well-known-key check simplified accordingly, no `.value` needed
 
 PAC-CAT
 - added new categories 
@@ -463,16 +490,37 @@ PAC-CAT
 
 PAC-ID Resolver
 - Transition to improved resolver configuration ( replaces coupling information table )
+- BREAKING: `ServiceType` now derives from `StrEnum` instead of `Enum`; `_validate_service_type` in both `resolver_config_common.py` and `resolver_config.py` dropped their manual `.value`/`isinstance` unwrapping now that members compare directly against plain strings
+- BREAKING: `ServiceStatus` (`Service.status`) now derives from `StrEnum` with explicit string values (`"active"`/`"inactive"`/`"unknown"`) instead of plain `Enum` with `auto()`-generated int values; any code reading `.value` directly (none found in this codebase) would now get a string instead of an int
+- new optional `key` field on `ResolverConfigEntry`/`Service`: an absolute IRI, drawn from the same shared vocabularies PAC-ID Attributes already sources its own `key` from, identifying what an entry semantically *is* (e.g. "this is a Material Safety Data Sheet"), orthogonal to `application_intents` (which identifies which use case selects it). `PacInfo` gained matching `get_user_handover(s)_by_key()`/`get_action(s)_by_key()` lookups
 
 
 PAC-ID Attributes
 - new building block
+- BREAKING: renamed PhysoChemicalProperties to PhysicoChemicalProperties (typo fix; deprecated alias kept for one more major version)
+- BREAKING: fixed MELTINGPOINT value typo (meltinggpoint -> meltingpoint) - still an unreleased `.../dummy/...` placeholder key, fixed before real adoption
+- BREAKING: replaced BOILINGPOINT, MELTINGPOINT and DENSITY `.../dummy/...` placeholder values with real qudt.org quantitykind URIs, matching what a real attribute server (Apini) returns - still unreleased placeholder keys, fixed before real adoption
+- added well-known attribute keys MOLARMASS and FLASHPOINT to PhysicoChemicalProperties, and new ChemicalIdentifiers (CAS_NUMBER, EC_NUMBER, EMPIRICAL_FORMULA), GuaranteeAnalysisProperties (ASSAY, WATER_CONTENT) and DocumentKeys (DATASHEET, SAFETY_DATA_SHEET) enums, sourced from a real Apini attribute server response for a Carl Roth solvent
+- renamed well_knonw_attribute_keys module to well_known_attribute_keys (typo fix; deprecated shim module kept for one more major version)
+- BREAKING: `Webframework` (`AttributeServerFactory`) now derives from `StrEnum` instead of `Enum`, for consistency; no known call site read `.value` on it before
+- BREAKING: attribute key enums (MetaAttributeKeys, IdentifierKeys, PhysicoChemicalProperties, etc.) now derive from `StrEnum` instead of `Enum`, matching `CommonQuantityUnit`; members are usable directly wherever a `str` is expected (dict keys, equality checks, `pyAttribute(key=...)`) without `.value` - existing `.value` call sites are unaffected, but code relying on `isinstance(key, str)` being `False` or on the old `str(key)` repr-style output will observe different behavior
+- NumericAttributeItemsElement's unit validation now shares the same UCUM check used across the package (authoritative when the new optional `units` extra is installed), instead of its own separate regex
 
 
 General
 - Minor Bugfixes
+- `labfreed_experimental.pac_disco`'s `ServiceUUID`/`PAC_Characteristics` now derive from `StrEnum` instead of `Enum` (no compatibility guarantee on this module, not tagged BREAKING)
+- `qr.generate_qr`'s `Direction` modernized from `class Direction(str, Enum)` to `class Direction(StrEnum)` - purely cosmetic, identical runtime behavior
+- BREAKING: `ValidationMsgLevel` (used across every building block's validation messages) now derives from `StrEnum` with explicit string values (`"error"`/`"warning"`/`"recommendation"`/`"info"`) instead of plain `Enum` with `auto()`-generated int values; `ValidationMessage.level` would now serialize as a string via `model_dump()`/`model_dump_json()` instead of an int if ever dumped directly (it's stored in a private attribute and excluded from the parent model's own serialization by default, but is a public field on `ValidationMessage` itself) - no in-repo call site read `.value` on it before this change
 - BREAKING: reorganization of module structure > some import paths have changed
+- BREAKING: `labfreed.trex.pythonic` and `labfreed.pac_attributes.pythonic` renamed to `labfreed.trex.facade` and `labfreed.pac_attributes.facade`; every `py`-prefixed convenience class (`pyTREX`, `pyAttribute`, `pyAttributes`, `pyResource`, `pyReference`, `pyDict_DataSource`) renamed to drop the `py` prefix (`T_REX`, `Attribute`, `Attributes`, `Resource`, `Reference`, `Dict_DataSource`) - old names kept as deprecated aliases for one more major version, but the old `labfreed.*.pythonic` submodule path itself is gone entirely, not just the symbol names
 - BREAKING: renamed Quantity.float property to Quantity.as_float (the name collided with the float type used in Quantity's own annotations, breaking model construction on Python 3.14)
+- moved `Quantity` from `labfreed.trex.pythonic.quantity` to `labfreed.utilities.quantity` (it's used by PAC-ID Attributes too, not only T-REX); also reachable via `labfreed.trex.facade` alongside `T_REX`/`DataTable` - `unece_unit_code_from_quantity` (T-REX-specific) moved into `pyTREX.py`
+- `AttributeClient.get_attributes()`'s `pac_id` parameter renamed to `subject_id`, matching the rest of the IRI migration - old `pac_id=` keyword still works via a deprecated shim
+- new optional `units` extra (`pip install labfreed[units]`, adds pint+ucumvert): Quantity<->T-REX UNECE unit-code mapping is now automatic for compound/non-SI units (mol/L, kg/m3, Cel, ...) instead of only working when a unit's UNECE symbol happened to equal its UCUM string
+- BREAKING (edge case): when a unit can't be resolved to a UNECE code and the `units` extra isn't installed, `Quantity`/`pyTREX.to_trex()` now raise `UcumSupportError` (an `ImportError` subclass) instead of `ValueError` - only observable if calling code specifically caught `ValueError` from this path, which previously fired for every non-exact-match unit
+- BREAKING: `Quantity` now validates that `unit` is a valid UCUM unit at construction time (structure only without the `units` extra, full symbol-level check with it) and raises `ValueError` otherwise - previously any string was accepted. Pass `dont_enforce_ucum_units=True` to the constructor to bypass this (discouraged)
+- `Quantity.__str__` pretty-prints its unit (e.g. `kg/m3` -> `kg/m³`) when the `units` extra is installed, instead of the old naive `.`->`·` substitution
 
 
 

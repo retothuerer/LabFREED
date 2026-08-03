@@ -245,40 +245,41 @@ rather than trying to pre-empt the whole remaining set now.
 Related to: ["Convenience API for PAC-ID/PAC-CAT derivation
 namespaces"](#convenience-api-for-pac-idpac-cat-derivation-namespaces) (same test file)
 
-`tests/test_PAC_CAT/test_PAC_CAT_derivation_namespace.py`'s two `@pytest.mark.skip(reason="NOT
-REVIEWED")` stretch-goal tests
-(`test_forced_long_notation_preserves_exact_layout_across_categories`,
-`test_chained_derivation_namespaces_stay_in_original_order`) both assert equality on the
-*serialized URL string* - `pac.to_url(use_short_notation=False) == url_in` - which demands
-`to_url()` reproduce the exact original segment ordering byte-for-byte, not just an equivalent
-structure. Raised while looking at these tests: comparing the *parsed* structure instead (e.g. a
-`PAC_CAT`/`Category`-level equality or a segment-set comparison, so two PAC-CATs are equal
-whenever their categories/segments carry the same key-value pairs regardless of on-the-wire
-ordering) would let both tests express what they actually care about - "did the data survive a
-round trip" - without also requiring literal layout preservation.
+`tests/test_PAC_CAT/test_PAC_CAT_derivation_namespace.py` used to carry two `NOT REVIEWED`
+stretch-goal tests asserting equality on the *serialized URL string* -
+`pac.to_url(use_short_notation=False) == url_in` - which demands `to_url()` reproduce the exact
+original segment ordering byte-for-byte, not just an equivalent structure (they've since been
+superseded by `test_round_trip_forced_long_notation_preserves_marker_position` and
+`test_forced_notation_never_changes_category_structure_across_a_marker` in the same file, both
+reviewed and passing). The underlying idea raised while looking at the originals still stands:
+comparing the *parsed* structure instead (e.g. a `PAC_CAT`/`Category`-level equality or a
+segment-set comparison, so two PAC-CATs are equal whenever their categories/segments carry the
+same key-value pairs regardless of on-the-wire ordering) would let a test express what it
+actually cares about - "did the data survive a round trip" - without also requiring literal
+layout preservation.
 
-Not scoped or acted on: `PAC_ID`/`PAC_CAT` have no `__eq__` today (confirmed by grep - the only
-two `__eq__` overrides in the package are in `pac_id_resolver/resolver_config.py` and
-`cit_v1.py`, unrelated), so this would be new API, not a fix to something broken. Bigger than the
-two tests above suggest: a grep across `tests/` shows roughly 43 uses of the
-`.to_url() == <literal>` / `to_url(use_short_notation=...)` pattern spanning at least
-`test_PAC_CAT_derivation_namespace.py`, `test_PAC_CAT_parse_serialize_sequence.py`,
-`test_PAC_CAT_serialize.py`, `test_PAC_ID_serialize.py`, `test_pac_id_parse.py`,
-`test_excel_attribute_data_source.py`, `test__serialize.py`, `test_sanity_check.py`, and the
-generated-tests suite - each would need individually judging whether it's actually testing
-serialization fidelity (should keep comparing URL strings) or just object identity/round-trip
-(could switch to structural equality once it exists). Revisit alongside the derivation-namespace
-convenience-API pass above, since both touch the same test file and category model.
+Update 2026-08-03: `PAC_ID` gained a `__hash__` (`hash(self.to_url())`), but that's not the same
+thing as the order-insensitive equality this entry is about - `PAC_ID`/`PAC_CAT` already get
+*structural* `__eq__` for free via inherited Pydantic `BaseModel.__eq__` (confirmed empirically),
+but that compares fields (including `identifier`'s segment order) directly, not the
+order-insensitive "same categories/segments regardless of layout" semantics this entry wants. A
+grep across `tests/` shows roughly 43 uses of the `.to_url() == <literal>` /
+`to_url(use_short_notation=...)` pattern spanning at least `test_PAC_CAT_derivation_namespace.py`,
+`test_PAC_CAT_parse_serialize_sequence.py`, `test_PAC_CAT_serialize.py`, `test_PAC_ID_serialize.py`,
+`test_pac_id_parse.py`, `test_excel_attribute_data_source.py`, `test__serialize.py`,
+`test_sanity_check.py`, and the generated-tests suite - each would need individually judging
+whether it's actually testing serialization fidelity (should keep comparing URL strings) or just
+object identity/round-trip (could switch to structural equality once it exists). Not scoped yet.
 
 ---
 
 ## Convenience API for PAC-ID/PAC-CAT derivation namespaces
 
 Related to the derivation-namespace (`+<namespace>`) support in `pac_id.py`/`pac_cat.py`
-(see `tests/test_PAC_CAT/test_PAC_CAT_derivation_namespace.py` - as of 2026-07-29, 11 of
-its 14 tests still carry `@pytest.mark.skip(reason="NOT REVIEWED")`, though all 14 pass
-once unskipped; implementation looks functionally complete, review of those tests is
-what's actually outstanding).
+(see `tests/test_PAC_CAT/test_PAC_CAT_derivation_namespace.py` - as of 2026-08-03, all
+tests in that file have been reviewed and unskipped; the two "exact layout" stretch-goal
+tests mentioned below were superseded by better-named round-trip tests during that
+review).
 
 Requested convenience methods, with current status:
 

@@ -152,8 +152,10 @@ class PAC_ID(LabFREED_BaseModel):
     
     def __str__(self):
         return self.to_url()
-          
-         
+
+    def __hash__(self):
+        return hash(self.to_url())
+
     @model_validator(mode='after')
     def _check_at_least_one_segment(self) -> Self:
         if not len(self.identifier) >= 1:

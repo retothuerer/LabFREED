@@ -167,7 +167,7 @@ class RemoteAttributeDataSource(AttributeGroupDataSource):
     def attributes(self, subject_id: str) -> list[Spec_AttributeGroup]:
         canonical = self._canonicalize(subject_id)
         remote_subject_id = self._pac_to_key(canonical) if self._pac_to_key else canonical
-        return list(self._client.get_attributes(self._base_url, pac_id=remote_subject_id,
+        return list(self._client.get_attributes(self._base_url, subject_id=remote_subject_id,
                                                   language_preferences=self._language_preferences))
         
         

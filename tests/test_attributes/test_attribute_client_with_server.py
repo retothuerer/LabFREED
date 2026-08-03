@@ -1,5 +1,7 @@
 from datetime import datetime
 
+import pytest
+
 from labfreed.pac_attributes.api_data_models.request import AttributeRequestData
 from labfreed.pac_attributes.api_data_models.response import AttributeResponsePayload
 from labfreed.pac_attributes.client.client import AttributeClient
@@ -69,7 +71,7 @@ def _build_client():
 
 def test_client_gets_attributes_for_a_normal_pac_id():
     client = _build_client()
-    groups = client.get_attributes(server_url="", pac_id=NORMAL_PAC_ID)
+    groups = client.get_attributes(server_url="", subject_id=NORMAL_PAC_ID)
     assert len(groups) == 1
     assert groups[0].group_key == "ProductionData"
     assert set(groups[0].attributes.keys()) == {"MfgDate", "CalWeight"}
@@ -81,7 +83,7 @@ def test_referenced_pac_id_is_forward_looked_up_but_not_returned_directly():
     # cache), but get_attributes() should only return the attribute groups for the id
     # actually requested, not the referenced one.
     client = _build_client()
-    groups = client.get_attributes(server_url="", pac_id=NORMAL_PAC_ID)
+    groups = client.get_attributes(server_url="", subject_id=NORMAL_PAC_ID)
     assert len(groups) == 1
     assert "NominalWeight" not in groups[0].attributes
 
@@ -90,21 +92,31 @@ def test_client_gets_attributes_for_a_trailing_slash_pac_id():
     # the original bug: a PAC-ID-shaped id with an empty (trailing-slash) segment isn't
     # a strictly valid PAC-ID, but the attribute service only requires it to be an IRI.
     client = _build_client()
-    groups = client.get_attributes(server_url="", pac_id=TRAILING_SLASH_PAC_ID)
+    groups = client.get_attributes(server_url="", subject_id=TRAILING_SLASH_PAC_ID)
     assert len(groups) == 1
     assert groups[0].attributes["MfgDate"].items[0].value == datetime(2020, 1, 1).date()
 
 
 def test_client_gets_attributes_for_a_generic_non_pac_id_iri():
     client = _build_client()
-    groups = client.get_attributes(server_url="", pac_id=GENERIC_IRI)
+    groups = client.get_attributes(server_url="", subject_id=GENERIC_IRI)
     assert len(groups) == 1
     assert groups[0].attributes["MfgDate"].items[0].value == datetime(2021, 1, 1).date()
 
 
+def test_old_pac_id_keyword_still_works_and_warns():
+    # get_attributes()'s subject_id parameter used to be named pac_id - kept working via
+    # a deprecated keyword shim, matching the rest of the IRI migration's naming.
+    client = _build_client()
+    with pytest.deprecated_call():
+        groups = client.get_attributes(server_url="", pac_id=NORMAL_PAC_ID)
+    assert len(groups) == 1
+    assert groups[0].group_key == "ProductionData"
+
+
 def test_no_attributes_found_returns_empty_list_not_a_crash():
     client = _build_client()
-    groups = client.get_attributes(server_url="", pac_id="HTTPS://PAC.METTORIUS.COM/-MD/UNKNOWN/000")
+    groups = client.get_attributes(server_url="", subject_id="HTTPS://PAC.METTORIUS.COM/-MD/UNKNOWN/000")
     assert groups == []
 
 

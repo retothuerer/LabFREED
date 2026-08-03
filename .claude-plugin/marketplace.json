@@ -11,7 +11,7 @@
     {
       "name": "labfreed",
       "description": "Reference knowledge and a code quickstart for writing Python against the labfreed package -- PAC-ID, PAC-CAT, T-REX, PAC-ID Resolver, PAC-ID Attributes.",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "source": "./plugins/labfreed",
       "category": "development"
     }

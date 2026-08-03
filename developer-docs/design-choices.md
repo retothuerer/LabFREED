@@ -589,12 +589,17 @@ rather than a catch-all for every attribute key ever seen.
 **Impact:** tagged `BREAKING:` in `CHANGELOG.md` per the `versioning` skill's "value
 change to a serialized key" rule, even though - as with the earlier `MELTINGPOINT` fix -
 the practical blast radius is zero (no confirmed caller reads `BOILINGPOINT`,
-`MELTINGPOINT`, or `DENSITY` today). `POLARITY` staying on a dummy value is a known gap,
-not an oversight - fill it in once a real server response with a polarity attribute is
-seen.
+`MELTINGPOINT`, or `DENSITY` today).
 
 *Investigated 2026-07-29, prompted by a real Apini attribute server response for a Carl
 Roth DMSO solvent.*
+
+**Update 2026-08-03:** `POLARITY` deleted outright rather than left on its dummy value,
+per the user's own call while auditing the package ahead of the 1.0.0 release - same
+reasoning as the `NAME` alias deletion elsewhere in this same cleanup pass: zero
+confirmed real-world usage, still on an unreleased placeholder namespace, so there's no
+deprecation window that would mean anything here. Re-add it (with a real URI) once a
+real attribute source that actually populates a polarity value shows up.
 
 ---
 

@@ -51,6 +51,17 @@ Available project skills, in `.claude/skills/`:
   rejected alternatives and why) in [`design-choices.md`](design-choices.md). Use it
   whenever a decision at that level gets made or investigated, not for routine
   implementation notes.
+- **`versioning`** - how to classify a change as breaking or not, which version segment
+  to bump, and how to deprecate a public API before removing it. Use whenever a change
+  renames/removes/restructures anything importable from `labfreed`, or when bumping
+  `labfreed/__init__.py`'s `__version__` and writing the `CHANGELOG.md` entry.
+- **`release`** - the checklist for wrapping an actual release: version bump (via
+  `versioning`), README regen (via `update-readme`), and syncing the public Claude Code
+  plugin in `plugins/labfreed/` so its docs/examples don't quietly drift out of date.
+- **`small-fix`** - restricts search/read/edit scope to whatever file or folder the user
+  explicitly points to for a change they call "a small fix" - never escalates scope on
+  its own, and flags (rather than fixes) any tests/docs/changelog drift found along the
+  way.
 
 ## Design choices
 
