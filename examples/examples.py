@@ -170,7 +170,7 @@ without baking it into the identifier itself.
 
 This shows the core data model only: an in-memory data source, served in-process with no Flask/network involved.
 For an actual deployable server and a PAC-ID landing page built on the same classes, see
-[Setting up a PAC-ID Landing Page](examples/pac_mettorius_com/README.md).
+[Setting up a PAC-ID Landing Page](https://github.com/retothuerer/LabFREED/blob/main/examples/pac_mettorius_com/README.md).
 '''
 from labfreed.pac_attributes.facade.attributes import Attribute, Attributes, Resource  # noqa: E402
 from labfreed.pac_attributes.facade.dict_data_source import Dict_DataSource  # noqa: E402

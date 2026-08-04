@@ -1,30 +1,62 @@
 # LabFREED for Python
 
-[![PyPI](https://img.shields.io/pypi/v/labfreed.svg)](https://pypi.org/project/labfreed/) ![Python Version](https://img.shields.io/pypi/pyversions/labfreed) [![Test Labfreed](https://github.com/retothuerer/LabFREED/actions/workflows/run-tests.yml/badge.svg)](https://github.com/retothuerer/LabFREED/actions/workflows/run-tests.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![Ruff](https://img.shields.io/badge/style-Ruff-black?logo=ruff&labelColor=gray)](https://github.com/astral-sh/ruff)
+[![PyPI](https://img.shields.io/pypi/v/labfreed.svg)](https://pypi.org/project/labfreed/) ![Python Version](https://img.shields.io/pypi/pyversions/labfreed) [![Test Labfreed](https://github.com/retothuerer/LabFREED/actions/workflows/run-tests.yml/badge.svg)](https://github.com/retothuerer/LabFREED/actions/workflows/run-tests.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/retothuerer/LabFREED/blob/main/LICENSE) [![Ruff](https://img.shields.io/badge/style-Ruff-black?logo=ruff&labelColor=gray)](https://github.com/astral-sh/ruff)
 
 This is a Python implementation of [LabFREED](https://labfreed.org/) building blocks.
 
 LabFREED itself is an open, vendor-neutral community initiative for pragmatic lab
 digitalization, contributed to mainly by [ApiniLabs](https://github.com/ApiniLabs),
-Büchi, and WEGA-IT, with 40+ supporting vendors/adopters. See
+[Buchi](https://www.buchi.com), and [wega](https://www.wega-it.com), with 40+ supporting vendors/adopters. See
 [labfreed.org](https://labfreed.org/) for the building-block specs themselves, or join
 the community [Discord](https://discord.com/invite/bxAghUAHFE) for questions and
 discussion. This repo is only the Python reference implementation.
 
 ## Contents
 
-- [Supported Building Blocks](#supported-building-blocks)
-- [Installation](#installation)
-- [Using with Claude Code](#using-with-claude-code)
-- [Package Structure](#package-structure)
-- [Design Philosophy](#design-philosophy)
-- [Usage Examples](#usage-examples)
-- [PAC-ID Resolver](#pac-id-resolver)
-- [PAC-ID Attributes](#pac-id-attributes)
-- [Versioning](#versioning)
-- [Change Log](#change-log)
-- [Getting Help / FAQ](#getting-help--faq)
-- [Contributing](#contributing)
+- [LabFREED for Python](#labfreed-for-python)
+  - [Contents](#contents)
+  - [Supported Building Blocks](#supported-building-blocks)
+  - [Installation](#installation)
+  - [Using with Claude Code](#using-with-claude-code)
+  - [Package Structure](#package-structure)
+  - [Design Philosophy](#design-philosophy)
+  - [Usage Examples](#usage-examples)
+    - [Parse a simple PAC-ID](#parse-a-simple-pac-id)
+    - [Show recommendations:](#show-recommendations)
+    - [Save as QR Code](#save-as-qr-code)
+    - [PAC-CAT](#pac-cat)
+    - [Parse a PAC-ID with extensions](#parse-a-pac-id-with-extensions)
+      - [Display Name](#display-name)
+      - [TREX](#trex)
+    - [Create a PAC-ID with Extensions](#create-a-pac-id-with-extensions)
+      - [Create PAC-ID](#create-pac-id)
+      - [Create a TREX](#create-a-trex)
+      - [Combine PAC-ID and TREX and serialize](#combine-pac-id-and-trex-and-serialize)
+  - [PAC-ID Resolver](#pac-id-resolver)
+  - [PAC-ID Attributes](#pac-id-attributes)
+  - [Versioning](#versioning)
+  - [Change Log](#change-log)
+    - [v1.0.0](#v100)
+    - [v0.2.12](#v0212)
+    - [v0.2.11](#v0211)
+    - [v0.2.10](#v0210)
+    - [v0.2.9](#v029)
+    - [v0.2.8](#v028)
+    - [v0.2.7](#v027)
+    - [v0.2.6](#v026)
+    - [v0.2.5](#v025)
+    - [v0.2.4](#v024)
+    - [v0.2.3](#v023)
+    - [v0.2.2](#v022)
+    - [v0.2.1](#v021)
+    - [v0.2.0b2](#v020b2)
+    - [v0.1.1](#v011)
+    - [v0.1.0](#v010)
+    - [v0.0.20](#v0020)
+    - [v0.0.19](#v0019)
+  - [Getting Help / FAQ](#getting-help--faq)
+  - [Contributing](#contributing)
+- [Attributions](#attributions)
 
 ## Supported Building Blocks
 - PAC-ID
@@ -38,9 +70,8 @@ discussion. This repo is only the Python reference implementation.
 - Display Extension
   - base36 <> str conversions
 - PAC-ID Resolver
-  - support for CIT v1
-  - draft support for CIT v2 (improved version)
-  - use of multiple cit in any combination of version
+  - support for resolver configuration v2 (improved version)
+  - use of multiple resolver configuration
 - PAC-ID Attributes
   - client and server code
 - Generation of QR codes (PAC-ID with extensions)
@@ -89,7 +120,7 @@ itself. Plugin content is refreshed as part of every labfreed release (see
 
 **Uninstall:** `/plugin uninstall labfreed`.
 
-See [plugins/labfreed/README.md](plugins/labfreed/README.md) for exactly what the skill covers.
+See [plugins/labfreed/README.md](https://github.com/retothuerer/LabFREED/blob/main/plugins/labfreed/README.md) for exactly what the skill covers.
 
 ## Package Structure
 
@@ -101,7 +132,7 @@ The `labfreed` package is organized into three parts, reflecting how far the cod
   pip install labfreed[units]
   ```
 
-- **`labfreed/labfreed_extended/`** — reference implementations built on top of the library that go beyond representing the specs in Python, such as a Flask-based attribute server and the PAC issuer landing page (see [Setting up a PAC-ID Landing Page](examples/pac_mettorius_com/README.md)). Requires the `extended` extra:
+- **`labfreed/labfreed_extended/`** — reference implementations built on top of the library that go beyond representing the specs in Python, such as a Flask-based attribute server and the PAC issuer landing page (see [Setting up a PAC-ID Landing Page](https://github.com/retothuerer/LabFREED/blob/main/examples/pac_mettorius_com/README.md)). Requires the `extended` extra:
 
   ```bash
   pip install labfreed[extended]
@@ -397,7 +428,7 @@ without baking it into the identifier itself.
 
 This shows the core data model only: an in-memory data source, served in-process with no Flask/network involved.
 For an actual deployable server and a PAC-ID landing page built on the same classes, see
-[Setting up a PAC-ID Landing Page](examples/pac_mettorius_com/README.md).
+[Setting up a PAC-ID Landing Page](https://github.com/retothuerer/LabFREED/blob/main/examples/pac_mettorius_com/README.md).
 
 ```python
 from labfreed.pac_attributes.facade.attributes import Attribute, Attributes, Resource  
@@ -593,14 +624,14 @@ General
   [Discord](https://discord.com/invite/bxAghUAHFE) or see [labfreed.org](https://labfreed.org/).
 - **Bugs or feature requests for this Python package** — open a
   [GitHub issue](https://github.com/retothuerer/LabFREED/issues).
-- **Found a security issue?** See [SECURITY.md](SECURITY.md) instead of opening a public issue.
+- **Found a security issue?** See [SECURITY.md](https://github.com/retothuerer/LabFREED/blob/main/SECURITY.md) instead of opening a public issue.
 - **Looking for the full API reference** (all classes/functions, generated from docstrings via
   [pdoc](https://pdoc.dev/))? It's published at
   [retothuerer.github.io/LabFREED](https://retothuerer.github.io/LabFREED/).
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for setting up a dev environment, running the test
+See [CONTRIBUTING.md](https://github.com/retothuerer/LabFREED/blob/main/CONTRIBUTING.md) for setting up a dev environment, running the test
 suite, and what's expected of a pull request.
 
 # Attributions
