@@ -16,11 +16,29 @@ __all__ = [
 
 
 class ResolverConfigEntry(LabFREED_BaseModel):
+    # CIT entries are meant to stay forward-compatible as the resolver config format
+    # evolves (new service_type-specific fields, vendor extensions) - an unrecognized
+    # field must not hard-crash resolution of an otherwise-valid PAC-ID. Overrides the
+    # `extra="forbid"` inherited from LabFREED_BaseModel/PDOC_Workaround_Base, same
+    # opt-in ResolverConfig itself already uses.
+    model_config = {"extra": "allow"}
+
     service_name: str
     application_intents:list[str]
     service_type:ServiceType |str
     template_url:str
     key: str | None = Field(default=None)
+
+    @model_validator(mode='after')
+    def _validate_no_unknown_fields(self):
+        for extra_key in (self.model_extra or {}):
+            self._add_validation_message(
+                level=ValidationMsgLevel.WARNING,
+                source=f'Service {self.service_name}',
+                msg=f'Unrecognized field {extra_key!r} - ignored by this version of the resolver.',
+                highlight_sub=[extra_key]
+            )
+        return self
 
     @model_validator(mode='after')
     def _validate_key(self):
