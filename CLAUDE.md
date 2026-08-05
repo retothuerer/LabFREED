@@ -49,6 +49,22 @@ owner typed themselves, so provenance depends entirely on process, not on what g
 
 If any of the above is unclear in a given situation, stop and ask rather than guessing.
 
+## `PacInfo` is the data-prep layer, not the UI
+
+`PacInfo` (`labfreed/labfreed_extended/app/pac_info/pac_info.py`) is meant to be the
+single place that resolves and normalizes attribute data for consumption elsewhere -
+looking up well-known keys, extracting codes out of raw values, applying static
+lookups (e.g. GHS statement text), deciding which of several possible representations
+(bare code vs. supplier-delivered text, attribute value vs. resource link) wins.
+
+UI/template layers (`pac_issuer_lib`, `labfreed-webtools`, etc.) should consume
+already-prepared `PacInfo` properties (`signal_word`, `hazard_statements`, `supplier`,
+...) rather than looking up or parsing attributes themselves. A template reaching for
+`find_attributes()` or a raw well-known key directly should be the exception (e.g. a
+field with no dedicated `PacInfo` property yet), not the default - if a UI layer needs
+to parse/resolve attribute data itself, that logic almost always belongs in `PacInfo`
+instead, so every consumer gets it for free.
+
 ## Repo structure map
 
 Use this to jump straight to the right place instead of grepping the whole tree cold.
