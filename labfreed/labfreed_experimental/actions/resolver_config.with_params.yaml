@@ -1,0 +1,57 @@
+schema_version: "2.0"
+origin: LabFREED well-known actions
+
+# The one canonical CIT for the three well-known actions in consumer.py - always the
+# same, except for ${BASE_URL}. A consuming app substitutes its own base url (where
+# create_actions_blueprint() is mounted) and adds this via add_resolver_config().
+#
+# EXPERIMENTAL, not wired through evaluation yet (2026-08-04): `params` declares the
+# query params each action expects, as JSON Schema/OpenAPI parameter objects. Every
+# entry here implies `in: query` and `required: true` - never written, always the
+# same, inject them back in if you need a fully standard parameter object. Value
+# types mirror PAC-ID Attributes' own AttributeValue.type (bool, datetime, numeric,
+# text, reference, resource, object); `format: pac-id` and the `x-unit` sibling
+# (validated against CommonQuantityUnit, not a bare string) are our own extensions -
+# neither is standard JSON Schema. Parses today (ResolverConfigEntry now tolerates
+# unknown fields with a warning) but isn't yet propagated onto the resolved Service
+# object, so pac_info.get_action_by_intent(...) won't expose it until services.py and
+# resolver_config_evaluator.py are updated too.
+config:
+- if: True
+  entries:
+  - service_name: Update Location
+    application_intents: [update-location]
+    service_type: action-generic
+    template_url: "${BASE_URL}/actions/update_location"
+    params:
+      - name: pac_id
+        schema:
+          type: string
+          format: pac-id
+      - name: location
+        schema:
+          type: string
+          format: pac-id
+  - service_name: Update Amount
+    application_intents: [update-amount]
+    service_type: action-generic
+    template_url: "${BASE_URL}/actions/update_amount"
+    params:
+      - name: pac_id
+        schema:
+          type: string
+          format: pac-id
+      - name: amount
+        schema:
+          type: number
+          minimum: 0
+        x-unit: mL
+  - service_name: Container Is Empty
+    application_intents: [container-is-empty]
+    service_type: action-generic
+    template_url: "${BASE_URL}/actions/container_is_empty"
+    params:
+      - name: pac_id
+        schema:
+          type: string
+          format: pac-id
