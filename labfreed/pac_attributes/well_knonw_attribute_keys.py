@@ -4,7 +4,8 @@ from labfreed.pac_attributes.well_known_attribute_keys import MetaAttributeKeys,
 
 warnings.warn(
     "labfreed.pac_attributes.well_knonw_attribute_keys is deprecated (typo in the "
-    "module name) - use labfreed.pac_attributes.well_known_attribute_keys instead.",
+    "module name) - use labfreed.pac_attributes.well_known_attribute_keys instead. "
+    "Deprecated since v1.0, will be removed in v2.0.",
     DeprecationWarning,
     stacklevel=2,
 )

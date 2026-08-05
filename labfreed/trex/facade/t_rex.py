@@ -123,7 +123,7 @@ class T_REX(RootModel[dict[str, Quantity | datetime | time | date | bool | str |
     def __len__(self): return len(self.root)
 
 
-@deprecated("Use T_REX")
+@deprecated("Use T_REX. Deprecated since v1.0, will be removed in v2.0.")
 class pyTREX(T_REX):
     '''Deprecated alias for T_REX - kept for backward compatibility.'''
 

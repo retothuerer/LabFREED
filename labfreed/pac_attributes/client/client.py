@@ -144,7 +144,8 @@ class AttributeClient():
         """
         if 'pac_id' in kwargs:
             warnings.warn(
-                "The 'pac_id' keyword argument to get_attributes() is deprecated, use 'subject_id' instead.",
+                "The 'pac_id' keyword argument to get_attributes() is deprecated, use 'subject_id' instead. "
+                "Deprecated since v1.0, will be removed in v2.0.",
                 DeprecationWarning,
                 stacklevel=2,
             )

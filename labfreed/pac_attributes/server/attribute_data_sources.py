@@ -113,7 +113,7 @@ class Spec_Dict_DataSource(AttributeGroupDataSource):
                               attributes=attributes)
 
 
-@deprecated("Use Spec_Dict_DataSource")
+@deprecated("Use Spec_Dict_DataSource. Deprecated since v1.0, will be removed in v2.0.")
 class Dict_DataSource(Spec_Dict_DataSource):
     '''Deprecated alias for Spec_Dict_DataSource - kept for backward compatibility.'''
 

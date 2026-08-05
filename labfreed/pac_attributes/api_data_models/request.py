@@ -76,7 +76,7 @@ class AttributeRequestData(LabFREED_BaseModel):
         return d
     
     @property
-    @deprecated(" field pac_id was renamed to subject_id.")
+    @deprecated(" field pac_id was renamed to subject_id. Deprecated since v1.0, will be removed in v2.0.")
     def pac_id(self):
         # field pac_id was renamed to subject_id. This is for backward compatibility.
         return self.subject_id

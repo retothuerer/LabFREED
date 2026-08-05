@@ -12,7 +12,7 @@ from rich import print
 from rich.table import Table
 
 ''' Configure pdoc'''
-__all__ = ["LabFREED_BaseModel", "ValidationMessage", "ValidationMsgLevel", "LabFREED_ValidationError"]
+__all__ = ["LabFREED_BaseModel", "ValidationMessage", "ValidationMsgLevel", "LabFREED_ValidationError", "experimental"]
 
 class PDOC_Workaround_Base(BaseModel):
     '''@private
@@ -251,6 +251,68 @@ class LabFREED_BaseModel(PDOC_Workaround_Base):
             
 
     
+def experimental(reason: str = ""):
+    """Marks a function, method, or class as an experimental addition to an otherwise stable API.
+
+    This is the opposite of `deprecated` (see the `deprecated` package, used throughout
+    this codebase): it flags something newly added whose signature or behavior may still
+    change based on feedback, rather than something on its way out. Unlike a regular
+    deprecation, an experimental API is not bound by the usual deprecation policy (see
+    the README's Versioning section) - it can change or disappear in a minor/patch
+    release.
+
+    Emits a `FutureWarning` every time the decorated function/method is called, or the
+    decorated class is instantiated, and adds a note to its docstring. Pattern adapted
+    from Apache Beam's `apache_beam.utils.annotations.experimental`.
+
+    Args:
+        reason (str, optional): why this is experimental, e.g. what might still change.
+
+    Example:
+        ```python
+        class Foo(LabFREED_BaseModel):
+            @experimental("Return type may change to a dedicated Bar type.")
+            def do_thing(self):
+                ...
+        ```
+    """
+    def _experimental(wrapped):
+        suffix = f' {reason}' if reason else ''
+
+        if inspect.isclass(wrapped):
+            message = f'{wrapped.__name__} is experimental and may change or be removed without notice.{suffix}'
+            old_new = wrapped.__new__
+
+            def wrapped_new(cls, *args, **kwargs):
+                warnings.warn(message, FutureWarning, stacklevel=2)
+                if old_new is object.__new__:
+                    return old_new(cls)
+                return old_new(cls, *args, **kwargs)
+
+            wrapped.__new__ = staticmethod(wrapped_new)
+            wrapped.__doc__ = _add_experimental_note_to_docstring(wrapped.__doc__, message)
+            return wrapped
+
+        message = f'{wrapped.__qualname__} is experimental and may change or be removed without notice.{suffix}'
+
+        @functools.wraps(wrapped)
+        def wrapper(*args, **kwargs):
+            warnings.warn(message, FutureWarning, stacklevel=2)
+            return wrapped(*args, **kwargs)
+
+        wrapper.__doc__ = _add_experimental_note_to_docstring(wrapped.__doc__, message)
+        return wrapper
+
+    return _experimental
+
+
+def _add_experimental_note_to_docstring(docstring: str | None, message: str) -> str:
+    note = f'**Experimental:** {message}'
+    if docstring:
+        return f'{docstring}\n\n{note}'
+    return note
+
+
 def _filter_errors(val_msg:list[ValidationMessage]) -> list[ValidationMessage]:
     return [ m for m in val_msg if m.level == ValidationMsgLevel.ERROR ]
 

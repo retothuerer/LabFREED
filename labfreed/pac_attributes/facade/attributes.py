@@ -29,12 +29,12 @@ class Resource(RootModel[str]):
         return str(self.root)
 
 
-@deprecated("Use Reference")
+@deprecated("Use Reference. Deprecated since v1.0, will be removed in v2.0.")
 class pyReference(Reference):
     '''Deprecated alias for Reference - kept for backward compatibility.'''
 
 
-@deprecated("Use Resource")
+@deprecated("Use Resource. Deprecated since v1.0, will be removed in v2.0.")
 class pyResource(Resource):
     '''Deprecated alias for Resource - kept for backward compatibility.'''
 
@@ -55,7 +55,7 @@ class Attribute(LabFREED_BaseModel):
         return self.values if isinstance(self.values, list) else [self.values]
     
     @property
-    @deprecated
+    @deprecated("Use .values instead. Deprecated since v1.0, will be removed in v2.0.")
     def value(self):
         return self.values
     
@@ -81,7 +81,7 @@ class Attribute(LabFREED_BaseModel):
             return v
 
 
-@deprecated("Use Attribute")
+@deprecated("Use Attribute. Deprecated since v1.0, will be removed in v2.0.")
 class pyAttribute(Attribute):
     '''Deprecated alias for Attribute - kept for backward compatibility.'''
 
@@ -198,7 +198,7 @@ class Attributes(RootModel[list[Attribute]]):
         return out
 
 
-@deprecated("Use Attributes")
+@deprecated("Use Attributes. Deprecated since v1.0, will be removed in v2.0.")
 class pyAttributes(Attributes):
     '''Deprecated alias for Attributes - kept for backward compatibility.'''
 
@@ -213,6 +213,6 @@ class AttributeGroup(ClientAttributeGroup):
         return cls(**data)
 
 
-@deprecated("Use AttributeGroup")
+@deprecated("Use AttributeGroup. Deprecated since v1.0, will be removed in v2.0.")
 class pyAttributeGroup(AttributeGroup):
     '''Deprecated alias for AttributeGroup - kept for backward compatibility.'''

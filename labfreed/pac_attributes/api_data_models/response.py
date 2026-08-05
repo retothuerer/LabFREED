@@ -182,7 +182,7 @@ class Spec_Attribute(LabFREED_BaseModel):
     items: list[AttributeItemsElement]
 
 
-@deprecated("Use Spec_Attribute")
+@deprecated("Use Spec_Attribute. Deprecated since v1.0, will be removed in v2.0.")
 class Attribute(Spec_Attribute):
     '''Deprecated alias for Spec_Attribute - kept for backward compatibility.'''
 
@@ -209,7 +209,7 @@ class Spec_AttributeGroup(LabFREED_BaseModel):
         return out
 
 
-@deprecated("Use Spec_AttributeGroup")
+@deprecated("Use Spec_AttributeGroup. Deprecated since v1.0, will be removed in v2.0.")
 class AttributeGroup(Spec_AttributeGroup):
     '''Deprecated alias for Spec_AttributeGroup - kept for backward compatibility.'''
 
@@ -230,11 +230,11 @@ class AttributesOfItem(LabFREED_BaseModel):
         return d
 
 
-@deprecated("Class AttributesOfPACID is deprecated. Use it's base class instead.")
+@deprecated("Class AttributesOfPACID is deprecated. Use it's base class instead. Deprecated since v1.0, will be removed in v2.0.")
 class AttributesOfPACID(AttributesOfItem):
 
     @property
-    @deprecated(" field pac_id was renamed to id.")
+    @deprecated(" field pac_id was renamed to id. Deprecated since v1.0, will be removed in v2.0.")
     def pac_id(self):
         # field pac-id was renamed to subject-id. This is for backward compatibility.
         return self.id

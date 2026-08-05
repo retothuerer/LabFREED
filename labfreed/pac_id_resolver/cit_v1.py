@@ -14,7 +14,7 @@ from labfreed.pac_id_resolver.resolver_config_common import ( _add_msg_to_cit_en
                                                  ServiceType)
 
 
-@deprecated("Use ResolverConfig")
+@deprecated("Use ResolverConfig. Deprecated since v1.0, will be removed in v2.0.")
 class CITEntry_v1(LabFREED_BaseModel):
     applicable_if: str = Field(..., min_length=1)
     service_name: str = Field(..., min_length=1)
@@ -69,7 +69,7 @@ class CITEntry_v1(LabFREED_BaseModel):
     
     
 
-@deprecated("Use ResolverConfig")
+@deprecated("Use ResolverConfig. Deprecated since v1.0, will be removed in v2.0.")
 class CIT_v1(LabFREED_BaseModel):
     origin:str = ''
     entries:list[CITEntry_v1]

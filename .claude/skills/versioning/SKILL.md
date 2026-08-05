@@ -62,7 +62,7 @@ or `labfreed/pac_attributes/pythonic/py_attributes.py` for the existing pattern:
 ```python
 from deprecated import deprecated
 
-@deprecated("Use ResolverConfig")
+@deprecated("Use ResolverConfig. Deprecated since v1.0, will be removed in v2.0.")
 class CITEntry_v1(LabFREED_BaseModel):
     ...
 ```
@@ -70,14 +70,28 @@ class CITEntry_v1(LabFREED_BaseModel):
 - The message should name the concrete replacement, not just say "deprecated" (compare
   the existing `"cit version 1 is deprecated. use resolvber config and load with
   ResolverConfig.from_yaml(s)"` -- name the actual replacement API/call).
+- **The message itself must also state when it was deprecated and when it will be
+  removed**, not just track that separately in a TODO.md entry -- a caller reading the
+  warning at runtime, with no access to this repo's docs, still needs to know the
+  timeline. Append a standardized clause in exactly this form: `"Deprecated since
+  vX.0, will be removed in v(X+1).0."` (e.g. `"Deprecated since v1.0, will be removed
+  in v2.0."`). This applies whether the deprecation is a `@deprecated(...)` decorator
+  reason or a `warnings.warn(...)` message -- both get the same clause, worded the
+  same way, every time. This is not optional polish; a deprecation addition isn't
+  complete without it.
 - The deprecated path must keep *working*, not just exist -- delegate to the new
   implementation rather than leaving stale/rotting logic behind it.
 - Keep it alive for **at least one more major version** after the one that introduced
-  the deprecation, before actually deleting it. Track pending removals somewhere
-  visible (e.g. a TODO.md entry: "remove `X`, deprecated since vN, earliest removal
-  vN+1") so a deprecated symbol doesn't just get forgotten forever.
+  the deprecation, before actually deleting it -- this is exactly what the message's
+  "will be removed in v(X+1).0" clause above already promises the caller, so the two
+  must never drift apart. Track pending removals somewhere visible (e.g. a TODO.md
+  entry: "remove `X`, deprecated since vN, earliest removal vN+1") so a deprecated
+  symbol doesn't just get forgotten forever -- see `TODO.md`'s "Pending removals"
+  section for the running list.
 - Only actually delete a deprecated symbol at a MAJOR bump, and call the deletion out
-  in that version's CHANGELOG entry.
+  in that version's CHANGELOG entry. The `release` skill's checklist enforces this at
+  the point a MAJOR version is actually cut -- don't rely on remembering to do it
+  manually.
 
 ## Picking the number itself
 

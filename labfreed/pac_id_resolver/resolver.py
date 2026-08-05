@@ -23,7 +23,7 @@ def load_cit(path):
         return cit_from_str(s)
 
     
-@deprecated("cit version 1 is deprecated. use resolvber config and load with ResolverConfig.from_yaml(s)")
+@deprecated("cit version 1 is deprecated. use resolvber config and load with ResolverConfig.from_yaml(s). Deprecated since v1.0, will be removed in v2.0.")
 def cit_from_str(s:str, origin:str='') -> CIT_v1|ResolverConfig:
     try:
         cit2 = ResolverConfig.from_yaml(s)

@@ -65,7 +65,7 @@ class Spec_T_REX(LabFREED_BaseModel):
         return segments
 
 
-@deprecated("Use Spec_T_REX")
+@deprecated("Use Spec_T_REX. Deprecated since v1.0, will be removed in v2.0.")
 class TREX(Spec_T_REX):
     '''Deprecated alias for Spec_T_REX - kept for backward compatibility.'''
 

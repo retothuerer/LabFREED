@@ -5,18 +5,47 @@ description: Checklist for wrapping a release of the labfreed package -- pick th
 
 # Wrapping a release
 
-Composes three existing pieces -- don't re-derive their logic here, just don't skip any
+Composes four existing pieces -- don't re-derive their logic here, just don't skip any
 of them:
 
 1. **Version number** -- classify changes and pick MAJOR/MINOR/PATCH per the
    `versioning` skill; update `__version__` and `CHANGELOG.md` there.
-2. **README.md** -- regenerate via the `update-readme` skill
+2. **Deliver on deprecation promises** -- covered below. Only relevant when this
+   release is a MAJOR bump; skip for MINOR/PATCH.
+3. **README.md** -- regenerate via the `update-readme` skill
    (`build_tools/update_readme.py`), which re-executes `examples/examples.py` and
    copies in the new changelog.
-3. **The public plugin** (`plugins/labfreed/`) -- covered below. This is the one that's
+4. **The public plugin** (`plugins/labfreed/`) -- covered below. This is the one that's
    easy to forget because nothing fails loudly when it goes stale: the package still
    works, tests still pass, only a *user of the plugin* would eventually notice Claude
    confidently suggesting an import path or API that no longer exists.
+
+## Delivering on deprecation promises (MAJOR bumps only)
+
+Every deprecation added under the `versioning` skill's policy carries an explicit "will
+be removed in vN" promise in its own warning message, and is tracked in
+`developer-docs/TODO.md`'s "Pending removals" section. A MAJOR release is the one place
+that promise is cashed in -- it's silent, easy-to-forget cleanup work exactly like the
+plugin sync below, so treat it with the same discipline:
+
+1. Read `developer-docs/TODO.md`'s "Pending removals" section and find every entry whose
+   "removed in vN" matches the version being cut (i.e. N equals this release's major
+   number).
+2. For each: delete the deprecated symbol/module (not just its `@deprecated`
+   decorator/`warnings.warn` call -- the whole shim), confirm nothing left in this repo's
+   `tests/` still exercises the old name, and remove its `TODO.md` entry.
+3. Call out every deletion explicitly in this version's `CHANGELOG.md` entry (per the
+   `versioning` skill's "only delete at a MAJOR bump, call it out in the changelog"
+   rule) -- a silent removal is a breaking change users have no way to anticipate from
+   the changelog alone.
+4. An entry whose target version *hasn't* arrived yet (e.g. "removed in v3.0" while
+   cutting v2.0) stays untouched -- don't remove early just because a major bump is
+   happening.
+5. If removing a symbol turns out to be unsafe (e.g. `labfreed-webtools` or another
+   known consumer still imports it, per a cross-reference note in `design-choices.md`
+   or `TODO.md`), don't remove it silently past its promised version either -- flag it
+   to the user and decide deliberately whether to extend the deprecation window (update
+   the warning message and `TODO.md` entry to the new target version) or proceed anyway.
 
 This checklist is for a real, final release. A routine alpha/beta pre-release bump
 toward a not-yet-shipped version is lighter-weight -- see the `versioning` skill's
