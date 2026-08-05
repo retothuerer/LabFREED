@@ -40,25 +40,32 @@ class Document(BaseModel):
 
 
 # Every well-known key already surfaced by a dedicated PacInfo property below
-# (supplier, nominal_quantity, signal_word, ufi, safety_data_sheet,
-# certificate_of_analysis, product_identifiers, physico_chemical_properties,
-# hazard_statements, precautionary_statements, safety_pictogram_codes/
-# explicit_pictogram_image_urls) - the single place that list is assembled, so
-# PacInfo.other_attribute_groups can exclude them without a UI template having to
-# know about every property individually.
+# (supplier, nominal_quantity, signal_word, ufi, documents (safety_data_sheet/
+# certificate_of_analysis included), product_identifiers,
+# physico_chemical_properties, specifications, hazard_statements,
+# precautionary_statements, safety_pictogram_codes/explicit_pictogram_image_urls) -
+# the single place that list is assembled, so PacInfo.other_attribute_groups can
+# exclude them without a UI template having to know about every property individually.
 _CLAIMED_ATTRIBUTE_KEYS = [
     IdentifierKeys.SUPPLIER,
     CommercePackagingKeys.QUANTITY,
     RegulatorySafetyKeys.GHS_SIGNAL_WORD,
     RegulatorySafetyKeys.UNIQUE_FORMULA_IDENTIFIER,
-    DocumentKeys.SAFETY_DATA_SHEET,
-    DocumentKeys.CERTIFICATE_OF_ANALYSIS,
+    *DocumentKeys,
     RegulatorySafetyKeys.CLP_ANNEX_VI_INDEX_NO,
     IdentifierKeys.CAS_NUMBER,
     IdentifierKeys.CAS_NUMBER_ALT,
     IdentifierKeys.EC_NUMBER,
     IdentifierKeys.PRODUCT_CODE,
-    *PhysicoChemicalProperties,
+    IdentifierKeys.SYNONYM,
+    IdentifierKeys.EMPIRICAL_FORMULA,
+    *PhysicoChemicalProperties,  # includes WATER_CONTENT, claimed by specifications
+    RegulatorySafetyKeys.ASSAY,
+    "https://identifiers.org/CHEBI:15377",  # water, claimed by specifications alongside WATER_CONTENT
+    RegulatorySafetyKeys.HEAVY_METALS,
+    RegulatorySafetyKeys.STERILITY,
+    RegulatorySafetyKeys.ENDOTOXIN,
+    RegulatorySafetyKeys.ACCEPTANCE_QUALITY_LIMIT,
     RegulatorySafetyKeys.GHS_HAZARD_STATEMENT,
     RegulatorySafetyKeys.GHS_PRECAUTIONARY_STATEMENT,
     RegulatorySafetyKeys.GHS_PICTOGRAM,
@@ -370,6 +377,20 @@ class PacInfo(BaseModel):
     def nominal_quantity(self) -> Attribute | None:
         return self.get_attribute(CommercePackagingKeys.QUANTITY)
 
+    @staticmethod
+    def _dedupe_attributes(attributes: list[Attribute]) -> list[Attribute]:
+        # get_attribute matches by substring containment (`key in a.key`), so two
+        # different well-known keys can both match the same underlying attribute
+        # (e.g. MASS_FRACTION's URI is a literal substring of WATER_CONTENT's) -
+        # dedupe by the attribute's own key, unique in _all_attributes by construction.
+        seen = set()
+        out = []
+        for a in attributes:
+            if a.key not in seen:
+                seen.add(a.key)
+                out.append(a)
+        return out
+
     @cached_property
     @experimental()
     def product_identifiers(self) -> list[Attribute]:
@@ -384,7 +405,14 @@ class PacInfo(BaseModel):
             IdentifierKeys.EC_NUMBER,
             IdentifierKeys.PRODUCT_CODE,
         ]
-        return [a for key in keys if (a := self.get_attribute(key))]
+        return self._dedupe_attributes([a for key in keys if (a := self.get_attribute(key))])
+
+    @cached_property
+    @experimental()
+    def synonyms(self) -> list[Attribute]:
+        # IdentifierKeys.SYNONYM and MetaAttributeKeys.ALIAS are the same underlying
+        # well-known key (schema.org/alternateName) - querying one covers both.
+        return self._dedupe_attributes(self.get_attributes(IdentifierKeys.SYNONYM))
 
     @cached_property
     @experimental()
@@ -394,7 +422,36 @@ class PacInfo(BaseModel):
         # (boiling/melting point, density, flash point, pH, viscosity, ...), so no
         # separate hand-picked subset/ordering is needed the way product_identifiers
         # needed one (that one spans several enums with a CLP-specific priority order).
-        return [a for key in PhysicoChemicalProperties if (a := self.get_attribute(key))]
+        # WATER_CONTENT is excluded by its actual attribute key, not just skipped in
+        # the query loop - MASS_FRACTION's URI is a literal substring of
+        # WATER_CONTENT's, so querying MASS_FRACTION alone would still leak it back
+        # in via get_attribute's substring matching. It reads as a QC/CoA-style spec,
+        # not a bulk material property, so it belongs in specifications instead, not both.
+        matches = self._dedupe_attributes([a for key in PhysicoChemicalProperties if (a := self.get_attribute(key))])
+        matches = [a for a in matches if a.key != PhysicoChemicalProperties.WATER_CONTENT.value]
+        # empirical formula leads the list - the chemical identity is the first thing
+        # a reader wants when scanning physical/chemical properties, even though it's
+        # an IdentifierKeys member, not a PhysicoChemicalProperties one itself.
+        if formula := self.get_attribute(IdentifierKeys.EMPIRICAL_FORMULA):
+            matches = [formula] + [a for a in matches if a.key != formula.key]
+        return matches
+
+    @cached_property
+    @experimental()
+    def specifications(self) -> list[Attribute]:
+        # product/QC specification attributes - the kind of parameter set typically
+        # found on a Certificate of Analysis, distinct from physico_chemical_properties'
+        # bulk material properties.
+        keys = [
+            RegulatorySafetyKeys.ASSAY,
+            PhysicoChemicalProperties.WATER_CONTENT,
+            "https://identifiers.org/CHEBI:15377",  # water content keyed by the substance (ChEBI) rather than the QUDT quantity-kind - some sources use this instead of/alongside WATER_CONTENT
+            RegulatorySafetyKeys.HEAVY_METALS,
+            RegulatorySafetyKeys.STERILITY,
+            RegulatorySafetyKeys.ENDOTOXIN,
+            RegulatorySafetyKeys.ACCEPTANCE_QUALITY_LIMIT,
+        ]
+        return self._dedupe_attributes([a for key in keys if (a := self.get_attribute(key))])
 
     @cached_property
     @experimental()
@@ -410,6 +467,15 @@ class PacInfo(BaseModel):
         if service := self.get_user_handover_by_key(key):
             return Document.from_service(service)
         return None
+
+    @cached_property
+    @experimental()
+    def documents(self) -> list[Document]:
+        # every DocumentKeys entry (SDS, Certificate of Analysis, Datasheet, User
+        # Manual), from either an attribute or a user handover Service keyed the same
+        # way - see _get_document. safety_data_sheet/certificate_of_analysis below
+        # are just convenience shortcuts into this same set, not a separate source.
+        return [doc for key in DocumentKeys if (doc := self._get_document(key))]
 
     @cached_property
     @experimental()

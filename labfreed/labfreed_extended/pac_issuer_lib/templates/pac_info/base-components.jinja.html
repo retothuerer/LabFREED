@@ -2,14 +2,16 @@
 {# These macros render semantic HTML with light class hooks. #}
 
 {%- macro key_value_table(pairs) -%}
-  {# pairs: dict-like object #}
+  {# pairs: iterable of (key, value) 2-tuples - NOT a dict.items()-only call, so
+     callers with non-unique/empty labels (e.g. several attributes sharing a blank
+     label) don't silently lose rows the way collapsing into a dict first would. #}
   <table class="lf-table lf-table--kv">
     <tbody>
-      {%- for k, v in pairs.items() -%}
+      {%- for k, v in pairs -%}
         {%- if k != "key" -%}
           <tr>
-            <th class="lf-th lf-th--key">{{ k }}</th>
-            <td class="lf-td lf-td--val">{{ v }}</td>
+            <th class="lf-th lf-th--label">{{ k }}</th>
+            <td class="lf-td lf-td--val">{{ render_text(v) }}</td>
           </tr>
         {%- endif -%}
       {%- endfor -%}
@@ -21,7 +23,7 @@
 {%- macro category_block(category) -%}
   <div class="lf-section lf-section--category">
     <h5 class="lf-section__title">{{ category.__class__.__name__ }}</h5>
-    {{ key_value_table(category.segments_as_dict()) }}
+    {{ key_value_table(category.segments_as_dict().items()) }}
   </div>
 {%- endmacro -%}
 

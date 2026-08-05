@@ -29,19 +29,26 @@
 {% macro card_category_info(pac_info) %}
         {% if pac_info.main_category %}
             {% set c =  pac_info.main_category %}
-            {{ card_info_block(c.segments_as_dict()) }}
+            {{ card_info_block(c.segments_as_dict().items()) }}
         {% endif %}
 {% endmacro %}
 
-{% macro card_info_block(segments) %}
+{% macro card_info_block(segments, format_keys=True) %}
+    {# segments: iterable of (key, value) 2-tuples - NOT a dict.items()-only call,
+       so non-unique/empty labels don't silently lose rows by first collapsing into
+       a dict (see key_value_table in base-components.jinja.html for the same fix).
+       format_keys runs raw snake_case keys (PAC-CAT segment names) through
+       title_format - set it False for keys that are already a human-formatted
+       label (e.g. an attribute's own .label, like "CAS No." or "EG-Nr."), which
+       title_format would otherwise mangle (title-cases "CAS" down to "Cas"). #}
     <div class="lf-info-grid">
-        {% for k, v in segments.items() %}
+        {% for k, v in segments %}
             {% if k != "key" %}
                 <div class="lf-info-item">
                 <div class="lf-info-key">
-                    {% if k %}{{ title_format(k) }}{% else %}<i>No Key</i>{% endif %}
+                    {% if k %}{{ title_format(k) if format_keys else k }}{% else %}<i>No Key</i>{% endif %}
                 </div>
-                <div class="lf-info-val">{{ v }}</div>
+                <div class="lf-info-val">{{ render_text(v) }}</div>
                 </div>
             {% endif %}
         {% endfor %}

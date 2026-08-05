@@ -24,25 +24,28 @@
 {% if pac_info %}
 <section class="lf-results lf-digital-label">
 
-    {# ---- Product identification. product_identifiers covers CLP Art. 18's
-           chemical/regulatory identity (Annex VI index no., CAS/EC numbers, product
-           code) - the trade name itself is already card_title's job, so these are
-           additional, not a replacement. ---- #}
-    {% set product_identifiers = pac_info.product_identifiers %}
+    {# ---- Product identification. Trade name/category segments only - the
+           chemical/regulatory identity (product_identifiers) has its own section
+           below, sibling of Documents, not folded into this card. ---- #}
     <section class="lf-info-card">
         {{ card_macros.card_title(pac_info) }}
         {{ card_macros.card_main(pac_info) }}
         {{ card_macros.qualification_state(pac_info) }}
-        {% if product_identifiers %}
-        {# plain label -> value (e.g. "CAS No." -> "110-82-7") - key_value_table, not
-           attribute_row, since these read as a short identity summary and shouldn't
-           show each attribute's IRI key underneath the label. Jinja has no dict-
-           comprehension syntax, so build the pairs via map+zip+dict instead. #}
+    </section>
+
+    {# ---- Product identifiers. CLP Art. 18's chemical/regulatory identity (Annex
+           VI index no., CAS/EC numbers, product code) - the trade name itself is
+           already card_title's job above, so these are additional, not a
+           replacement. ---- #}
+    {% set product_identifiers = pac_info.product_identifiers %}
+    {% if product_identifiers %}
+    <section class="lf-section lf-section--product-identifiers">
+        <h4 class="lf-section__title">Product Identifiers</h4>
         {% set labels = product_identifiers | map(attribute='label') | list %}
         {% set values = product_identifiers | map(attribute='values') | list %}
-        {{ pac_macros.key_value_table(dict(zip(labels, values))) }}
-        {% endif %}
+        {{ pac_macros.key_value_table(zip(labels, values)) }}
     </section>
+    {% endif %}
 
     {# ---- Hazard information, surfaced first: matches what a user expects
            immediately after scanning the data carrier, not buried in a generic
@@ -118,16 +121,69 @@
     </section>
     {% endif %}
 
-    {# ---- Safety data sheet ---- #}
-    {% set safety_data_sheet = pac_info.safety_data_sheet %}
-    {% if safety_data_sheet %}
-    <section class="lf-section lf-section--sds">
-        <h4 class="lf-section__title">Safety Data Sheet</h4>
+    {# ---- Documents. Every DocumentKeys entry (SDS, Certificate of Analysis,
+           Datasheet, User Manual), from an attribute or a user handover Service -
+           see PacInfo.documents/_get_document. Supersedes a Safety-Data-Sheet-only
+           section - SDS is just one member of this same set now. ---- #}
+    {% set documents = pac_info.documents %}
+    {% if documents %}
+    <section class="lf-section lf-section--documents">
+        <h4 class="lf-section__title">Documents</h4>
         <table class="lf-table lf-table--kv">
             <tbody>
-                {{ pac_macros.document_row(safety_data_sheet) }}
+                {% for document in documents %}{{ pac_macros.document_row(document) }}{% endfor %}
             </tbody>
         </table>
+    </section>
+    {% endif %}
+
+    {# ---- Physical & chemical properties (e.g. boiling point, density, flash
+           point, pH, viscosity) - SDS Section 9-style info, distinct from the
+           hazard classification above. ---- #}
+    {% set physico_chemical_properties = pac_info.physico_chemical_properties %}
+    {% if physico_chemical_properties %}
+    <section class="lf-section lf-section--physchem">
+        <h4 class="lf-section__title">Physical &amp; Chemical Properties</h4>
+        {% set labels = physico_chemical_properties | map(attribute='label') | list %}
+        {% set values = physico_chemical_properties | map(attribute='values') | list %}
+        {{ pac_macros.key_value_table(zip(labels, values)) }}
+    </section>
+    {% endif %}
+
+    {# ---- Synonyms / alternate names. ---- #}
+    {% set synonyms = pac_info.synonyms %}
+    {% if synonyms %}
+    <section class="lf-section lf-section--synonyms">
+        <h4 class="lf-section__title">Synonyms</h4>
+        {% set labels = synonyms | map(attribute='label') | list %}
+        {% set values = synonyms | map(attribute='values') | list %}
+        {{ pac_macros.key_value_table(zip(labels, values)) }}
+    </section>
+    {% endif %}
+
+    {# ---- Specifications - product/QC parameters typically found on a Certificate
+           of Analysis (assay %, water content, heavy metals, sterility, ...),
+           distinct from physico_chemical_properties' bulk material properties.
+           The CoA link itself (if any) sits right below the table it backs, in
+           addition to also appearing in the general Documents section above -
+           a deliberate exception to that section's dedup, per the user's ask. ---- #}
+    {% set specifications = pac_info.specifications %}
+    {% set certificate_of_analysis = pac_info.certificate_of_analysis %}
+    {% if specifications or certificate_of_analysis %}
+    <section class="lf-section lf-section--specifications">
+        <h4 class="lf-section__title">Specifications</h4>
+        {% if specifications %}
+        {% set labels = specifications | map(attribute='label') | list %}
+        {% set values = specifications | map(attribute='values') | list %}
+        {{ pac_macros.key_value_table(zip(labels, values)) }}
+        {% endif %}
+        {% if certificate_of_analysis %}
+        <table class="lf-table lf-table--kv">
+            <tbody>
+                {{ pac_macros.document_row(certificate_of_analysis) }}
+            </tbody>
+        </table>
+        {% endif %}
     </section>
     {% endif %}
 
@@ -160,14 +216,14 @@
         </section>
     {% endif %}
 
-    {# ---- All attributes. Note: the hazard/supplier/quantity/SDS attributes
-           highlighted above will also appear again here, since they're ordinary
-           members of pac_info.attribute_groups like any other attribute -
-           deliberately not deduped in this first pass, see design-choices.md. ---- #}
-    {% if pac_info.attribute_groups %}
+    {# ---- Everything else. other_attribute_groups excludes whatever a dedicated
+           property above already surfaced (see PacInfo._CLAIMED_ATTRIBUTE_KEYS), so
+           nothing shown above is repeated here. ---- #}
+    {% set other_attribute_groups = pac_info.other_attribute_groups %}
+    {% if other_attribute_groups %}
         <section>
         <h4>Attributes</h4>
-        {% for ag in pac_info.attribute_groups.values() %}
+        {% for ag in other_attribute_groups.values() %}
             {% if ag.group_key not in hide_attribute_groups %}
                 {{ pac_macros.attribute_group_block(ag) }}
             {% endif %}
