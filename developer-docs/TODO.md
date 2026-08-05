@@ -554,3 +554,45 @@ to the wrong registry.
 Not scoped yet - deferred at the user's request (2026-08-03) while working on the
 `PAC-ID Resolver` `key` field; revisit when there's a concrete need to
 cross-reference a `T-REX` key against an IRI vocabulary.
+
+---
+
+## Pending removals - deprecated symbols scheduled for v2.0
+
+Per the `versioning` skill's deprecation policy, everything below carries a "Deprecated
+since v1.0, will be removed in v2.0" statement in its own warning message. This list is
+what the `release` skill's "Delivering on deprecation promises" step checks against
+when v2.0 is actually cut - remove each one then (not before), and cross off its entry
+here as it's removed.
+
+- `labfreed/pac_id_resolver/resolver.py`: `cit_from_str()` - use
+  `ResolverConfig.from_yaml(s)`.
+- `labfreed/pac_id_resolver/cit_v1.py`: `CITEntry_v1`, `CIT_v1` - use `ResolverConfig`.
+- `labfreed/pac_attributes/api_data_models/request.py`:
+  `AttributeRequestData.pac_id` property - use `.subject_id`.
+- `labfreed/pac_attributes/client/client.py`: `AttributeClient.get_attributes()`'s
+  `pac_id=` keyword argument - use `subject_id=`.
+- `labfreed/pac_attributes/well_knonw_attribute_keys.py`: the whole module (typo'd
+  name) - use `labfreed.pac_attributes.well_known_attribute_keys`.
+- `labfreed/pac_attributes/api_data_models/response.py`: `Attribute` - use
+  `Spec_Attribute`.
+- `labfreed/pac_attributes/api_data_models/response.py`: `AttributeGroup` - use
+  `Spec_AttributeGroup`.
+- `labfreed/pac_attributes/api_data_models/response.py`: `AttributesOfPACID` (incl. its
+  `.pac_id` property) - use `AttributesOfItem` (`.id`).
+- `labfreed/pac_attributes/server/attribute_data_sources.py`: `Dict_DataSource` - use
+  `Spec_Dict_DataSource`.
+- `labfreed/pac_attributes/facade/dict_data_source.py`: `pyDict_DataSource` - use
+  `Dict_DataSource`.
+- `labfreed/trex/trex.py`: `TREX` - use `Spec_T_REX`.
+- `labfreed/trex/facade/t_rex.py`: `pyTREX` - use `T_REX`.
+- `labfreed/pac_attributes/facade/attributes.py`: `pyReference`, `pyResource`,
+  `pyAttribute`, `pyAttributes`, `pyAttributeGroup` - use `Reference`, `Resource`,
+  `Attribute`, `Attributes`, `AttributeGroup` respectively.
+- `labfreed/pac_attributes/facade/attributes.py`: `Attribute.value` property - use
+  `.values`.
+
+Before removing any of these, check whether `labfreed-webtools` still imports it under
+the old name - see the "Two typo fixes..." and IRI-migration entries in
+`design-choices.md`, which confirmed a couple of these were still in live use there as
+of 2026-07-29.

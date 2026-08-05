@@ -144,6 +144,8 @@ The `labfreed` package is organized into three parts, reflecting how far the cod
   pip install labfreed[experimental]
   ```
 
+  This is distinct from the `@experimental` decorator (`labfreed.experimental`, defined in `labfreed_infrastructure.py`): `labfreed_experimental/` is for whole modules that are undefined/unstable from top to bottom, while `@experimental` flags a single function, method, or class as a newly-added, still-shifting addition within a module that is otherwise stable and covered by the normal versioning/deprecation policy below. It emits a `FutureWarning` on every call and adds a note to the docstring.
+
 ## Design Philosophy
 
 This library optimizes for ease of use over the cleanest possible architecture. Concretely:
@@ -495,7 +497,9 @@ This package follows [Semantic Versioning](https://semver.org): `MAJOR.MINOR.PAT
 **Deprecation policy:** when a public API needs to change or go away, we deprecate it
 first -- it keeps working, but raises a `DeprecationWarning` pointing at its
 replacement -- and keep that deprecated path working for at least one more major
-version before actually removing it.
+version before actually removing it. This policy doesn't apply to anything marked
+`@experimental` (see [Package Structure](#package-structure)) -- those can change or be
+removed in a minor/patch release without going through deprecation first.
 
 **Pre-releases:** in-progress work toward the next version is published straight to
 [PyPI](https://pypi.org/project/labfreed/) as an alpha/beta pre-release (e.g.

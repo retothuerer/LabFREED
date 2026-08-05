@@ -1786,3 +1786,76 @@ still renders correctly with no `SUPPLIER` attribute present at all (each sectio
 visibility is independent, neither requires the other).
 
 *Investigated 2026-08-03, on branch `cleanup-labfreed-library-for-release-1.0.0`.*
+
+---
+
+## `@experimental` decorator (`labfreed_infrastructure.py`), adapted from Apache Beam rather than pandas
+
+**Decision:** added `experimental(reason: str = "")` to `labfreed_infrastructure.py`
+(exported from `labfreed` via its existing `from labfreed.labfreed_infrastructure import
+*`). It decorates a function, method, or class - wrapping functions/methods with
+`functools.wraps` and patching a class's `__new__` (the same technique the `deprecated`
+package already uses under the hood for `@deprecated`, and already proven safe on
+Pydantic models in this codebase, e.g. `response.py`'s `AttributesOfPACID`) - and on
+every call/instantiation emits a plain builtin `FutureWarning` plus appends a
+`**Experimental:** ...` note to the docstring. Calling convention deliberately mirrors
+the existing `@deprecated("reason")` usage (the `deprecated` PyPI package, already used
+in ~15 places) for consistency: `@experimental("reason")`.
+
+This is distinct from the existing `labfreed_experimental/` package (BLE PAC discovery
+etc.): that folder is for whole modules with no compatibility guarantee at all, while
+`@experimental` flags one function/method/class inside a module that is otherwise
+stable and normally covered by the deprecate-first policy. README's Versioning section
+gained one sentence exempting `@experimental`-marked APIs from that policy - they can
+change or vanish in a minor/patch release without a deprecation cycle.
+
+**Why:** the user asked to "copy the `@experimental` decorator pattern from pandas."
+Checking pandas' actual source first (see Alternatives) showed pandas has no such
+decorator - it exists purely as a docstring convention. Rather than build something and
+call it "the pandas pattern" when pandas doesn't have one, this was surfaced to the
+user, who chose to base it on Apache Beam's real `apache_beam.utils.annotations`
+instead.
+
+**Alternatives considered / why not:**
+
+- **pandas' own convention** - verified empirically, not assumed: cloned
+  `pandas-dev/pandas` (sparse checkout of `pandas/`) and grepped the full tree, plus
+  fetched `pandas/util/_decorators.py` at `main` and tags `v0.23.4` through `v2.2.3`
+  directly from GitHub. No `experimental` decorator or `Experimental`-named class exists
+  anywhere in the checked versions. Every "experimental" hit is a plain docstring
+  sentence like *"ArrowDtype is considered experimental. The implementation and API may
+  change without warning."* - no runtime warning, no programmatic marker at all. Not
+  usable as "the pandas pattern" because it doesn't exist as a pattern beyond prose.
+- **Apache Beam's `experimental`** (`apache_beam.utils.annotations`) - read the real
+  source (fetched from GitHub at several tags). It's a `functools.partial` of a shared
+  `annotate(label, since, current, extra_message, ...)` function also used for
+  `deprecated`, with a `_WarningMessage` class building the text and a class/function
+  branch nearly identical to what `deprecated` (the PyPI package) already does in this
+  codebase. Chosen as the base pattern - it's the real, working prior art the user
+  wanted, and its mechanism already has a proven analog here via `deprecated`.
+  Deliberately deviated from Beam in two spots: (1) Beam only appends a docstring note
+  for `label='deprecated'`, not for `experimental` - looked like an oversight, so this
+  implementation documents both; (2) Beam uses a plain builtin `FutureWarning` for
+  `experimental` (only `deprecated` gets a custom warning subclass,
+  `BeamDeprecationWarning`) - kept that asymmetry since it mirrors how `@deprecated` is
+  already used in this codebase (plain builtin `DeprecationWarning`, no custom
+  subclass). Note: Beam itself removed `experimental` from its own codebase somewhere
+  around v2.4x-v2.50 (confirmed present at `v2.40.0`, gone by `v2.50.0`) - only
+  `deprecated` remains upstream today.
+- **Dagster's `@preview`/`@beta` lifecycle annotations** (`dagster._annotations`,
+  read via GitHub) - a heavier system: dedicated `PreviewInfo`/`BetaInfo` data objects
+  plus introspection helpers (`is_preview()`, `get_beta_info()`, etc.), replacing an
+  older `@experimental` Dagster itself used to have. Offered to the user as an
+  alternative; not chosen for this pass - more machinery than a single-repo library
+  with one experimental-marking need currently justifies.
+- **PEP 702's `warnings.deprecated`** (`typing`/`typing_extensions`) - not applicable
+  here: it's specifically for deprecation (type checkers flag call sites as going
+  away), not for "newly added, still shifting" - the opposite lifecycle stage.
+
+**Verified:** ran the decorator locally (function, method, and class cases) with
+`python3 -W always` - confirmed the `FutureWarning` fires with the correct message and
+points at the actual call site (not at the decorator's own wrapper frame), and that the
+docstring gains the `**Experimental:**` note while undecorated methods on the same
+class are untouched.
+
+*Investigated 2026-08-04.*
