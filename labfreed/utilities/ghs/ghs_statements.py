@@ -3,6 +3,8 @@ import json
 from pathlib import Path
 import re
 
+from labfreed.utilities.ghs.ghs_statement_models import HazardStatement
+
 _SIGNAL_WORD_SEVERITY = {'Danger': 2, 'Warning': 1}
 
 # A leading statement code (or several joined by "+", e.g. "H300+H310"), optionally
@@ -52,6 +54,22 @@ def precautionary_statement_text(code: str, lang: str = 'en') -> str | None:
     return _localized(entry, lang)
 
 
+def hazard_statement_is_complete(code: str) -> bool | None:
+    '''None if `code` isn't a known hazard statement. All hazard statements are
+    complete as printed - Annex 3 defines no supplier-completed placeholders for
+    H-codes - but the lookup stays symmetric with precautionary_statement_is_complete.'''
+    entry = ghs_data()['hazard_statements'].get(code)
+    return entry.get('complete') if entry else None
+
+
+def precautionary_statement_is_complete(code: str) -> bool | None:
+    '''False means the Annex 3 text still has a "..." placeholder (e.g. P264 "Wash ...
+    thoroughly after handling.") that the manufacturer/supplier or competent authority
+    must complete before the statement is label-ready. None if `code` is unknown.'''
+    entry = ghs_data()['precautionary_statements'].get(code)
+    return entry.get('complete') if entry else None
+
+
 def _localized(entry: dict | None, lang: str) -> str | None:
     if not entry:
         return None
@@ -63,14 +81,14 @@ def pictogram_name(ghs_code: str) -> str | None:
     return ghs_data()['pictograms'].get(ghs_code)
 
 
-def pictogram_codes_for_hazard_statement(code: str) -> list[str]:
-    '''Resolve one or more GHS0x pictogram codes for a hazard statement code, splitting
-    combined codes (e.g. "H300+H310") and taking the union of each constituent's
+def pictogram_codes_for_hazard_statement(statement: HazardStatement) -> list[str]:
+    '''Resolve one or more GHS0x pictogram codes for a HazardStatement, splitting a
+    combined code (e.g. "H300+H310") and taking the union of each constituent's
     pictogram(s). Returns [] if none apply (e.g. H303, H401).'''
     info = ghs_data()['hazard_statement_pictograms']
     name_to_code = _pictogram_name_to_code()
     codes = []
-    for part in code.split('+'):
+    for part in statement.code.split('+'):
         entry = info.get(part.strip())
         if not entry:
             continue
@@ -81,13 +99,25 @@ def pictogram_codes_for_hazard_statement(code: str) -> list[str]:
     return codes
 
 
-def signal_word_for_hazard_statement(code: str) -> str | None:
+def signal_word_for_hazard_statement(statement: HazardStatement) -> str | None:
     '''For a combined code (e.g. "H300+H310"), returns the most severe signal word
     among its constituents ("Danger" beats "Warning").'''
+    return signal_word_for_hazard_statements([statement])
+
+
+def signal_word_for_hazard_statements(statements: 'set[HazardStatement] | list[HazardStatement]') -> str | None:
+    '''Signal word only ever derives from hazard statements, never precautionary ones -
+    P-codes carry no signal-word/pictogram classification in GHS Annex 3 at all, so
+    passing PrecautionaryStatements here would just silently contribute nothing. For a
+    combined code (e.g. "H300+H310"), the most severe word wins ("Danger" beats
+    "Warning") - both across constituents of one statement and across all statements
+    passed in.'''
     info = ghs_data()['hazard_statement_pictograms']
-    words = [info[part.strip()]['signal_word']
-             for part in code.split('+')
-             if info.get(part.strip(), {}).get('signal_word')]
+    words = set()
+    for statement in statements:
+        for part in statement.code.split('+'):
+            if word := info.get(part.strip(), {}).get('signal_word'):
+                words.add(word)
     if not words:
         return None
     return max(words, key=lambda w: _SIGNAL_WORD_SEVERITY.get(w, 0))

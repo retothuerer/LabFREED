@@ -1,4 +1,5 @@
 {% import 'pac_info/card-components.jinja.html' as card_macros %}
+{% import 'pac_info/base-components.jinja.html' as pac_macros with context %}
 
 {# The full info card, as a macro only - see card_standalone.jinja.html to render it directly. #}
 {% macro info_card(pac_info) %}
@@ -8,7 +9,7 @@
 
         {{ card_macros.card_main(pac_info) }}
 
-        {{ card_macros.safety_pictograms(pac_info) }}
+        {{ pac_macros.pictogram_strip(pac_info.safety_pictogram_codes) }}
 
         {{ card_macros.qualification_state(pac_info) }}
     </section>

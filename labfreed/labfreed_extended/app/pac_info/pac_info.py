@@ -1,10 +1,11 @@
+import re
 from functools import cached_property
 from pathlib import Path
 from urllib.parse import urlparse
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pydantic import BaseModel, Field
 from labfreed.pac_attributes.facade.attributes import Attribute, AttributeGroup, Attributes, Reference, Resource
-from labfreed.pac_attributes.well_known_attribute_keys import MetaAttributeKeys
+from labfreed.pac_attributes.well_known_attribute_keys import CommercePackagingKeys, DocumentKeys, IdentifierKeys, MetaAttributeKeys, PhysicoChemicalProperties, RegulatorySafetyKeys
 from labfreed.pac_cat.pac_cat import PAC_CAT
 from labfreed.pac_cat.predefined_categories import PredefinedCategory
 from labfreed.pac_id.pac_id import PAC_ID
@@ -12,8 +13,57 @@ from labfreed.pac_id_resolver.services import ServiceGroup, Service
 from labfreed.labfreed_extended.app.formatted_print import StringIOLineBreak
 from labfreed.trex.facade.data_table import DataTable
 from labfreed.trex.facade.t_rex import T_REX
+from labfreed.utilities.ghs.ghs_statements import extract_statement_code, hazard_statement_text, hazard_statement_is_complete, precautionary_statement_text, precautionary_statement_is_complete, pictogram_codes_for_hazard_statement, signal_word_for_hazard_statements
+from labfreed.utilities.ghs.ghs_statement_models import HazardStatement, PrecautionaryStatement
 from labfreed.well_known_extensions.display_name_extension import DisplayNameExtension
+from labfreed.labfreed_infrastructure import experimental
 from enum import Enum
+
+
+class Document(BaseModel):
+    '''Uniform shape for a document reachable either via an attribute (a Resource/
+    link value) or a user handover Service keyed the same way - so a consumer never
+    has to branch on which of the two PacInfo.safety_data_sheet (etc.) came from.'''
+    name: str
+    key: str
+    url: str
+
+    @classmethod
+    def from_attribute(cls, attribute: Attribute) -> 'Document':
+        value = attribute.values
+        url = value.root if isinstance(value, Resource) else str(value)
+        return cls(name=attribute.label, key=attribute.key, url=url)
+
+    @classmethod
+    def from_service(cls, service: Service) -> 'Document':
+        return cls(name=service.service_name, key=service.key or '', url=service.url)
+
+
+# Every well-known key already surfaced by a dedicated PacInfo property below
+# (supplier, nominal_quantity, signal_word, ufi, safety_data_sheet,
+# certificate_of_analysis, product_identifiers, physico_chemical_properties,
+# hazard_statements, precautionary_statements, safety_pictogram_codes/
+# explicit_pictogram_image_urls) - the single place that list is assembled, so
+# PacInfo.other_attribute_groups can exclude them without a UI template having to
+# know about every property individually.
+_CLAIMED_ATTRIBUTE_KEYS = [
+    IdentifierKeys.SUPPLIER,
+    CommercePackagingKeys.QUANTITY,
+    RegulatorySafetyKeys.GHS_SIGNAL_WORD,
+    RegulatorySafetyKeys.UNIQUE_FORMULA_IDENTIFIER,
+    DocumentKeys.SAFETY_DATA_SHEET,
+    DocumentKeys.CERTIFICATE_OF_ANALYSIS,
+    RegulatorySafetyKeys.CLP_ANNEX_VI_INDEX_NO,
+    IdentifierKeys.CAS_NUMBER,
+    IdentifierKeys.CAS_NUMBER_ALT,
+    IdentifierKeys.EC_NUMBER,
+    IdentifierKeys.PRODUCT_CODE,
+    *PhysicoChemicalProperties,
+    RegulatorySafetyKeys.GHS_HAZARD_STATEMENT,
+    RegulatorySafetyKeys.GHS_PRECAUTIONARY_STATEMENT,
+    RegulatorySafetyKeys.GHS_PICTOGRAM,
+]
+
 
 class PacInfo(BaseModel):
     """A convenient collection of information about a PAC-ID"""
@@ -149,9 +199,6 @@ class PacInfo(BaseModel):
         
         
         
-        
-        
-        
      # Attributes   
         
     @cached_property
@@ -221,13 +268,181 @@ class PacInfo(BaseModel):
         return display_name
     
     
+    
     @cached_property
-    def safety_pictograms(self) -> dict[str, Attribute]:
-        pictogram_attributes = {k: a for k, a in self._all_attributes.items() if "https://labfreed.org/ghs/pictogram/" in a.key}
-        return pictogram_attributes    
+    @experimental()
+    def supplier(self) -> Attribute | None:
+        # value is expected to be a PAC-ID reference to the supplier's own attribute
+        # page (their name/address/phone live there) - see design-choices.md
+        return self.get_attribute(IdentifierKeys.SUPPLIER)
+    
+    
+    
+    @cached_property
+    @experimental()
+    def hazard_statements(self) -> list[HazardStatement]:
+        statements = set()
+        for attribute in self.get_attributes(RegulatorySafetyKeys.GHS_HAZARD_STATEMENT):
+            for value in attribute.value_list:
+                normalized = re.sub(r'\s*\+\s*', '+', value.strip())
+                codes = [v for v in re.split(r'[\s;-]+', normalized) if v.startswith('H')]
+                for c in codes:
+                    code = extract_statement_code(c)
+                    statements.add(HazardStatement(code=code,
+                                                    text=hazard_statement_text(code),
+                                                    text_origin='Predefined',
+                                                    complete=hazard_statement_is_complete(code)))
+        return sorted(statements, key=lambda s: s.code)
+
+    @cached_property
+    @experimental()
+    def precautionary_statements(self) -> list[PrecautionaryStatement]:
+        statements = set()
+        for attribute in self.get_attributes(RegulatorySafetyKeys.GHS_PRECAUTIONARY_STATEMENT):
+            for value in attribute.value_list:
+                normalized = re.sub(r'\s*\+\s*', '+', value.strip())
+                codes = [v for v in re.split(r'[\s;-]+', normalized) if v.startswith('P')]
+                for c in codes:
+                    code = extract_statement_code(c)
+                    statements.add(PrecautionaryStatement(code=code,
+                                                            text=precautionary_statement_text(code),
+                                                            text_origin='Predefined',
+                                                            complete=precautionary_statement_is_complete(code)))
+        return sorted(statements, key=lambda s: s.code)
+
+
+    
+
+
+    @cached_property
+    @experimental()
+    def _safety_pictogram_codes_from_attributes(self) -> set[str]:
+        # find the codes explicitly given by attributes as bare strings (e.g. "GHS02").
+        # Resource-valued (image link) entries are not codes - they're not added here,
+        # so they don't get double-rendered; explicit_pictogram_image_urls (below)
+        # takes them from GHS_PICTOGRAM attributes as-is instead.
+        codes = set()
+        for attribute in self.get_attributes(RegulatorySafetyKeys.GHS_PICTOGRAM):
+            for value in attribute.value_list:
+                if isinstance(value, str):
+                    normalized = re.sub(r'\s*\+\s*', '+', value.strip())
+                    codes.update(part for part in re.split(r'[\s;-]+', normalized) if part)
+        return codes
+
+
+    @cached_property
+    @experimental()
+    def safety_pictogram_codes(self) -> list[str]:
+        # GHS0x codes explicitly given by GHS_PICTOGRAM attributes, plus codes derived
+        # from hazard statement codes via the 06e_annex3 lookup table. Precautionary
+        # statements are never a source here - pictogram assignment is per hazard
+        # class/category, so P-codes carry none (see signal_word_for_hazard_statements).
+        codes = set(self._safety_pictogram_codes_from_attributes)
+        for statement in self.hazard_statements:
+            codes.update(pictogram_codes_for_hazard_statement(statement))
+        return sorted(codes)
+
+    @cached_property
+    @experimental()
+    def explicit_pictogram_image_urls(self) -> list[str]:
+        # supplier-provided pictogram images (Resource-valued GHS_PICTOGRAM attribute
+        # values) - rendered as-is, not matched to a specific code (see
+        # _safety_pictogram_codes_from_attributes, which handles the string/code case)
+        return [str(value.root) for attribute in self.get_attributes(RegulatorySafetyKeys.GHS_PICTOGRAM)
+                for value in attribute.value_list if isinstance(value, Resource)]
+
+
+
+
+    @cached_property
+    @experimental()
+    def signal_word(self) -> str | None:
+        # attribute-delivered wins if present (matches the earlier precedence decision
+        # for hazard/precautionary statement text); derived from hazard statements
+        # (never precautionary - see signal_word_for_hazard_statements) otherwise.
+        if attribute := self.get_attribute(RegulatorySafetyKeys.GHS_SIGNAL_WORD):
+            return attribute.values
+        return signal_word_for_hazard_statements(self.hazard_statements)
     
     
     @cached_property
+    @experimental()
+    def nominal_quantity(self) -> Attribute | None:
+        return self.get_attribute(CommercePackagingKeys.QUANTITY)
+
+    @cached_property
+    @experimental()
+    def product_identifiers(self) -> list[Attribute]:
+        # CLP Art. 18 "product identifier": for a substance, its Annex VI/CAS/EC
+        # identity; for a mixture, the identity of the substances contributing to its
+        # classification. Trade name is already covered by display_name - this is
+        # just the chemical/regulatory identifiers, in order of CLP-specific first.
+        keys = [
+            RegulatorySafetyKeys.CLP_ANNEX_VI_INDEX_NO,
+            IdentifierKeys.CAS_NUMBER,
+            IdentifierKeys.CAS_NUMBER_ALT,
+            IdentifierKeys.EC_NUMBER,
+            IdentifierKeys.PRODUCT_CODE,
+        ]
+        return [a for key in keys if (a := self.get_attribute(key))]
+
+    @cached_property
+    @experimental()
+    def physico_chemical_properties(self) -> list[Attribute]:
+        # every PhysicoChemicalProperties key present, wherever it lives among the
+        # attribute groups - that enum is already the curated "sensible" key set
+        # (boiling/melting point, density, flash point, pH, viscosity, ...), so no
+        # separate hand-picked subset/ordering is needed the way product_identifiers
+        # needed one (that one spans several enums with a CLP-specific priority order).
+        return [a for key in PhysicoChemicalProperties if (a := self.get_attribute(key))]
+
+    @cached_property
+    @experimental()
+    def ufi(self) -> Attribute | None:
+        return self.get_attribute(RegulatorySafetyKeys.UNIQUE_FORMULA_IDENTIFIER)
+    
+
+    def _get_document(self, key) -> Document | None:
+        # attribute (a Resource/link value) takes priority; falls back to a user
+        # handover Service keyed the same way - see Document.from_attribute/from_service
+        if attribute := self.get_attribute(key):
+            return Document.from_attribute(attribute)
+        if service := self.get_user_handover_by_key(key):
+            return Document.from_service(service)
+        return None
+
+    @cached_property
+    @experimental()
+    def safety_data_sheet(self) -> Document | None:
+        return self._get_document(DocumentKeys.SAFETY_DATA_SHEET)
+
+    @cached_property
+    @experimental()
+    def certificate_of_analysis(self) -> Document | None:
+        return self._get_document(DocumentKeys.CERTIFICATE_OF_ANALYSIS)
+    
+
+
+    @cached_property
+    @experimental()
+    def other_attribute_groups(self) -> dict[str, AttributeGroup]:
+        # attribute_groups with every attribute already surfaced by a dedicated
+        # property (see _CLAIMED_ATTRIBUTE_KEYS) filtered out of each group - lets a
+        # generic "everything else" UI block avoid showing the same attribute twice.
+        # Matches get_attribute(s)' own substring-containment semantics (`key in
+        # a.key`), just inverted for exclusion. Groups left with nothing remaining
+        # are dropped entirely rather than shown empty.
+        claimed = [str(key) for key in _CLAIMED_ATTRIBUTE_KEYS]
+        out = {}
+        for group_key, ag in self.attribute_groups.items():
+            remaining = {k: a for k, a in ag.attributes.items()
+                         if not any(claim in a.key for claim in claimed)}
+            if remaining:
+                out[group_key] = ag.model_copy(update={'attributes': remaining})
+        return out
+
+    @cached_property
+    @experimental()
     def qualification_state(self) -> Attribute:
         if state := self._all_attributes.get("https://labfreed.org/qualification/status"): 
             return state

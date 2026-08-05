@@ -49,18 +49,6 @@
 {% endmacro%}
 
 
-{% macro safety_pictograms(pac_info) %}
-    {% if pac_info.safety_pictograms %}
-        <div class="lf-info-pictos">
-        {% for p in pac_info.safety_pictograms.values() %}
-            <figure class="lf-figure lf-figure--image">
-            <img src="{{ p.value|e }}" alt="{{ p.label|e }}" class="lf-attr-image">
-            <figcaption class="lf-figure__caption sr-only">{{ p.label }}</figcaption>
-            </figure>
-        {% endfor %}
-        </div>
-    {% endif %}
-{% endmacro %}
 
 
 {% macro qualification_state(pac_info) %}

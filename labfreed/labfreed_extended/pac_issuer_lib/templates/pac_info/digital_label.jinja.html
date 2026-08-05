@@ -24,11 +24,24 @@
 {% if pac_info %}
 <section class="lf-results lf-digital-label">
 
-    {# ---- Product identification ---- #}
+    {# ---- Product identification. product_identifiers covers CLP Art. 18's
+           chemical/regulatory identity (Annex VI index no., CAS/EC numbers, product
+           code) - the trade name itself is already card_title's job, so these are
+           additional, not a replacement. ---- #}
+    {% set product_identifiers = pac_info.product_identifiers %}
     <section class="lf-info-card">
         {{ card_macros.card_title(pac_info) }}
         {{ card_macros.card_main(pac_info) }}
         {{ card_macros.qualification_state(pac_info) }}
+        {% if product_identifiers %}
+        {# plain label -> value (e.g. "CAS No." -> "110-82-7") - key_value_table, not
+           attribute_row, since these read as a short identity summary and shouldn't
+           show each attribute's IRI key underneath the label. Jinja has no dict-
+           comprehension syntax, so build the pairs via map+zip+dict instead. #}
+        {% set labels = product_identifiers | map(attribute='label') | list %}
+        {% set values = product_identifiers | map(attribute='values') | list %}
+        {{ pac_macros.key_value_table(dict(zip(labels, values))) }}
+        {% endif %}
     </section>
 
     {# ---- Hazard information, surfaced first: matches what a user expects
@@ -38,10 +51,10 @@
            pictogram(s) and full text - see base-components.jinja.html's
            hazard_statement_row/precautionary_statement_row), rather than the generic
            attribute_row used for signal word and UFI. ---- #}
-    {% set signal_word_attrs = find_attributes(pac_info.attribute_groups, [RegulatorySafetyKeys.GHS_SIGNAL_WORD]) %}
-    {% set hazard_stmt_attrs = find_attributes(pac_info.attribute_groups, [RegulatorySafetyKeys.GHS_HAZARD_STATEMENT]) %}
-    {% set precautionary_stmt_attrs = find_attributes(pac_info.attribute_groups, [RegulatorySafetyKeys.GHS_PRECAUTIONARY_STATEMENT]) %}
-    {% set ufi_attrs = find_attributes(pac_info.attribute_groups, [RegulatorySafetyKeys.UFI]) %}
+    {% set signal_word = pac_info.signal_word %}
+    {% set hazard_statements = pac_info.hazard_statements %}
+    {% set precautionary_statements = pac_info.precautionary_statements %}
+    {% set ufi = pac_info.ufi %}
     {# Pictograms are a property of the substance as a whole, not of any one
        statement row - pulled once from every hazard/precautionary code (a set
        dedupes, e.g. H300/H310/H330 sharing Skull-and-crossbones), sorted by GHS
@@ -49,41 +62,35 @@
        per row. Supersedes the old plain safety_pictograms() display - this is a
        strict superset (same explicit attributes, plus codes derived from the
        statements themselves). #}
-    {% set explicit_images = explicit_pictogram_images(pac_info) %}
-    {% set pictogram_codes = hazard_pictogram_codes(pac_info, hazard_stmt_attrs + precautionary_stmt_attrs) %}
-    {% if pictogram_codes or signal_word_attrs or hazard_stmt_attrs or precautionary_stmt_attrs or ufi_attrs %}
+    {% set explicit_image_urls = pac_info.explicit_pictogram_image_urls %}
+    {% set pictogram_codes = pac_info.safety_pictogram_codes %}
+    {% if pictogram_codes or explicit_image_urls or signal_word or hazard_statements or precautionary_statements or ufi %}
     <section class="lf-section lf-section--hazard">
         <h4 class="lf-section__title">Hazard Information</h4>
-        {{ pac_macros.pictogram_strip(pictogram_codes, explicit_images) }}
-        {% if signal_word_attrs %}
-        <table class="lf-table lf-table--kv">
-            <tbody>
-                {% for a in signal_word_attrs %}{{ pac_macros.attribute_row(a) }}{% endfor %}
-            </tbody>
-        </table>
-        {% endif %}
-        {% if hazard_stmt_attrs %}
+        <div class="lf-hazard-header">
+            {{ pac_macros.pictogram_strip(pictogram_codes, explicit_image_urls) }}
+            {% if signal_word %}
+            <p class="lf-signal-word">{{ signal_word }}</p>
+            {% endif %}
+        </div>
+        {% if hazard_statements %}
         <table class="lf-table lf-table--kv lf-ghs-statements">
             <tbody>
-                {% for a in hazard_stmt_attrs %}
-                    {% for value in a.value_list %}{{ pac_macros.hazard_statement_row(value) }}{% endfor %}
-                {% endfor %}
+                {% for statement in hazard_statements %}{{ pac_macros.hazard_statement_row(statement) }}{% endfor %}
             </tbody>
         </table>
         {% endif %}
-        {% if precautionary_stmt_attrs %}
+        {% if precautionary_statements %}
         <table class="lf-table lf-table--kv lf-ghs-statements">
             <tbody>
-                {% for a in precautionary_stmt_attrs %}
-                    {% for value in a.value_list %}{{ pac_macros.precautionary_statement_row(value) }}{% endfor %}
-                {% endfor %}
+                {% for statement in precautionary_statements %}{{ pac_macros.precautionary_statement_row(statement) }}{% endfor %}
             </tbody>
         </table>
         {% endif %}
-        {% if ufi_attrs %}
+        {% if ufi %}
         <table class="lf-table lf-table--kv">
             <tbody>
-                {% for a in ufi_attrs %}{{ pac_macros.attribute_row(a) }}{% endfor %}
+                {{ pac_macros.attribute_row(ufi) }}
             </tbody>
         </table>
         {% endif %}
@@ -97,29 +104,28 @@
            This issuer's own configured contact_address (SiteMeta) - for the common
            case where the issuer *is* the supplier - is a separate block, below the
            safety data sheet. ---- #}
-    {% set supplier_attrs = find_attributes(pac_info.attribute_groups, [
-        IdentifierKeys.SUPPLIER,
-        CommercePackagingKeys.QUANTITY,
-    ]) %}
-    {% if supplier_attrs %}
+    {% set supplier = pac_info.supplier %}
+    {% set nominal_quantity = pac_info.nominal_quantity %}
+    {% if supplier or nominal_quantity %}
     <section class="lf-section lf-section--supplier">
         <h4 class="lf-section__title">Supplier &amp; Quantity</h4>
         <table class="lf-table lf-table--kv">
             <tbody>
-                {% for a in supplier_attrs %}{{ pac_macros.attribute_row(a) }}{% endfor %}
+                {% if supplier %}{{ pac_macros.attribute_row(supplier) }}{% endif %}
+                {% if nominal_quantity %}{{ pac_macros.attribute_row(nominal_quantity) }}{% endif %}
             </tbody>
         </table>
     </section>
     {% endif %}
 
     {# ---- Safety data sheet ---- #}
-    {% set sds_attrs = find_attributes(pac_info.attribute_groups, [DocumentKeys.SAFETY_DATA_SHEET]) %}
-    {% if sds_attrs %}
+    {% set safety_data_sheet = pac_info.safety_data_sheet %}
+    {% if safety_data_sheet %}
     <section class="lf-section lf-section--sds">
         <h4 class="lf-section__title">Safety Data Sheet</h4>
         <table class="lf-table lf-table--kv">
             <tbody>
-                {% for a in sds_attrs %}{{ pac_macros.attribute_row(a) }}{% endfor %}
+                {{ pac_macros.document_row(safety_data_sheet) }}
             </tbody>
         </table>
     </section>
@@ -162,7 +168,7 @@
         <section>
         <h4>Attributes</h4>
         {% for ag in pac_info.attribute_groups.values() %}
-            {% if ag.key not in hide_attribute_groups %}
+            {% if ag.group_key not in hide_attribute_groups %}
                 {{ pac_macros.attribute_group_block(ag) }}
             {% endif %}
         {% endfor %}

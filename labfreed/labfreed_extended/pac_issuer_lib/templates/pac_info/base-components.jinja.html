@@ -84,6 +84,18 @@
 {%- endmacro %}
 
 
+{# A PacInfo.Document (name, key, url) - the uniform shape safety_data_sheet/
+   certificate_of_analysis return regardless of whether the source was an attribute
+   or a user handover Service. Distinct from attribute_row() since Document has no
+   .value_list/.label to match that macro's Attribute-shaped interface. #}
+{%- macro document_row(document) -%}
+  <tr>
+    <th class="lf-th lf-th--label">{{ document.name }}</th>
+    <td class="lf-td lf-td--val"><a href="{{ document.url }}" target="_default">{{ document.url }}</a></td>
+  </tr>
+{%- endmacro -%}
+
+
 {%- macro attribute_row(a) -%}
   <tr>
     <th class="lf-th lf-th--label">
@@ -129,9 +141,10 @@
 
 {%- macro attribute_group_block(ag) -%}
   <div class="lf-section lf-section--attributes">
-    <h5 class="lf-section__title">
-      {{ ag.label }} <span class="lf-origin-hint">(from {{ ag.origin }})</span>
-    </h5>
+    <h5 class="lf-section__title">{{ ag.group_label }}</h5>
+    {%- if dev_mode %}
+    <p class="lf-origin-hint">(from {{ ag.origin }})</p>
+    {%- endif %}
     <table class="lf-table lf-table--kv">
       <tbody>
         {%- for a in ag.attributes.values() -%}
@@ -188,59 +201,62 @@
     </div>
 {%- endmacro -%}
 
-{# One pictogram <img>, preferring an explicitly-supplied image over the
-   code-derived guess (see explicit_pictogram_images/hazard_pictogram_codes in
-   lib/render_predicates.py). resolve_static_image() only searches flat filenames
-   directly in the static root (Path(base_name).stem strips any directory
-   component before it even searches) - no subdirectory, no extension needed, it
-   tries svg/png/jpg/jpeg/webp itself. #}
-{%- macro pictogram_image(code, explicit_images=dict()) -%}
-  {%- if code in explicit_images -%}
-    <img src="{{ explicit_images[code] }}" alt="{{ pictogram_name(code) }}" class="lf-ghs-pictogram">
-  {%- else -%}
-    <img src="{{ resolve_static_image(code.lower()) }}" alt="{{ pictogram_name(code) }}" class="lf-ghs-pictogram">
-  {%- endif -%}
+{# One pictogram <img> for a GHS0x code, using the bundled static image.
+   resolve_static_image() only searches flat filenames directly in the static
+   root (Path(base_name).stem strips any directory component before it even
+   searches) - no subdirectory, no extension needed, it tries svg/png/jpg/jpeg/
+   webp itself. Supplier-provided images (see PacInfo.explicit_pictogram_image_urls)
+   aren't matched to a particular code - they're rendered as their own separate
+   images by pictogram_strip below. #}
+{%- macro pictogram_image(code) -%}
+  <img src="{{ resolve_static_image(code.lower()) }}" alt="{{ pictogram_name(code) }}" class="lf-ghs-pictogram">
 {%- endmacro -%}
 
 
 {# Shown once above the hazard/precautionary statement table (see
-   hazard_pictogram_codes) rather than repeated per row - a hazard statement's
+   PacInfo.safety_pictogram_codes) rather than repeated per row - a hazard statement's
    pictogram is a property of the substance as a whole, and several codes
-   commonly share the same one (e.g. H300/H310/H330 are all Skull-and-crossbones). #}
-{%- macro pictogram_strip(codes, explicit_images=dict()) -%}
-  {%- if codes -%}
+   commonly share the same one (e.g. H300/H310/H330 are all Skull-and-crossbones).
+   explicit_image_urls are supplier-provided pictogram images (Resource-valued
+   GHS_PICTOGRAM attribute values) - rendered in addition to the code-derived
+   images, not matched against any particular code. #}
+{%- macro pictogram_strip(codes, explicit_image_urls=[]) -%}
+  {%- if codes or explicit_image_urls -%}
     <div class="lf-ghs-pictogram-strip">
       {%- for code in codes -%}
-        {{ pictogram_image(code, explicit_images) }}
+        {{ pictogram_image(code) }}
+      {%- endfor -%}
+      {%- for url in explicit_image_urls -%}
+        <img src="{{ url }}" alt="" class="lf-ghs-pictogram">
       {%- endfor -%}
     </div>
   {%- endif -%}
 {%- endmacro -%}
 
 
-{# GHS hazard/precautionary statement rows - code beside its full text, resolved
-   from labfreed/utilities/ghs/ghs_statements.json (UNECE GHS Rev.7 Annex 3)
-   rather than requiring the attribute value to carry the full text itself. Falls
-   back to showing the raw value if the code isn't in that table (e.g. an
-   EU-specific EUH code, which isn't part of the UN GHS document this was sourced
-   from) - see developer-docs/design-choices.md. #}
+{# GHS hazard/precautionary statement rows - code beside its full text. Resolution
+   (code extraction + labfreed/utilities/ghs/ghs_statements.json lookup) now happens
+   in PacInfo.hazard_statements/precautionary_statements, not here - these macros
+   just render the already-resolved HazardStatement/PrecautionaryStatement (code,
+   text, text_origin). text is None when the code isn't in that table (e.g. an
+   EU-specific EUH code, not part of the UN GHS document it was sourced from) and
+   text_origin is always 'Predefined' for now - falls back to the bare code until
+   attribute-delivered text is wired up - see developer-docs/design-choices.md. #}
 {# th/td classes match every other key/value table (key_value_table, attribute_row) -
    same 1/3-2/3 column widths and label bolding from .lf-table--kv, for free, no
    GHS-specific CSS needed. #}
-{%- macro hazard_statement_row(raw_value) -%}
-  {%- set code = extract_statement_code(raw_value) -%}
+{%- macro hazard_statement_row(statement) -%}
   <tr class="lf-ghs-row">
-    <th class="lf-th lf-th--label">{{ code }}</th>
-    <td class="lf-td lf-td--val">{{ hazard_statement_text(code) or raw_value }}</td>
+    <th class="lf-th lf-th--label">{{ statement.code }}</th>
+    <td class="lf-td lf-td--val">{{ statement.text or statement.code }}</td>
   </tr>
 {%- endmacro -%}
 
 
-{%- macro precautionary_statement_row(raw_value) -%}
-  {%- set code = extract_statement_code(raw_value) -%}
+{%- macro precautionary_statement_row(statement) -%}
   <tr class="lf-ghs-row">
-    <th class="lf-th lf-th--label">{{ code }}</th>
-    <td class="lf-td lf-td--val">{{ precautionary_statement_text(code) or raw_value }}</td>
+    <th class="lf-th lf-th--label">{{ statement.code }}</th>
+    <td class="lf-td lf-td--val">{{ statement.text or statement.code }}</td>
   </tr>
 {%- endmacro -%}
 

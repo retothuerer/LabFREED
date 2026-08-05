@@ -159,21 +159,47 @@
     width: 30px;
 }
 
-/* One deduplicated strip of GHS pictograms shown once above the hazard/
-   precautionary statement table (see hazard_pictogram_codes), not repeated per
-   row - sized larger than an inline text icon since this is the label's main
-   visual hazard callout. */
+/* Pictogram strip + signal word side by side - the label's main visual hazard
+   callout, above the hazard/precautionary statement tables. */
+.lf-hazard-header {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+/* One deduplicated strip of GHS pictograms (see safety_pictogram_codes), not
+   repeated per row - sized larger than an inline text icon since this is the
+   label's main visual hazard callout. */
 .lf-ghs-pictogram-strip {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
-    margin-bottom: 0.75rem;
 }
 
 .lf-ghs-pictogram {
-    height: 3rem;
-    width: 3rem;
+    height: 4rem;
+    width: 4rem;
     object-fit: contain;
+}
+
+/* GHS signal word ("Danger"/"Warning") - the single most severe word at a glance,
+   right of the pictograms. */
+.lf-signal-word {
+    font-weight: bold;
+    font-size: 2rem;
+    margin: 0;
+}
+
+/* Hazard/precautionary statement text is a full sentence, unlike other
+   .lf-td--val cells - the shared .lf-table nowrap+ellipsis would truncate it,
+   which is unacceptable for safety text. Always wrap it in full instead. */
+.lf-ghs-row .lf-td--val {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: break-word;
 }
 
 /* SiteMeta.contact_address is a plain string, not HTML - the issuer writes it as a

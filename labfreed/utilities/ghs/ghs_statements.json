@@ -13,681 +13,907 @@
   },
   "hazard_statements": {
     "H200": {
-      "en": "Unstable explosive"
+      "en": "Unstable explosive",
+      "complete": true
     },
     "H201": {
-      "en": "Explosive; mass explosion hazard"
+      "en": "Explosive; mass explosion hazard",
+      "complete": true
     },
     "H202": {
-      "en": "Explosive; severe projection hazard"
+      "en": "Explosive; severe projection hazard",
+      "complete": true
     },
     "H203": {
-      "en": "Explosive; fire, blast or projection hazard"
+      "en": "Explosive; fire, blast or projection hazard",
+      "complete": true
     },
     "H204": {
-      "en": "Fire or projection hazard"
+      "en": "Fire or projection hazard",
+      "complete": true
     },
     "H205": {
-      "en": "May mass explode in fire"
+      "en": "May mass explode in fire",
+      "complete": true
     },
     "H206": {
-      "en": "Fire, blast or projection hazard; increased risk of explosion if desensitizing agent is reduced"
+      "en": "Fire, blast or projection hazard; increased risk of explosion if desensitizing agent is reduced",
+      "complete": true
     },
     "H207": {
-      "en": "Fire or projection hazard; increased risk of explosion if desensitizing agent is reduced"
+      "en": "Fire or projection hazard; increased risk of explosion if desensitizing agent is reduced",
+      "complete": true
     },
     "H208": {
-      "en": "Fire hazard; increased risk of explosion if desensitizing agent is reduced"
+      "en": "Fire hazard; increased risk of explosion if desensitizing agent is reduced",
+      "complete": true
     },
     "H220": {
-      "en": "Extremely flammable gas"
+      "en": "Extremely flammable gas",
+      "complete": true
     },
     "H221": {
-      "en": "Flammable gas"
+      "en": "Flammable gas",
+      "complete": true
     },
     "H222": {
-      "en": "Extremely flammable aerosol"
+      "en": "Extremely flammable aerosol",
+      "complete": true
     },
     "H223": {
-      "en": "Flammable aerosol"
+      "en": "Flammable aerosol",
+      "complete": true
     },
     "H224": {
-      "en": "Extremely flammable liquid and vapour"
+      "en": "Extremely flammable liquid and vapour",
+      "complete": true
     },
     "H225": {
-      "en": "Highly flammable liquid and vapour"
+      "en": "Highly flammable liquid and vapour",
+      "complete": true
     },
     "H226": {
-      "en": "Flammable liquid and vapour"
+      "en": "Flammable liquid and vapour",
+      "complete": true
     },
     "H227": {
-      "en": "Combustible liquid"
+      "en": "Combustible liquid",
+      "complete": true
     },
     "H228": {
-      "en": "Flammable solid"
+      "en": "Flammable solid",
+      "complete": true
     },
     "H229": {
-      "en": "Pressurized container: may burst if heated"
+      "en": "Pressurized container: may burst if heated",
+      "complete": true
     },
     "H230": {
-      "en": "May react explosively even in the absence of air"
+      "en": "May react explosively even in the absence of air",
+      "complete": true
     },
     "H231": {
-      "en": "May react explosively even in the absence of air at elevated pressure and/or temperature"
+      "en": "May react explosively even in the absence of air at elevated pressure and/or temperature",
+      "complete": true
     },
     "H232": {
-      "en": "May ignite spontaneously if exposed to air"
+      "en": "May ignite spontaneously if exposed to air",
+      "complete": true
     },
     "H240": {
-      "en": "Heating may cause an explosion"
+      "en": "Heating may cause an explosion",
+      "complete": true
     },
     "H241": {
-      "en": "Heating may cause a fire or explosion"
+      "en": "Heating may cause a fire or explosion",
+      "complete": true
     },
     "H242": {
-      "en": "Heating may cause a fire"
+      "en": "Heating may cause a fire",
+      "complete": true
     },
     "H250": {
-      "en": "Catches fire spontaneously if exposed to air"
+      "en": "Catches fire spontaneously if exposed to air",
+      "complete": true
     },
     "H251": {
-      "en": "Self-heating; may catch fire"
+      "en": "Self-heating; may catch fire",
+      "complete": true
     },
     "H252": {
-      "en": "Self-heating in large quantities; may catch fire"
+      "en": "Self-heating in large quantities; may catch fire",
+      "complete": true
     },
     "H260": {
-      "en": "In contact with water releases flammable gases which may ignite spontaneously"
+      "en": "In contact with water releases flammable gases which may ignite spontaneously",
+      "complete": true
     },
     "H261": {
-      "en": "In contact with water releases flammable gas"
+      "en": "In contact with water releases flammable gas",
+      "complete": true
     },
     "H270": {
-      "en": "May cause or intensify fire; oxidizer"
+      "en": "May cause or intensify fire; oxidizer",
+      "complete": true
     },
     "H271": {
-      "en": "May cause fire or explosion; strong oxidizer"
+      "en": "May cause fire or explosion; strong oxidizer",
+      "complete": true
     },
     "H272": {
-      "en": "May intensify fire; oxidizer"
+      "en": "May intensify fire; oxidizer",
+      "complete": true
     },
     "H280": {
-      "en": "Contains gas under pressure; may explode if heated"
+      "en": "Contains gas under pressure; may explode if heated",
+      "complete": true
     },
     "H281": {
-      "en": "Contains refrigerated gas; may cause cryogenic burns or injury"
+      "en": "Contains refrigerated gas; may cause cryogenic burns or injury",
+      "complete": true
     },
     "H290": {
-      "en": "May be corrosive to metals"
+      "en": "May be corrosive to metals",
+      "complete": true
     },
     "H300": {
-      "en": "Fatal if swallowed"
+      "en": "Fatal if swallowed",
+      "complete": true
     },
     "H301": {
-      "en": "Toxic if swallowed"
+      "en": "Toxic if swallowed",
+      "complete": true
     },
     "H302": {
-      "en": "Harmful if swallowed"
+      "en": "Harmful if swallowed",
+      "complete": true
     },
     "H303": {
-      "en": "May be harmful if swallowed"
+      "en": "May be harmful if swallowed",
+      "complete": true
     },
     "H304": {
-      "en": "May be fatal if swallowed and enters airways"
+      "en": "May be fatal if swallowed and enters airways",
+      "complete": true
     },
     "H305": {
-      "en": "May be harmful if swallowed and enters airways"
+      "en": "May be harmful if swallowed and enters airways",
+      "complete": true
     },
     "H310": {
-      "en": "Fatal in contact with skin"
+      "en": "Fatal in contact with skin",
+      "complete": true
     },
     "H311": {
-      "en": "Toxic in contact with skin"
+      "en": "Toxic in contact with skin",
+      "complete": true
     },
     "H312": {
-      "en": "Harmful in contact with skin"
+      "en": "Harmful in contact with skin",
+      "complete": true
     },
     "H313": {
-      "en": "May be harmful in contact with skin"
+      "en": "May be harmful in contact with skin",
+      "complete": true
     },
     "H314": {
-      "en": "Causes severe skin burns and eye damage"
+      "en": "Causes severe skin burns and eye damage",
+      "complete": true
     },
     "H315": {
-      "en": "Causes skin irritation"
+      "en": "Causes skin irritation",
+      "complete": true
     },
     "H316": {
-      "en": "Causes mild skin irritation"
+      "en": "Causes mild skin irritation",
+      "complete": true
     },
     "H317": {
-      "en": "May cause an allergic skin reaction"
+      "en": "May cause an allergic skin reaction",
+      "complete": true
     },
     "H318": {
-      "en": "Causes serious eye damage"
+      "en": "Causes serious eye damage",
+      "complete": true
     },
     "H319": {
-      "en": "Causes serious eye irritation"
+      "en": "Causes serious eye irritation",
+      "complete": true
     },
     "H320": {
-      "en": "Causes eye irritation"
+      "en": "Causes eye irritation",
+      "complete": true
     },
     "H330": {
-      "en": "Fatal if inhaled"
+      "en": "Fatal if inhaled",
+      "complete": true
     },
     "H331": {
-      "en": "Toxic if inhaled"
+      "en": "Toxic if inhaled",
+      "complete": true
     },
     "H332": {
-      "en": "Harmful if inhaled"
+      "en": "Harmful if inhaled",
+      "complete": true
     },
     "H333": {
-      "en": "May be harmful if inhaled"
+      "en": "May be harmful if inhaled",
+      "complete": true
     },
     "H334": {
-      "en": "May cause allergy or asthma symptoms or breathing difficulties if inhaled"
+      "en": "May cause allergy or asthma symptoms or breathing difficulties if inhaled",
+      "complete": true
     },
     "H335": {
-      "en": "May cause respiratory irritation"
+      "en": "May cause respiratory irritation",
+      "complete": true
     },
     "H336": {
-      "en": "May cause drowsiness or dizziness"
+      "en": "May cause drowsiness or dizziness",
+      "complete": true
     },
     "H340": {
-      "en": "May cause genetic defects"
+      "en": "May cause genetic defects",
+      "complete": true
     },
     "H341": {
-      "en": "Suspected of causing genetic defects"
+      "en": "Suspected of causing genetic defects",
+      "complete": true
     },
     "H350": {
-      "en": "May cause cancer"
+      "en": "May cause cancer",
+      "complete": true
     },
     "H351": {
-      "en": "Suspected of causing cancer"
+      "en": "Suspected of causing cancer",
+      "complete": true
     },
     "H360": {
-      "en": "May damage fertility or the unborn child"
+      "en": "May damage fertility or the unborn child",
+      "complete": true
     },
     "H361": {
-      "en": "Suspected of damaging fertility or the unborn child"
+      "en": "Suspected of damaging fertility or the unborn child",
+      "complete": true
     },
     "H362": {
-      "en": "May cause harm to breast-fed children"
+      "en": "May cause harm to breast-fed children",
+      "complete": true
     },
     "H370": {
-      "en": "Causes damage to organs"
+      "en": "Causes damage to organs",
+      "complete": true
     },
     "H371": {
-      "en": "May cause damage to organs"
+      "en": "May cause damage to organs",
+      "complete": true
     },
     "H372": {
-      "en": "Causes damage to organs through prolonged or repeated exposure"
+      "en": "Causes damage to organs through prolonged or repeated exposure",
+      "complete": true
     },
     "H373": {
-      "en": "May cause damage to organs through prolonged or repeated exposure"
+      "en": "May cause damage to organs through prolonged or repeated exposure",
+      "complete": true
     },
     "H400": {
-      "en": "Very toxic to aquatic life"
+      "en": "Very toxic to aquatic life",
+      "complete": true
     },
     "H401": {
-      "en": "Toxic to aquatic life"
+      "en": "Toxic to aquatic life",
+      "complete": true
     },
     "H402": {
-      "en": "Harmful to aquatic life"
+      "en": "Harmful to aquatic life",
+      "complete": true
     },
     "H410": {
-      "en": "Very toxic to aquatic life with long lasting effects"
+      "en": "Very toxic to aquatic life with long lasting effects",
+      "complete": true
     },
     "H411": {
-      "en": "Toxic to aquatic life with long lasting effects"
+      "en": "Toxic to aquatic life with long lasting effects",
+      "complete": true
     },
     "H412": {
-      "en": "Harmful to aquatic life with long lasting effects"
+      "en": "Harmful to aquatic life with long lasting effects",
+      "complete": true
     },
     "H413": {
-      "en": "May cause long lasting harmful effects to aquatic life"
+      "en": "May cause long lasting harmful effects to aquatic life",
+      "complete": true
     },
     "H420": {
-      "en": "Harms public health and the environment by destroying ozone in the upper atmosphere"
+      "en": "Harms public health and the environment by destroying ozone in the upper atmosphere",
+      "complete": true
     },
     "H300+H310": {
-      "en": "Fatal if swallowed or in contact with skin"
+      "en": "Fatal if swallowed or in contact with skin",
+      "complete": true
     },
     "H300+H330": {
-      "en": "Fatal if swallowed or if inhaled"
+      "en": "Fatal if swallowed or if inhaled",
+      "complete": true
     },
     "H310+H330": {
-      "en": "Fatal in contact with skin or if inhaled"
+      "en": "Fatal in contact with skin or if inhaled",
+      "complete": true
     },
     "H300+H310+H330": {
-      "en": "Fatal if swallowed, in contact with skin or if inhaled"
+      "en": "Fatal if swallowed, in contact with skin or if inhaled",
+      "complete": true
     },
     "H301+H311": {
-      "en": "Toxic if swallowed or in contact with skin"
+      "en": "Toxic if swallowed or in contact with skin",
+      "complete": true
     },
     "H301+H331": {
-      "en": "Toxic if swallowed or if inhaled"
+      "en": "Toxic if swallowed or if inhaled",
+      "complete": true
     },
     "H311+H331": {
-      "en": "Toxic in contact with skin or if inhaled"
+      "en": "Toxic in contact with skin or if inhaled",
+      "complete": true
     },
     "H301+H311+H331": {
-      "en": "Toxic if swallowed, in contact with skin or if inhaled"
+      "en": "Toxic if swallowed, in contact with skin or if inhaled",
+      "complete": true
     },
     "H302+H312": {
-      "en": "Harmful if swallowed or in contact with skin"
+      "en": "Harmful if swallowed or in contact with skin",
+      "complete": true
     },
     "H302+H332": {
-      "en": "Harmful if swallowed or if inhaled"
+      "en": "Harmful if swallowed or if inhaled",
+      "complete": true
     },
     "H312+H332": {
-      "en": "Harmful in contact with skin or if inhaled"
+      "en": "Harmful in contact with skin or if inhaled",
+      "complete": true
     },
     "H302+H312+H332": {
-      "en": "Harmful if swallowed, in contact with skin or if inhaled"
+      "en": "Harmful if swallowed, in contact with skin or if inhaled",
+      "complete": true
     },
     "H303+H313": {
-      "en": "May be harmful if swallowed or in contact with skin"
+      "en": "May be harmful if swallowed or in contact with skin",
+      "complete": true
     },
     "H303+H333": {
-      "en": "May be harmful if swallowed or if inhaled"
+      "en": "May be harmful if swallowed or if inhaled",
+      "complete": true
     },
     "H313+H333": {
-      "en": "May be harmful in contact with skin or if inhaled"
+      "en": "May be harmful in contact with skin or if inhaled",
+      "complete": true
     },
     "H303+H313+H333": {
-      "en": "May be harmful if swallowed, in contact with skin or if inhaled"
+      "en": "May be harmful if swallowed, in contact with skin or if inhaled",
+      "complete": true
     },
     "H315+H320": {
-      "en": "Causes skin and eye irritation"
+      "en": "Causes skin and eye irritation",
+      "complete": true
     }
   },
   "precautionary_statements": {
+    "_comment": "complete: false marks statements whose GHS Annex 3 text (section A3.2.3.4) contains a literal placeholder ('...'/'\u2026') that the manufacturer/supplier (or competent authority) must replace with specific wording before the statement is label-ready; complete: true statements can be used as printed. All hazard_statements are complete (Annex 3 defines no placeholders for H-codes).",
     "P101": {
-      "en": "If medical advice is needed, have product container or label at hand."
+      "en": "If medical advice is needed, have product container or label at hand.",
+      "complete": true
     },
     "P102": {
-      "en": "Keep out of reach of children."
+      "en": "Keep out of reach of children.",
+      "complete": true
     },
     "P103": {
-      "en": "Read carefully and follow all instructions."
+      "en": "Read carefully and follow all instructions.",
+      "complete": true
     },
     "P201": {
-      "en": "Obtain special instructions before use."
+      "en": "Obtain special instructions before use.",
+      "complete": true
     },
     "P202": {
-      "en": "Do not handle until all safety precautions have been read and understood."
+      "en": "Do not handle until all safety precautions have been read and understood.",
+      "complete": true
     },
     "P210": {
-      "en": "Keep away from heat, hot surfaces, sparks, open flames and other ignition sources. No smoking."
+      "en": "Keep away from heat, hot surfaces, sparks, open flames and other ignition sources. No smoking.",
+      "complete": true
     },
     "P211": {
-      "en": "Do not spray on an open flame or other ignition source."
+      "en": "Do not spray on an open flame or other ignition source.",
+      "complete": true
     },
     "P212": {
-      "en": "Avoid heating under confinement or reduction of the desensitizing agent."
+      "en": "Avoid heating under confinement or reduction of the desensitizing agent.",
+      "complete": true
     },
     "P220": {
-      "en": "Keep away from clothing and other combustible materials."
+      "en": "Keep away from clothing and other combustible materials.",
+      "complete": true
     },
     "P222": {
-      "en": "Do not allow contact with air."
+      "en": "Do not allow contact with air.",
+      "complete": true
     },
     "P223": {
-      "en": "Do not allow contact with water."
+      "en": "Do not allow contact with water.",
+      "complete": true
     },
     "P230": {
-      "en": "Keep wetted with ..."
+      "en": "Keep wetted with ...",
+      "complete": false
     },
     "P231": {
-      "en": "Handle and store contents under inert gas/..."
+      "en": "Handle and store contents under inert gas/...",
+      "complete": false
     },
     "P232": {
-      "en": "Protect from moisture."
+      "en": "Protect from moisture.",
+      "complete": true
     },
     "P233": {
-      "en": "Keep container tightly closed."
+      "en": "Keep container tightly closed.",
+      "complete": true
     },
     "P234": {
-      "en": "Keep only in original packaging."
+      "en": "Keep only in original packaging.",
+      "complete": true
     },
     "P235": {
-      "en": "Keep cool."
+      "en": "Keep cool.",
+      "complete": true
     },
     "P240": {
-      "en": "Ground and bond container and receiving equipment."
+      "en": "Ground and bond container and receiving equipment.",
+      "complete": true
     },
     "P241": {
-      "en": "Use explosion-proof [electrical/ventilating/lighting/...] equipment."
+      "en": "Use explosion-proof [electrical/ventilating/lighting/...] equipment.",
+      "complete": false
     },
     "P242": {
-      "en": "Use non-sparking tools."
+      "en": "Use non-sparking tools.",
+      "complete": true
     },
     "P243": {
-      "en": "Take action to prevent static discharges."
+      "en": "Take action to prevent static discharges.",
+      "complete": true
     },
     "P244": {
-      "en": "Keep valves and fittings free from oil and grease."
+      "en": "Keep valves and fittings free from oil and grease.",
+      "complete": true
     },
     "P250": {
-      "en": "Do not subject to grinding/shock/friction/...."
+      "en": "Do not subject to grinding/shock/friction/....",
+      "complete": false
     },
     "P251": {
-      "en": "Do not pierce or burn, even after use."
+      "en": "Do not pierce or burn, even after use.",
+      "complete": true
     },
     "P260": {
-      "en": "Do not breathe dust/fume/gas/mist/vapours/spray."
+      "en": "Do not breathe dust/fume/gas/mist/vapours/spray.",
+      "complete": true
     },
     "P261": {
-      "en": "Avoid breathing dust/fume/gas/mist/vapours/spray."
+      "en": "Avoid breathing dust/fume/gas/mist/vapours/spray.",
+      "complete": true
     },
     "P262": {
-      "en": "Do not get in eyes, on skin, or on clothing."
+      "en": "Do not get in eyes, on skin, or on clothing.",
+      "complete": true
     },
     "P263": {
-      "en": "Avoid contact during pregnancy and while nursing."
+      "en": "Avoid contact during pregnancy and while nursing.",
+      "complete": true
     },
     "P264": {
-      "en": "Wash ... thoroughly after handling."
+      "en": "Wash ... thoroughly after handling.",
+      "complete": false
     },
     "P270": {
-      "en": "Do not eat, drink or smoke when using this product."
+      "en": "Do not eat, drink or smoke when using this product.",
+      "complete": true
     },
     "P271": {
-      "en": "Use only outdoors or in a well-ventilated area."
+      "en": "Use only outdoors or in a well-ventilated area.",
+      "complete": true
     },
     "P272": {
-      "en": "Contaminated work clothing should not be allowed out of the workplace."
+      "en": "Contaminated work clothing should not be allowed out of the workplace.",
+      "complete": true
     },
     "P273": {
-      "en": "Avoid release to the environment."
+      "en": "Avoid release to the environment.",
+      "complete": true
     },
     "P280": {
-      "en": "Wear protective gloves/protective clothing/eye protection/face protection/hearing protection/..."
+      "en": "Wear protective gloves/protective clothing/eye protection/face protection/hearing protection/...",
+      "complete": false
     },
     "P282": {
-      "en": "Wear cold insulating gloves and either face shield or eye protection."
+      "en": "Wear cold insulating gloves and either face shield or eye protection.",
+      "complete": true
     },
     "P283": {
-      "en": "Wear fire resistant or flame retardant clothing."
+      "en": "Wear fire resistant or flame retardant clothing.",
+      "complete": true
     },
     "P284": {
-      "en": "[In case of inadequate ventilation] wear respiratory protection."
+      "en": "[In case of inadequate ventilation] wear respiratory protection.",
+      "complete": true
     },
     "P231+P232": {
-      "en": "Handle and store contents under inert gas/.... Protect from moisture."
+      "en": "Handle and store contents under inert gas/.... Protect from moisture.",
+      "complete": false
     },
     "P301": {
-      "en": "IF SWALLOWED:"
+      "en": "IF SWALLOWED:",
+      "complete": true
     },
     "P302": {
-      "en": "IF ON SKIN:"
+      "en": "IF ON SKIN:",
+      "complete": true
     },
     "P303": {
-      "en": "IF ON SKIN (or hair):"
+      "en": "IF ON SKIN (or hair):",
+      "complete": true
     },
     "P304": {
-      "en": "IF INHALED:"
+      "en": "IF INHALED:",
+      "complete": true
     },
     "P305": {
-      "en": "IF IN EYES:"
+      "en": "IF IN EYES:",
+      "complete": true
     },
     "P306": {
-      "en": "IF ON CLOTHING:"
+      "en": "IF ON CLOTHING:",
+      "complete": true
     },
     "P308": {
-      "en": "IF exposed or concerned:"
+      "en": "IF exposed or concerned:",
+      "complete": true
     },
     "P310": {
-      "en": "Immediately call a POISON CENTER/doctor/..."
+      "en": "Immediately call a POISON CENTER/doctor/...",
+      "complete": false
     },
     "P311": {
-      "en": "Call a POISON CENTER/doctor/..."
+      "en": "Call a POISON CENTER/doctor/...",
+      "complete": false
     },
     "P312": {
-      "en": "Call a POISON CENTER/doctor/...if you feel unwell."
+      "en": "Call a POISON CENTER/doctor/...if you feel unwell.",
+      "complete": false
     },
     "P313": {
-      "en": "Get medical advice/attention."
+      "en": "Get medical advice/attention.",
+      "complete": true
     },
     "P314": {
-      "en": "Get medical advice/attention if you feel unwell."
+      "en": "Get medical advice/attention if you feel unwell.",
+      "complete": true
     },
     "P315": {
-      "en": "Get immediate medical advice/attention."
+      "en": "Get immediate medical advice/attention.",
+      "complete": true
     },
     "P320": {
-      "en": "Specific treatment is urgent (see ... on this label)."
+      "en": "Specific treatment is urgent (see ... on this label).",
+      "complete": false
     },
     "P321": {
-      "en": "Specific treatment (see ... on this label)."
+      "en": "Specific treatment (see ... on this label).",
+      "complete": false
     },
     "P330": {
-      "en": "Rinse mouth."
+      "en": "Rinse mouth.",
+      "complete": true
     },
     "P331": {
-      "en": "Do NOT induce vomiting."
+      "en": "Do NOT induce vomiting.",
+      "complete": true
     },
     "P332": {
-      "en": "If skin irritation occurs:"
+      "en": "If skin irritation occurs:",
+      "complete": true
     },
     "P333": {
-      "en": "If skin irritation or rash occurs:"
+      "en": "If skin irritation or rash occurs:",
+      "complete": true
     },
     "P334": {
-      "en": "Immerse in cool water [or wrap in wet bandages]."
+      "en": "Immerse in cool water [or wrap in wet bandages].",
+      "complete": true
     },
     "P335": {
-      "en": "Brush off loose particles from skin."
+      "en": "Brush off loose particles from skin.",
+      "complete": true
     },
     "P336": {
-      "en": "Thaw frosted parts with lukewarm water. Do not rub affected area."
+      "en": "Thaw frosted parts with lukewarm water. Do not rub affected area.",
+      "complete": true
     },
     "P337": {
-      "en": "If eye irritation persists:"
+      "en": "If eye irritation persists:",
+      "complete": true
     },
     "P338": {
-      "en": "Remove contact lenses, if present and easy to do. Continue rinsing."
+      "en": "Remove contact lenses, if present and easy to do. Continue rinsing.",
+      "complete": true
     },
     "P340": {
-      "en": "Remove person to fresh air and keep comfortable for breathing."
+      "en": "Remove person to fresh air and keep comfortable for breathing.",
+      "complete": true
     },
     "P342": {
-      "en": "If experiencing respiratory symptoms:"
+      "en": "If experiencing respiratory symptoms:",
+      "complete": true
     },
     "P351": {
-      "en": "Rinse cautiously with water for several minutes."
+      "en": "Rinse cautiously with water for several minutes.",
+      "complete": true
     },
     "P352": {
-      "en": "Wash with plenty of water/..."
+      "en": "Wash with plenty of water/...",
+      "complete": false
     },
     "P353": {
-      "en": "Rinse skin with water [or shower]."
+      "en": "Rinse skin with water [or shower].",
+      "complete": true
     },
     "P360": {
-      "en": "Rinse immediately contaminated clothing and skin with plenty of water before removing clothes."
+      "en": "Rinse immediately contaminated clothing and skin with plenty of water before removing clothes.",
+      "complete": true
     },
     "P361": {
-      "en": "Take off immediately all contaminated clothing."
+      "en": "Take off immediately all contaminated clothing.",
+      "complete": true
     },
     "P362": {
-      "en": "Take off contaminated clothing."
+      "en": "Take off contaminated clothing.",
+      "complete": true
     },
     "P363": {
-      "en": "Wash contaminated clothing before reuse."
+      "en": "Wash contaminated clothing before reuse.",
+      "complete": true
     },
     "P364": {
-      "en": "And wash it before reuse."
+      "en": "And wash it before reuse.",
+      "complete": true
     },
     "P370": {
-      "en": "In case of fire:"
+      "en": "In case of fire:",
+      "complete": true
     },
     "P371": {
-      "en": "In case of major fire and large quantities:"
+      "en": "In case of major fire and large quantities:",
+      "complete": true
     },
     "P372": {
-      "en": "Explosion risk."
+      "en": "Explosion risk.",
+      "complete": true
     },
     "P373": {
-      "en": "DO NOT fight fire when fire reaches explosives."
+      "en": "DO NOT fight fire when fire reaches explosives.",
+      "complete": true
     },
     "P375": {
-      "en": "Fight fire remotely due to the risk of explosion."
+      "en": "Fight fire remotely due to the risk of explosion.",
+      "complete": true
     },
     "P376": {
-      "en": "Stop leak if safe to do so."
+      "en": "Stop leak if safe to do so.",
+      "complete": true
     },
     "P377": {
-      "en": "Leaking gas fire: Do not extinguish, unless leak can be stopped safely."
+      "en": "Leaking gas fire: Do not extinguish, unless leak can be stopped safely.",
+      "complete": true
     },
     "P378": {
-      "en": "Use ... to extinguish."
+      "en": "Use ... to extinguish.",
+      "complete": false
     },
     "P380": {
-      "en": "Evacuate area."
+      "en": "Evacuate area.",
+      "complete": true
     },
     "P381": {
-      "en": "In case of leakage, eliminate all ignition sources."
+      "en": "In case of leakage, eliminate all ignition sources.",
+      "complete": true
     },
     "P390": {
-      "en": "Absorb spillage to prevent material damage."
+      "en": "Absorb spillage to prevent material damage.",
+      "complete": true
     },
     "P391": {
-      "en": "Collect spillage."
+      "en": "Collect spillage.",
+      "complete": true
     },
     "P301+P310": {
-      "en": "IF SWALLOWED: Immediately call a POISON CENTER/doctor/..."
+      "en": "IF SWALLOWED: Immediately call a POISON CENTER/doctor/...",
+      "complete": false
     },
     "P301+P312": {
-      "en": "IF SWALLOWED: Call a POISON CENTER/doctor/...if you feel unwell."
+      "en": "IF SWALLOWED: Call a POISON CENTER/doctor/...if you feel unwell.",
+      "complete": false
     },
     "P302+P334": {
-      "en": "IF ON SKIN: Immerse in cool water or wrap in wet bandages."
+      "en": "IF ON SKIN: Immerse in cool water or wrap in wet bandages.",
+      "complete": true
     },
     "P302+P352": {
-      "en": "IF ON SKIN: Wash with plenty of water/..."
+      "en": "IF ON SKIN: Wash with plenty of water/...",
+      "complete": false
     },
     "P304+P312": {
-      "en": "IF INHALED: Call a POISON CENTER/doctor/...if you feel unwell."
+      "en": "IF INHALED: Call a POISON CENTER/doctor/...if you feel unwell.",
+      "complete": false
     },
     "P304+P340": {
-      "en": "IF INHALED: Remove person to fresh air and keep comfortable for breathing."
+      "en": "IF INHALED: Remove person to fresh air and keep comfortable for breathing.",
+      "complete": true
     },
     "P306+P360": {
-      "en": "IF ON CLOTHING: Rinse immediately contaminated clothing and skin with plenty of water before removing clothes."
+      "en": "IF ON CLOTHING: Rinse immediately contaminated clothing and skin with plenty of water before removing clothes.",
+      "complete": true
     },
     "P308+P311": {
-      "en": "IF exposed or concerned: Call a POISON CENTER/doctor/..."
+      "en": "IF exposed or concerned: Call a POISON CENTER/doctor/...",
+      "complete": false
     },
     "P308+P313": {
-      "en": "IF exposed or concerned: Get medical advice/attention."
+      "en": "IF exposed or concerned: Get medical advice/attention.",
+      "complete": true
     },
     "P332+P313": {
-      "en": "If skin irritation occurs: Get medical advice/attention."
+      "en": "If skin irritation occurs: Get medical advice/attention.",
+      "complete": true
     },
     "P333+P313": {
-      "en": "If skin irritation or rash occurs: Get medical advice/attention."
+      "en": "If skin irritation or rash occurs: Get medical advice/attention.",
+      "complete": true
     },
     "P336+P315": {
-      "en": "Thaw frosted parts with lukewarm water. Do not rub affected area. Get immediate medical advice/attention."
+      "en": "Thaw frosted parts with lukewarm water. Do not rub affected area. Get immediate medical advice/attention.",
+      "complete": true
     },
     "P337+P313": {
-      "en": "If eye irritation persists: Get medical advice/attention."
+      "en": "If eye irritation persists: Get medical advice/attention.",
+      "complete": true
     },
     "P342+P311": {
-      "en": "If experiencing respiratory symptoms: Call a POISON CENTER/doctor/..."
+      "en": "If experiencing respiratory symptoms: Call a POISON CENTER/doctor/...",
+      "complete": false
     },
     "P361+P364": {
-      "en": "Take off immediately all contaminated clothing and wash it before reuse."
+      "en": "Take off immediately all contaminated clothing and wash it before reuse.",
+      "complete": true
     },
     "P362+P364": {
-      "en": "Take off contaminated clothing and wash it before reuse."
+      "en": "Take off contaminated clothing and wash it before reuse.",
+      "complete": true
     },
     "P370+P376": {
-      "en": "In case of fire: Stop leak if safe to do so."
+      "en": "In case of fire: Stop leak if safe to do so.",
+      "complete": true
     },
     "P370+P378": {
-      "en": "In case of fire: Use ... to extinguish."
+      "en": "In case of fire: Use ... to extinguish.",
+      "complete": false
     },
     "P301+P330+P331": {
-      "en": "IF SWALLOWED: Rinse mouth. Do NOT induce vomiting."
+      "en": "IF SWALLOWED: Rinse mouth. Do NOT induce vomiting.",
+      "complete": true
     },
     "P302+P335+P334": {
-      "en": "IF ON SKIN: Brush off loose particles from skin. Immerse in cool water [or wrap in wet bandages]."
+      "en": "IF ON SKIN: Brush off loose particles from skin. Immerse in cool water [or wrap in wet bandages].",
+      "complete": true
     },
     "P303+P361+P353": {
-      "en": "IF ON SKIN (or hair): Take off immediately all contaminated clothing. Rinse skin with water [or shower]."
+      "en": "IF ON SKIN (or hair): Take off immediately all contaminated clothing. Rinse skin with water [or shower].",
+      "complete": true
     },
     "P305+P351+P338": {
-      "en": "IF IN EYES: Rinse cautiously with water for several minutes. Remove contact lenses, if present and easy to do. Continue rinsing."
+      "en": "IF IN EYES: Rinse cautiously with water for several minutes. Remove contact lenses, if present and easy to do. Continue rinsing.",
+      "complete": true
     },
     "P370+P380+P375": {
-      "en": "In case of fire: Evacuate area. Fight fire remotely due to the risk of explosion."
+      "en": "In case of fire: Evacuate area. Fight fire remotely due to the risk of explosion.",
+      "complete": true
     },
     "P371+P380+P375": {
-      "en": "In case of major fire and large quantities: Evacuate area. Fight fire remotely due to the risk of explosion."
+      "en": "In case of major fire and large quantities: Evacuate area. Fight fire remotely due to the risk of explosion.",
+      "complete": true
     },
     "P370+P372+P380+P373": {
-      "en": "In case of fire: Explosion risk. Evacuate area. DO NOT fight fire when fire reaches explosives."
+      "en": "In case of fire: Explosion risk. Evacuate area. DO NOT fight fire when fire reaches explosives.",
+      "complete": true
     },
     "P401": {
-      "en": "Store in accordance with..."
+      "en": "Store in accordance with...",
+      "complete": false
     },
     "P402": {
-      "en": "Store in a dry place."
+      "en": "Store in a dry place.",
+      "complete": true
     },
     "P403": {
-      "en": "Store in a well-ventilated place."
+      "en": "Store in a well-ventilated place.",
+      "complete": true
     },
     "P404": {
-      "en": "Store in a closed container."
+      "en": "Store in a closed container.",
+      "complete": true
     },
     "P405": {
-      "en": "Store locked up."
+      "en": "Store locked up.",
+      "complete": true
     },
     "P406": {
-      "en": "Store in a corrosion resistant/...container with a resistant inner liner."
+      "en": "Store in a corrosion resistant/...container with a resistant inner liner.",
+      "complete": false
     },
     "P407": {
-      "en": "Maintain air gap between stacks or pallets."
+      "en": "Maintain air gap between stacks or pallets.",
+      "complete": true
     },
     "P410": {
-      "en": "Protect from sunlight."
+      "en": "Protect from sunlight.",
+      "complete": true
     },
     "P411": {
-      "en": "Store at temperatures not exceeding ...\u00b0C/...\u00b0F."
+      "en": "Store at temperatures not exceeding ...\u00b0C/...\u00b0F.",
+      "complete": false
     },
     "P412": {
-      "en": "Do not expose to temperatures exceeding 50 \u00b0C/122 \u00b0F."
+      "en": "Do not expose to temperatures exceeding 50 \u00b0C/122 \u00b0F.",
+      "complete": true
     },
     "P413": {
-      "en": "Store bulk masses greater than ... kg/...lbs at temperatures not exceeding ...\u00b0C/...\u00b0F."
+      "en": "Store bulk masses greater than ... kg/...lbs at temperatures not exceeding ...\u00b0C/...\u00b0F.",
+      "complete": false
     },
     "P420": {
-      "en": "Store separately."
+      "en": "Store separately.",
+      "complete": true
     },
     "P402+P404": {
-      "en": "Store in a dry place. Store in a closed container."
+      "en": "Store in a dry place. Store in a closed container.",
+      "complete": true
     },
     "P403+P233": {
-      "en": "Store in a well-ventilated place. Keep container tightly closed."
+      "en": "Store in a well-ventilated place. Keep container tightly closed.",
+      "complete": true
     },
     "P403+P235": {
-      "en": "Store in a well-ventilated place. Keep cool."
+      "en": "Store in a well-ventilated place. Keep cool.",
+      "complete": true
     },
     "P410+P403": {
-      "en": "Protect from sunlight. Store in a well-ventilated place."
+      "en": "Protect from sunlight. Store in a well-ventilated place.",
+      "complete": true
     },
     "P410+P412": {
-      "en": "Protect from sunlight. Do not expose to temperatures exceeding 50 \u00b0C/122 \u00b0F."
+      "en": "Protect from sunlight. Do not expose to temperatures exceeding 50 \u00b0C/122 \u00b0F.",
+      "complete": true
     },
     "P501": {
-      "en": "Dispose of contents/container to ..."
+      "en": "Dispose of contents/container to ...",
+      "complete": false
     },
     "P502": {
-      "en": "Refer to manufacturer or supplier for information on recovery or recycling."
+      "en": "Refer to manufacturer or supplier for information on recovery or recycling.",
+      "complete": true
     },
     "P503": {
-      "en": "Refer to manufacturer/supplier... for information on disposal/recovery/recycling."
+      "en": "Refer to manufacturer/supplier... for information on disposal/recovery/recycling.",
+      "complete": false
     }
   },
   "hazard_statement_pictograms": {

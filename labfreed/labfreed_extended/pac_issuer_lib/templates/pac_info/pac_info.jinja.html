@@ -27,7 +27,7 @@
             <section>
             <h4>Attributes</h4>
             {% for ag in pac_info.attribute_groups.values() %}
-                {% if ag.key not in hide_attribute_groups %}
+                {% if ag.group_key not in hide_attribute_groups %}
                     {{ pac_macros.attribute_group_block(ag) }}
                 {% endif %}
             {% endfor %}

@@ -1,3 +1,4 @@
+import os
 from urllib.parse import urlparse
 
 import nh3
@@ -12,13 +13,7 @@ from labfreed.pac_attributes.well_known_attribute_keys import (
 )
 from labfreed.pac_cat.pac_cat import PAC_CAT
 from labfreed.trex.facade import DataTable
-from labfreed.utilities.ghs.ghs_statements import (
-    extract_statement_code,
-    hazard_statement_text,
-    pictogram_codes_for_hazard_statement,
-    pictogram_name,
-    precautionary_statement_text,
-)
+from labfreed.utilities.ghs.ghs_statements import pictogram_name
 
 
 def is_pac_id(v: str) -> bool:
@@ -88,44 +83,6 @@ def render_text(value) -> Markup:
     return Markup(nh3.clean(text, tags=_ALLOWED_INLINE_TAGS, attributes={}))
 
 
-def explicit_pictogram_images(pac_info) -> dict[str, str]:
-    '''Maps GHS0x code -> image URL from whatever pictogram attributes the data
-    source directly supplied (PacInfo.safety_pictograms, keyed like
-    "https://labfreed.org/ghs/pictogram/GHS02") - lets a hazard statement row prefer
-    an explicitly-supplied pictogram over the code-derived guess from
-    pictogram_codes_for_hazard_statement, which is only ever an approximation (see
-    developer-docs/design-choices.md).'''
-    images = {}
-    for a in pac_info.safety_pictograms.values():
-        code = a.key.rsplit('/', 1)[-1]
-        value = a.values[0] if isinstance(a.values, list) else a.values
-        if value is not None:
-            images[code] = str(value)
-    return images
-
-
-def hazard_pictogram_codes(pac_info, attributes) -> list[str]:
-    '''Union of GHS0x codes explicitly supplied on pac_info and codes derived from
-    the given hazard/precautionary statement attributes' values (precautionary
-    codes simply contribute nothing - they have no pictogram of their own),
-    deduplicated via a set and sorted by GHS number - meant to be shown once above
-    the statement table rather than repeated per row.'''
-    codes = set(explicit_pictogram_images(pac_info))
-    for a in attributes:
-        for raw in a.value_list:
-            codes.update(pictogram_codes_for_hazard_statement(extract_statement_code(raw)))
-    return sorted(codes)
-
-
-def find_attributes(attribute_groups, keys) -> list:
-    """Look up attributes across all of a PacInfo's groups by well-known key,
-    in `keys` order - skips any key with no match. Lets a template pull a specific
-    handful of attributes (e.g. for a highlighted block) out of whichever group the
-    data source happened to put them in, without needing its own group structure."""
-    by_key = {a.key: a for ag in attribute_groups.values() for a in ag.attributes.values()}
-    return [by_key[k] for k in keys if k in by_key]
-
-
 render_context_utils = {
     "is_url": is_url,
     "is_data_table": is_data_table,
@@ -133,18 +90,15 @@ render_context_utils = {
     "is_reference": is_reference,
     "is_pac_id": is_pac_id,
     "title_format": title_format,
-    "find_attributes": find_attributes,
-    "explicit_pictogram_images": explicit_pictogram_images,
-    "hazard_pictogram_codes": hazard_pictogram_codes,
     "render_text": render_text,
-    "extract_statement_code": extract_statement_code,
-    "hazard_statement_text": hazard_statement_text,
-    "precautionary_statement_text": precautionary_statement_text,
-    "pictogram_codes_for_hazard_statement": pictogram_codes_for_hazard_statement,
     "pictogram_name": pictogram_name,
     "RegulatorySafetyKeys": RegulatorySafetyKeys,
     "DocumentKeys": DocumentKeys,
     "IdentifierKeys": IdentifierKeys,
     "CommercePackagingKeys": CommercePackagingKeys,
     "zip": zip,
+    # gates dev-only details (e.g. an attribute group's data-source origin) that would
+    # be noise on a production digital label - set at blueprint-registration time
+    # (see app_factory.py's _build_jinja_env), not re-read per request.
+    "dev_mode": bool(os.environ.get('DEV')),
 }
