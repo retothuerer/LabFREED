@@ -2,10 +2,10 @@ origin: PERSONAL
 
 config:
 # CAS Search
-- if: $.categories[?(@.key == "-MS")].segments[?(@.key == "CAS")]
+- if: $.pac.categories[?(@.key == "-MS")].segments[?(@.key == "CAS")]
   entries:
   - service_type: userhandover-generic
     service_name: CAS Search
     application_intents:
       - chem-info
-    template_url: https://pubchem.ncbi.nlm.nih.gov/#query={$.categories[?(@.key == "-MS")].segments[?(@.key == 'CAS')].value}
+    template_url: https://pubchem.ncbi.nlm.nih.gov/#query={$.pac.categories[?(@.key == "-MS")].segments[?(@.key == 'CAS')].value}

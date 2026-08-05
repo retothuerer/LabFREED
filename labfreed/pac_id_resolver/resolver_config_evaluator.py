@@ -33,13 +33,13 @@ class ResolverConfigEvaluator:
 
     def evaluate(self, pac, client_info: dict | None = None) -> ServiceGroup:
         '''`client_info` (e.g. `{"language": ..., "location": ...}`) is merged into the
-        Resolver Context alongside the PAC-ID's own fields, so `applicable_if`/`template_url`
-        can reference it as `$.client_info....` - forward-looking, not part of the published
+        Resolver Context as a sibling of `pac`, so `applicable_if`/`template_url` can
+        reference it as `$.client_info....` - forward-looking, not part of the published
         v2 spec (see the PAC-ID-Resolver v3 roadmap, "Resolver Context: beyond just the
         PAC-ID"). Omit it (default) to get exactly today's PAC-ID-only behavior.'''
-        pac_id_json = pac.to_dict()
+        pac_id_json = {'pac': pac.to_dict()}
         if client_info is not None:
-            pac_id_json = {**pac_id_json, 'client_info': client_info}
+            pac_id_json['client_info'] = client_info
         resolver_config_evaluated = ServiceGroup(origin=self._config.origin)
         for block in self._config.config:
             try:

@@ -131,7 +131,7 @@ def test_v2_macros_is_valid():
 
 def test_v2_macros_device_gets_shop_via_macro():
     # same single-quote bracket shorthand issue as cit.yaml:
-    # $.categories['-MD'] never matches, so the macro-based Shop entry never
+    # $.pac.categories['-MD'] never matches, so the macro-based Shop entry never
     # appears for any device PAC-ID today.
     rc = _load(os.path.join(HERE, 'v2_macros.yaml'))
     assert 'Shop' in _service_names(rc, PAC_DEVICE)

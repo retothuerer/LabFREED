@@ -18,7 +18,11 @@ def _entry(**overrides):
 
 
 class _FakePac:
-    ''' Stand-in for a PAC_ID/PAC_CAT object: evaluate_pac_id only ever calls .to_dict(). '''
+    ''' Stand-in for a PAC_ID/PAC_CAT object: evaluate_pac_id only ever calls .to_dict().
+    Note: this returns the PAC-ID's own flat dict - ResolverConfigEvaluator.evaluate()
+    is what nests it under a `pac` key, so callers going through evaluate_pac_id()
+    (below) must write `$.pac....` in their config, while the flat dict passed here
+    stays unwrapped. '''
     def __init__(self, d):
         self._d = d
 
@@ -165,7 +169,7 @@ def test_from_yaml_parses_a_valid_config():
     schema_version: "2.0"
     origin: my-origin
     config:
-      - if: $.issuer == ACME.COM
+      - if: $.pac.issuer == ACME.COM
         entries:
           - service_name: Shop
             application_intents: [view-apinilabs]
@@ -257,33 +261,33 @@ def test_applicable_if_false_literal_is_not_applicable():
 
 def test_applicable_if_jsonpath_present_is_applicable():
     rc = ResolverConfig()
-    _, applicable = ResolverConfigEvaluator(rc)._evaluate_applicable_if({'issuer': 'ACME.COM'}, '$.issuer')
+    _, applicable = ResolverConfigEvaluator(rc)._evaluate_applicable_if({'pac': {'issuer': 'ACME.COM'}}, '$.pac.issuer')
     assert applicable is True
 
 
 def test_applicable_if_jsonpath_absent_is_not_applicable():
     rc = ResolverConfig()
-    _, applicable = ResolverConfigEvaluator(rc)._evaluate_applicable_if({}, '$.issuer')
+    _, applicable = ResolverConfigEvaluator(rc)._evaluate_applicable_if({}, '$.pac.issuer')
     assert applicable is False
 
 
 def test_applicable_if_equality_comparison_true_case_insensitive():
     rc = ResolverConfig()
-    _, applicable = ResolverConfigEvaluator(rc)._evaluate_applicable_if({'issuer': 'acme.com'}, '$.issuer == ACME.COM')
+    _, applicable = ResolverConfigEvaluator(rc)._evaluate_applicable_if({'pac': {'issuer': 'acme.com'}}, '$.pac.issuer == ACME.COM')
     assert applicable is True
 
 
 def test_applicable_if_equality_comparison_false():
     rc = ResolverConfig()
-    _, applicable = ResolverConfigEvaluator(rc)._evaluate_applicable_if({'issuer': 'OTHER.COM'}, '$.issuer == ACME.COM')
+    _, applicable = ResolverConfigEvaluator(rc)._evaluate_applicable_if({'pac': {'issuer': 'OTHER.COM'}}, '$.pac.issuer == ACME.COM')
     assert applicable is False
 
 
 def test_applicable_if_and_or_not_logic():
     rc = ResolverConfig()
-    pac = {'issuer': 'ACME.COM', 'category': '-MD'}
+    pac = {'pac': {'issuer': 'ACME.COM', 'category': '-MD'}}
     _, applicable = ResolverConfigEvaluator(rc)._evaluate_applicable_if(
-        pac, '$.issuer == ACME.COM AND NOT ($.category == "-MC")'
+        pac, '$.pac.issuer == ACME.COM AND NOT ($.pac.category == "-MC")'
     )
     assert applicable is True
 
@@ -303,13 +307,13 @@ def test_evaluate_pac_id_includes_services_from_applicable_blocks():
     yml = '''
     origin: my-origin
     config:
-      - if: $.issuer == ACME.COM
+      - if: $.pac.issuer == ACME.COM
         entries:
           - service_name: Shop
             application_intents: [view-apinilabs]
             service_type: userhandover-generic
             template_url: "https://acme.com/shop"
-      - if: $.issuer == OTHER.COM
+      - if: $.pac.issuer == OTHER.COM
         entries:
           - service_name: Should Not Appear
             application_intents: [view-apinilabs]
@@ -344,7 +348,7 @@ def test_evaluate_pac_id_skips_entries_with_validation_errors():
 
 def test_evaluate_pac_id_expands_url_template_placeholders():
     rc = ResolverConfig(origin='o')
-    block = ResolverConfigBlock(entries=[_entry(template_url='https://example.com/item/{$.name}')])
+    block = ResolverConfigBlock(entries=[_entry(template_url='https://example.com/item/{$.pac.name}')])
     rc.config = [block]
     result = rc.evaluate_pac_id(_FakePac({'name': 'widget'}))
     assert result.services[0].url == 'https://example.com/item/widget'
@@ -352,7 +356,7 @@ def test_evaluate_pac_id_expands_url_template_placeholders():
 
 def test_evaluate_pac_id_url_encodes_special_characters_in_placeholder_values():
     rc = ResolverConfig(origin='o')
-    block = ResolverConfigBlock(entries=[_entry(template_url='https://example.com/{$.q}')])
+    block = ResolverConfigBlock(entries=[_entry(template_url='https://example.com/{$.pac.q}')])
     rc.config = [block]
     result = rc.evaluate_pac_id(_FakePac({'q': 'a b&c=d'}))
     assert result.services[0].url == 'https://example.com/a%20b%26c%3Dd'
@@ -456,18 +460,18 @@ def test_applicable_if_treats_matched_value_as_literal_data_not_code():
 
 def test_applicable_if_supports_quoted_literals_as_reported():
     rc = ResolverConfig()
-    pac = {'issuer': 'APINILABS.COM', 'identifier': [{'value': 'PERSON'}, {'value': 'THOMAS'}]}
-    expr = ("$.issuer == APINILABS.COM AND $.identifier[0].value == 'PERSON'"
-            " AND $.identifier[1].value == 'THOMAS'")
+    pac = {'pac': {'issuer': 'APINILABS.COM', 'identifier': [{'value': 'PERSON'}, {'value': 'THOMAS'}]}}
+    expr = ("$.pac.issuer == APINILABS.COM AND $.pac.identifier[0].value == 'PERSON'"
+            " AND $.pac.identifier[1].value == 'THOMAS'")
     _, applicable = ResolverConfigEvaluator(rc)._evaluate_applicable_if(pac, expr)
     assert applicable is True
 
 
 def test_applicable_if_quoted_literal_mismatch_is_not_applicable():
     rc = ResolverConfig()
-    pac = {'identifier': [{'value': 'PERSON'}]}
+    pac = {'pac': {'identifier': [{'value': 'PERSON'}]}}
     _, applicable = ResolverConfigEvaluator(rc)._evaluate_applicable_if(
-        pac, "$.identifier[0].value == 'ROBOT'"
+        pac, "$.pac.identifier[0].value == 'ROBOT'"
     )
     assert applicable is False
 

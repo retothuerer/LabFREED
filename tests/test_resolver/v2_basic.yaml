@@ -4,7 +4,7 @@ origin: PERSONAL
 
 config:
 # Devices
-- if: $.categories[?(@.key == "-MD")]
+- if: $.pac.categories[?(@.key == "-MD")]
   entries: 
   - service_name: Technical Datasheet
     service_type: userhandover-generic
@@ -18,7 +18,7 @@ config:
     template_url: https://mettorius.com/shop.html
     
 # Substances
-- if: $.categories[?(@.key == "-MS")]
+- if: $.pac.categories[?(@.key == "-MS")]
   entries: 
   - service_name: CoA
     service_type: userhandover-generic
@@ -37,16 +37,16 @@ config:
     template_url: https://mettorius.com/shop.html
     
 # CAS Search
-- if: $.categories[?(@.key == "-MS")].segments[?(@.key == "CAS")]
+- if: $.pac.categories[?(@.key == "-MS")].segments[?(@.key == "CAS")]
   entries:
   - service_name: CAS Search
     service_type: userhandover-generic
     application_intents:
       - chem-info
-    template_url: https://pubchem.ncbi.nlm.nih.gov/#query={$.categories[?(@.key == "-MS")].segments[?(@.key == 'CAS')].value}
+    template_url: https://pubchem.ncbi.nlm.nih.gov/#query={$.pac.categories[?(@.key == "-MS")].segments[?(@.key == 'CAS')].value}
     
   - service_name: Web Search
     service_type: userhandover-generic
     application_intents:
       - chem-info
-    template_url: https://www.google.com/search?q={$.issuer}
+    template_url: https://www.google.com/search?q={$.pac.issuer}

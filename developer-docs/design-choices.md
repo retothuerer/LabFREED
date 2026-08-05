@@ -460,7 +460,7 @@ same pass:
   literal (including the text `"False"`) into a non-empty, therefore truthy, string - so
   `applicable_if: "false"` could never actually evaluate falsy. `_TokenEvaluator` treats
   bare `TRUE`/`FALSE` as real Python booleans instead.
-- Quoted string literals (e.g. `$.identifier[1].value == 'THOMAS'`) previously crashed
+- Quoted string literals (e.g. `$.pac.identifier[1].value == 'THOMAS'`) previously crashed
   the tokenizer with an unhandled `SyntaxError` on the quote character (reported
   upstream against github.com/ApiniLabs/PAC-ID-Resolver) - added a `STRING` token type
   so single- or double-quoted literals (spaces allowed) are valid syntax, compared as
@@ -1859,3 +1859,59 @@ docstring gains the `**Experimental:**` note while undecorated methods on the sa
 class are untouched.
 
 *Investigated 2026-08-04.*
+
+---
+
+## PAC-CAT segment/category context (issuer, issuing system) must be re-derived on every `.segments` access, not cached on the segment instance
+
+**Decision:** While designing per-segment `issuer`/`issuing_system` accessors for
+`CategorySegment` (alongside the existing `derivation_namespace`, for the PAC-CAT
+derivation-namespace-issuing-system work), don't denormalize them onto a segment
+object once and read them back later. `PredefinedCategory.segments`
+(`predefined_categories.py:31-38`, via `_get_segments_canonical`/
+`_get_segments_from_bindings`) and `PAC_CAT.categories` (`pac_cat.py:26-34`) already
+rebuild fresh `CategorySegment`/`Category` instances on *every* access - no caching,
+already relied on elsewhere (see the "no caching" comment in
+`test_PAC_CAT_main_category_and_processor.py`'s `test_main_category_is_the_first_category`).
+Any context tagged onto one instance is gone the moment `.segments`/`.categories` is
+called again, even on the same `PAC_CAT`. So `issuer`/`issuing_system` must be
+recomputed by the rebuild functions themselves, every time they run, from state cached
+on the stable `Category` object the caller actually holds onto - not from state
+stashed on the transient segment objects those functions emit.
+
+**Why:** `derivation_namespace` already gets this half-right, somewhat by accident.
+`_get_segments_from_bindings` reads it off the *original* tagged segment stored in
+`_segment_bindings` (itself cached on the `Category`, set once in
+`_cat_from_cat_segments`), so it survives repeated `.segments` calls. But
+`_get_segments_canonical` (the no-marker path) never threads `derivation_namespace`
+through at all - harmless today only because that path is only ever used when there's
+no marker, so the value is always `None` regardless. Adding `issuer` (needs the base
+PAC-ID's own issuer) and `issuing_system` (needs a *sibling* category, which doesn't
+exist yet when the primary category is built) hits the same gap in a way that's no
+longer harmless by coincidence - both rebuild paths need to actively participate.
+
+**Alternatives considered / why not:**
+
+- Denormalize `issuer`/`issuing_system` directly onto each `CategorySegment` at
+  construction time (the original plan going into this investigation) - rejected once
+  the rebuild-on-every-access behavior was confirmed by reading `predefined_categories.py`:
+  it would work for the one set of segment objects built during that pass, but the very
+  next `.segments` access on the same category discards them and builds new, untagged
+  ones.
+- Add real memoization to `.segments`/`.categories` so tagging-once would actually
+  stick - rejected: a bigger, unrelated architectural change. `PAC_CAT`s are designed to
+  be re-derived from `identifier` at any time, and existing tests already depend on
+  that no-caching behavior; caching risks staleness after direct field mutation. Out of
+  scope for this feature.
+
+**Impact:** `Category` needs a new `_issuer: str` `PrivateAttr` (the base PAC-ID's
+issuer, cached once when the category is built, alongside the existing
+`_segment_bindings`/`_use_position_preserving_segments`) that both
+`_get_segments_canonical` and `_get_segments_from_bindings` stamp onto every segment
+they construct. For `issuing_system`, the primary category needs a
+`{namespace: Category}` lookup, built by `PAC_CAT.categories`'s second pass after
+every category exists, that those same rebuild functions consult per-segment by that
+segment's own `derivation_namespace` - rather than trying to attach a resolved
+`Category` reference directly to a segment instance.
+
+*Investigated 2026-08-05.*

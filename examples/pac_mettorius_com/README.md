@@ -49,7 +49,7 @@ config:
     service_type: attributes-generic
     application_intents: [attributes]
     template_url: "${BASE_URL}/attributes"   # <- points back at this app's own attribute server, below
-- if: $.issuer == METTORIUS.COM AND $.categories[0].key == -MD
+- if: $.pac.issuer == METTORIUS.COM AND $.pac.categories[0].key == -MD
   entries:
   - service_name: Manual
     service_type: userhandover-generic

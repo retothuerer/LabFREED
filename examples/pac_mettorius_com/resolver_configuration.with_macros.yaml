@@ -12,7 +12,7 @@ config:
     application_intents:
     - attributes
     template_url: "${BASE_URL}/attributes"
-- if: $.issuer == METTORIUS.COM AND $.categories[0].key == -MD
+- if: $.pac.issuer == METTORIUS.COM AND $.pac.categories[0].key == -MD
   entries:
   - service_name: Manual
     service_type: userhandover-generic

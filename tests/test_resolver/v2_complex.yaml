@@ -4,7 +4,7 @@ origin: PERSONAL
 
 config:
 # CAS Search
-- if: ($.categories[?(@.key == "-MS")] OR $.categories[?(@.key == "-MD")]) AND True AND NOT $.categories[?(@.key == "-MS")].segments[0].value == BAL-CLEAN2 # note 0 based indexing
+- if: ($.pac.categories[?(@.key == "-MS")] OR $.pac.categories[?(@.key == "-MD")]) AND True AND NOT $.pac.categories[?(@.key == "-MS")].segments[0].value == BAL-CLEAN2 # note 0 based indexing
   entries:
   - service_name: Chem Inventory
     service_type: userhandover-generic
@@ -20,7 +20,7 @@ config:
       - chem-info
     template_url: https://www.google.com
 
-- if: $.categories[?(@.key == "-MS")].segments[0].value == BAL-CLEAN2
+- if: $.pac.categories[?(@.key == "-MS")].segments[0].value == BAL-CLEAN2
   entries: 
   - service_name: MSDS
     service_type: userhandover-generic

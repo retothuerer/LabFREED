@@ -43,9 +43,37 @@ PAC-CAT:
 PAC-ID-Resolver:
   repo: https://github.com/ApiniLabs/PAC-ID-Resolver
   branch: main
-  commit: null
-  checked_on: null
-  notes: null
+  commit: aff11a5d082484920f6f9b8ccef0177651b3a96d  # PROVISIONAL, see note
+  checked_on: "2026-08-05"
+  notes: >
+    Scoped pass, not a full conformance pass: implemented the "pac node in
+    ResolverContext" change only (README.md/faq.md/jsonpath_examples.md's
+    Resolver Context now nests issuer/identifier/categories/extensions/as_url
+    under a `pac` key, with client_info as a sibling). ResolverConfigEvaluator.evaluate()
+    (resolver_config_evaluator.py) now builds `{'pac': pac.to_dict(), ...}`
+    instead of a flat dict; every example/test resolver config YAML and the
+    inline expressions/dicts in test_resolver_config_v2.py were rewritten to
+    `$.pac....` accordingly (tests/test_resolver/, examples/, and the mirrored
+    files in ../labfreed-webtools).
+
+    Also removed: the spec's `derivation_namespace` field on `pac.categories[].segments[]`
+    (README.md's Resolver Context table + the jsonpath_examples.md worked
+    example) -- per-instruction decision that exposing it via the resolver
+    doesn't add enough value, made while this spec is still under active
+    development. LabFREED's own `CategorySegment.derivation_namespace` is
+    expected to become non-serialized to match, as part of the separate
+    PAC-CAT issuing-namespace work (not yet done as of this pin).
+
+    Other known-implementation-bugs.md items (bare True/False truthiness,
+    cit.yaml single-quote bracket keys, non-scalar template_url substitution,
+    required `if`, case-insensitive filter comparisons) are untouched --
+    out of scope for this pass, still open.
+
+    PROVISIONAL PIN: commit aff11a5 is the head of branch
+    `resolver-configuration-v2` (PR/merge status to origin/main not confirmed
+    from here -- no GitHub access in this environment). Next
+    check-spec-conformance run should fetch origin/main and correct this pin
+    once merged.
 
 PAC-Attributes:
   repo: https://github.com/ApiniLabs/PAC-Attributes

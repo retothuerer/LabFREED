@@ -147,7 +147,7 @@ class PAC_ID(LabFREED_BaseModel):
     @property
     def as_url(self) -> str:
         '''The PAC-ID re-serialized as a URL string, including extensions - matches to_url().
-        Part of the PAC-ID Resolver's Resolver Context JSON contract (`$.as_url`).'''
+        Part of the PAC-ID Resolver's Resolver Context JSON contract (`$.pac.as_url`).'''
         return self.to_url()
     
     def __str__(self):
