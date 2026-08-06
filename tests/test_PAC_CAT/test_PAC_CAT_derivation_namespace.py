@@ -8,6 +8,12 @@ any category segments that follow a `+<namespace>` marker belong to the *primary
 category - they must not start a new category, and must not be attributed to a
 second (issuing system) category, even if one appears between the primary category
 and the marker.
+
+A second category MAY still follow, though, once that block's own segments are
+done - per "Identifying the issuing system of a derivation", it identifies the
+issuing system *for that specific derivation*, scoped only to it (as opposed to a
+second category preceding any marker, which is the PAC-ID's own top-level issuing
+system, unscoped).
 '''
 import pytest
 
@@ -173,6 +179,162 @@ def test_forced_notation_never_changes_category_structure_across_a_marker():
         )
         assert reparsed.get_category('-DR').id == '1234'
         assert reparsed.get_category('-PS').processor_code == 'LABCROSS'
+
+
+# ---------------------------------------------------------------------------
+# Issuing system for a specific derivation ("Identifying the issuing system of
+# a derivation") - a second category MAY follow a +<namespace> block's own
+# segments, scoped only to that block. Unlike the recalc example above (a
+# top-level issuing system that simply precedes a marker), this category comes
+# AFTER the marker's own segments and must not be folded into the primary
+# category the way it would if it preceded the marker.
+# ---------------------------------------------------------------------------
+
+def test_issuing_system_after_marker_does_not_appear_in_categories():
+    ''' Spec's own worked example: -PS/240:ALIQUOT-TRACKER, appearing after
+    +ACMELABS.COM's own segment (250:1), is a "second category" per the spec's
+    grammar, but it's scoped to that one derivation, not to the PAC-ID itself -
+    so unlike a top-level issuing system, it does NOT show up in `.categories`
+    (which stays capped at primary + the PAC-ID's own issuing system, exactly as
+    before). It's only reachable via `.derivation_issuing_systems`. '''
+    pac = from_url("HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/20:500ML/21:9876/+ACMELABS.COM/250:1/-PS/240:ALIQUOT-TRACKER")
+    assert [c.key for c in pac.categories] == ['-MS']
+    assert pac.get_category('-PS') is None
+
+    primary = pac.get_category('-MS')
+    assert primary.aliquot == '1'
+
+
+def test_issuing_system_after_marker_is_reachable_via_derivation_issuing_systems():
+    pac = from_url("HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/20:500ML/21:9876/+ACMELABS.COM/250:1/-PS/240:ALIQUOT-TRACKER")
+    issuing = pac.derivation_issuing_systems['ACMELABS.COM']
+    assert isinstance(issuing, Processor_Software)
+    assert issuing.processor_code == 'ALIQUOT-TRACKER'
+    assert issuing.derivation_namespace == 'ACMELABS.COM'
+
+
+def test_issuing_system_after_marker_short_notation():
+    pac = from_url("HTTPS://PAC.OMNIZYME.COM/-MS/AMYLASE/AB9876/500ML/9876/+ACMELABS.COM/1/-PS/240:ALIQUOT-TRACKER")
+    assert [c.key for c in pac.categories] == ['-MS']
+    assert pac.get_category('-MS').aliquot == '1'
+    assert pac.derivation_issuing_systems['ACMELABS.COM'].processor_code == 'ALIQUOT-TRACKER'
+
+
+def test_no_derivation_issuing_systems_when_none_present():
+    pac = from_url(valid_base + "-DR/21:1234/-PS/240:LABCROSS")
+    assert pac.derivation_issuing_systems == {}
+
+
+def test_category_derivation_namespace_is_none_for_primary_category():
+    pac = from_url("HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/20:500ML/21:9876/+ACMELABS.COM/250:1/-PS/240:ALIQUOT-TRACKER")
+    assert pac.get_category('-MS').derivation_namespace is None
+
+
+def test_category_derivation_namespace_is_none_for_a_top_level_issuing_system():
+    ''' A -PS that precedes any marker is the PAC-ID's own issuing system, not
+    scoped to any derivation - same behavior as the existing recalc example,
+    just now also asserted via the new field. '''
+    pac = from_url(valid_base + "-DR/21:1234/-PS/240:LABCROSS/+ACMELABS.COM/RECALC:1")
+    assert pac.get_category('-PS').derivation_namespace is None
+
+
+def test_category_derivation_namespace_not_included_in_serialization():
+    pac = from_url(valid_base + "-DR/21:1234/-PS/240:LABCROSS/+ACMELABS.COM/RECALC:1/-PS/240:ALIQUOT-TRACKER")
+    d = pac.to_dict()
+    assert all('derivation_namespace' not in c for c in d['categories'])
+
+
+def test_derivation_issuing_systems_not_included_in_serialization():
+    pac = from_url(valid_base + "-DR/21:1234/-PS/240:LABCROSS/+ACMELABS.COM/RECALC:1/-PS/240:ALIQUOT-TRACKER")
+    d = pac.to_dict()
+    assert 'derivation_issuing_systems' not in d
+
+
+def test_top_level_issuing_system_and_derived_issuing_system_coexist():
+    ''' Combines the existing recalc example (top-level -PS/LABCROSS before the
+    marker, which stays in `.categories`) with a second, derivation-scoped
+    issuing system after it (which does not) - the two must stay distinct
+    rather than one overwriting or shadowing the other. '''
+    pac = from_url(valid_base + "-DR/21:1234/-PS/240:LABCROSS/+ACMELABS.COM/RECALC:1/-PS/240:ALIQUOT-TRACKER")
+    assert [c.key for c in pac.categories] == ['-DR', '-PS']
+
+    top_level = pac.get_category('-PS')
+    assert top_level.derivation_namespace is None
+    assert top_level.processor_code == 'LABCROSS'
+
+    derived = pac.derivation_issuing_systems['ACMELABS.COM']
+    assert derived.derivation_namespace == 'ACMELABS.COM'
+    assert derived.processor_code == 'ALIQUOT-TRACKER'
+
+
+def test_chained_derivations_each_get_their_own_scoped_issuing_system():
+    ''' Two separate +<namespace> blocks, each with its own issuing system -
+    per spec, each block's issuing system is scoped only to that block. '''
+    pac = from_url(
+        "HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/20:500ML/21:9876"
+        "/+ACMELABS.COM/250:1/-PS/240:TRACKER1"
+        "/+OTHERLABS.COM/NOTE:2/-PS/240:TRACKER2"
+    )
+    assert [c.key for c in pac.categories] == ['-MS']
+    assert set(pac.derivation_issuing_systems.keys()) == {'ACMELABS.COM', 'OTHERLABS.COM'}
+
+    first = pac.derivation_issuing_systems['ACMELABS.COM']
+    assert first.derivation_namespace == 'ACMELABS.COM'
+    assert first.processor_code == 'TRACKER1'
+
+    second = pac.derivation_issuing_systems['OTHERLABS.COM']
+    assert second.derivation_namespace == 'OTHERLABS.COM'
+    assert second.processor_code == 'TRACKER2'
+
+
+def test_round_trip_default_notation_issuing_system_after_marker():
+    url_in = "HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/20:500ML/21:9876/+ACMELABS.COM/250:1/-PS/240:ALIQUOT-TRACKER"
+    pac = from_url(url_in)
+    assert pac.to_url() == url_in
+
+
+def test_round_trip_forced_long_notation_issuing_system_after_marker():
+    url_in = "HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/20:500ML/21:9876/+ACMELABS.COM/250:1/-PS/240:ALIQUOT-TRACKER"
+    pac = from_url(url_in)
+    assert pac.to_url(use_short_notation=False) == url_in
+
+
+def test_forced_notation_never_changes_category_structure_for_issuing_system_after_marker():
+    ''' Same "hard requirement" as the recalc example's round-trip test above, but
+    for the new case: reparsing forced-notation output must still produce the
+    same primary category plus the same derivation-scoped issuing system. '''
+    url_in = "HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/20:500ML/21:9876/+ACMELABS.COM/250:1/-PS/240:ALIQUOT-TRACKER"
+    pac = from_url(url_in)
+    for use_short_notation in (True, False):
+        forced = pac.to_url(use_short_notation=use_short_notation)
+        reparsed = from_url(forced)
+        assert [c.key for c in reparsed.categories] == ['-MS'], (
+            f"use_short_notation={use_short_notation}: expected [-MS] after "
+            f"reparsing {forced!r}, got {[c.key for c in reparsed.categories]}"
+        )
+        assert reparsed.get_category('-MS').aliquot == '1'
+        issuing = reparsed.derivation_issuing_systems.get('ACMELABS.COM')
+        assert issuing is not None, f"use_short_notation={use_short_notation}: no issuing system after reparsing {forced!r}"
+        assert issuing.processor_code == 'ALIQUOT-TRACKER'
+
+
+def test_forced_notation_never_changes_category_structure_for_chained_derivations():
+    url_in = (
+        "HTTPS://PAC.OMNIZYME.COM/-MS/240:AMYLASE/10:AB9876/20:500ML/21:9876"
+        "/+ACMELABS.COM/250:1/-PS/240:TRACKER1"
+        "/+OTHERLABS.COM/NOTE:2/-PS/240:TRACKER2"
+    )
+    pac = from_url(url_in)
+    for use_short_notation in (True, False):
+        forced = pac.to_url(use_short_notation=use_short_notation)
+        reparsed = from_url(forced)
+        assert [c.key for c in reparsed.categories] == ['-MS'], (
+            f"use_short_notation={use_short_notation}: reparsing {forced!r} gave "
+            f"{[c.key for c in reparsed.categories]}"
+        )
+        assert set(reparsed.derivation_issuing_systems.keys()) == {'ACMELABS.COM', 'OTHERLABS.COM'}
+        assert reparsed.derivation_issuing_systems['ACMELABS.COM'].processor_code == 'TRACKER1'
+        assert reparsed.derivation_issuing_systems['OTHERLABS.COM'].processor_code == 'TRACKER2'
 
 
 

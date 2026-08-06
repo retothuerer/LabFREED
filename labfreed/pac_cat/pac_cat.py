@@ -25,15 +25,80 @@ class PAC_CAT(PAC_ID):
     '''
     @computed_field
     @property
-    def categories(self) -> list[Category]: 
-        '''The categories present in the PAC-ID's identifier'''
-        category_segments = self._split_segments_by_category(self.identifier)
-        categories = list()
-        for c in category_segments:
-            categories.append(self._cat_from_cat_segments(c))
+    def categories(self) -> list[Category]:
+        '''The categories present in the PAC-ID's identifier - the primary category
+        and, if present, the PAC-ID's own top-level issuing system. Capped at these
+        two: a derivation's own issuing system (PAC-CAT "Identifying the issuing
+        system of a derivation") is scoped to that one derivation, not to the
+        PAC-ID itself, so it does not appear here - see `derivation_issuing_systems`.'''
+        categories, _ = self._partition_categories(self._build_all_categories())
         return categories
-    
-    
+
+    @property
+    def derivation_issuing_systems(self) -> dict[str, Category]:
+        '''The issuing system used for each derivation (`+<namespace>` block) that
+        declared one, keyed by namespace - see PAC-CAT "Identifying the issuing
+        system of a derivation". Empty if none of the PAC-ID's derivations declared
+        one. Python-only convenience: not part of the Resolver Context JSON contract
+        (unlike `categories`), since including it there would mean serializing a
+        redundant, differently-shaped side channel through the same `to_dict()`
+        that resolver configs are written against.'''
+        _, derivation_issuing_systems = self._partition_categories(self._build_all_categories())
+        return derivation_issuing_systems
+
+    def _build_all_categories(self) -> list[Category]:
+        ''' @private All categories in original split order: the primary category
+        first, then every "second category" group in the order it appears in the
+        identifier - the PAC-ID's own top-level issuing system (if any) and each
+        derivation's own issuing system (if any) are peers here, even though only
+        the primary and the top-level one are ever exposed via the public
+        `.categories` (see `_partition_categories`). Kept separate from
+        `_partition_categories` because `_resolve_identifier_for_notation` needs
+        this full, unfiltered set too - forced-notation re-keying must account for
+        every category actually present in `self.identifier`, not just the
+        publicly-exposed ones. '''
+        groups = self._split_segments_by_category(self.identifier)
+        return [self._cat_from_cat_segments(segs, derivation_namespace=scope) for scope, segs in groups]
+
+    def _partition_categories(self, all_categories: list[Category]) -> tuple[list[Category], dict[str, Category]]:
+        ''' @private Splits `all_categories` (in original split order) into the
+        public `.categories` (every group scoped to `None` - i.e. everything
+        *except* a derivation's own issuing system, so a PAC-ID with several
+        plain, marker-free categories keeps working exactly as before) and the
+        derivation-scoped issuing systems dict. Also wires the primary category's
+        `_issuing_systems_by_scope`, so `CategorySegment.issuing_system` resolves
+        correctly for segments built fresh on every `.segments` access
+        (`PredefinedCategory._get_segments_canonical`/`_get_segments_from_bindings`).
+
+        Two kinds of segment are never rebuilt, though, and so need stamping here
+        directly instead of relying on a rebuild path to do it on demand: a
+        primary category that ISN'T a `PredefinedCategory` (base `Category.segments`
+        just returns its stored `_segments` as-is, never rebuilding), and
+        `additional_segments`/unbound `_segment_bindings` entries on a
+        `PredefinedCategory` primary (custom segments the rebuild paths pass
+        through unchanged rather than reconstructing - see `_get_segments_from_bindings`). '''
+        categories = [c for c in all_categories if c.derivation_namespace is None]
+        derivation_issuing_systems = {c.derivation_namespace: c for c in all_categories if c.derivation_namespace is not None}
+
+        primary = categories[0] if categories else None
+        if primary is not None:
+            # Whichever unscoped category comes right after the primary (if any)
+            # is the PAC-ID's own top-level issuing system - same positional
+            # convention `.processor` already uses.
+            top_level_issuing = categories[1] if len(categories) > 1 else None
+            issuing_by_scope = dict(derivation_issuing_systems)
+            if top_level_issuing is not None:
+                issuing_by_scope[None] = top_level_issuing
+            primary._issuing_systems_by_scope = issuing_by_scope
+            if isinstance(primary, PredefinedCategory):
+                for seg, alias in primary._segment_bindings or []:
+                    if alias is None:
+                        seg._issuing_system = issuing_by_scope.get(seg.derivation_namespace)
+            else:
+                for seg in primary._segments:
+                    seg._issuing_system = issuing_by_scope.get(seg.derivation_namespace)
+
+        return categories, derivation_issuing_systems
 
     @computed_field
     @property
@@ -75,38 +140,56 @@ class PAC_CAT(PAC_ID):
         would move that later category's key segment to right after the marker -
         which, on reparsing, incorrectly redirects it into the primary category too,
         collapsing two categories into one.
+
+        Uses `_build_all_categories()` rather than the public `.categories` - a
+        derivation-scoped issuing system needs its own cursor/omit-lookup entry
+        here too, even though it's excluded from `.categories` itself (see
+        `_partition_categories`), since it's still a real category physically
+        present in `self.identifier` that needs correct re-keying.
         '''
-        categories = self.categories
+        all_categories = self._build_all_categories()
         cursors = [
             iter(cat._segment_bindings) if isinstance(cat, PredefinedCategory) else None
-            for cat in categories
+            for cat in all_categories
         ]
         omit_lookup = [
             cat._omit_key_for_alias(use_short_notation) if isinstance(cat, PredefinedCategory) else None
-            for cat in categories
+            for cat in all_categories
         ]
-
-        derivation_idx = next((i for i, s in enumerate(self.identifier) if s.is_derivation_namespace), None)
 
         out = []
         owner = -1
-        for i, seg in enumerate(self.identifier):
-            if derivation_idx is not None and i >= derivation_idx:
-                owner = 0 if categories else -1
+        primary_mode = True
+        for seg in self.identifier:
+            if seg.is_derivation_namespace:
+                # Mirrors _split_segments_by_category: a marker redirects
+                # subsequent segments back to the primary category (owner 0)
+                # without touching `owner` itself - `owner` must keep counting
+                # from wherever it left off, so a *later* "-" (e.g. a second
+                # derivation's own issuing system) still gets the next index,
+                # not one that collides with an earlier category. Unlike a
+                # category-key segment below, the marker itself DOES still
+                # consume a binding-cursor slot (`_cat_from_cat_segments` binds
+                # it to `(seg, None)`) - falling through rather than
+                # `continue`-ing keeps that slot in sync with every segment
+                # after it.
+                primary_mode = True
             elif seg.value.startswith('-'):
                 owner += 1
+                primary_mode = False
                 out.append(seg)
                 continue
 
-            if owner < 0 or cursors[owner] is None:
+            this_owner = 0 if primary_mode else owner
+            if this_owner < 0 or this_owner >= len(cursors) or cursors[this_owner] is None:
                 out.append(seg)
                 continue
 
-            _, alias = next(cursors[owner], (seg, None))
+            _, alias = next(cursors[this_owner], (seg, None))
             if alias is None:
                 out.append(seg)
             else:
-                key = None if omit_lookup[owner].get(alias) else alias
+                key = None if omit_lookup[this_owner].get(alias) else alias
                 out.append(IDSegment(key=key, value=seg.value))
         return out
     
@@ -131,8 +214,13 @@ class PAC_CAT(PAC_ID):
         return PAC_ID(issuer=self.issuer, identifier=self.identifier)
         
             
-    @classmethod
-    def _cat_from_cat_segments(cls, segments:list[IDSegment]) -> Category:
+    def _cat_from_cat_segments(self, segments: list[IDSegment], derivation_namespace: str | None = None) -> Category:
+        ''' Builds one `Category` from one group of `_split_segments_by_category`'s
+        output. `derivation_namespace` is that group's own scope (`None` for the
+        primary category and for the PAC-ID's own top-level issuing system, a real
+        namespace for a derivation's own issuing system) - stamped onto the
+        returned `Category` itself, alongside the base PAC-ID's `issuer` every
+        category needs regardless of scope (see `CategorySegment.issuer`). '''
         segments = segments.copy()
         category_key = segments[0].value
         segments.pop(0)
@@ -152,13 +240,19 @@ class PAC_CAT(PAC_ID):
             if seg.is_derivation_namespace:
                 current_namespace = seg.value[1:]
                 has_marker = True
-            tagged_segments.append(CategorySegment(key=seg.key, value=seg.value, derivation_namespace=current_namespace))
+            tagged_seg = CategorySegment(key=seg.key, value=seg.value)
+            tagged_seg._derivation_namespace = current_namespace
+            tagged_seg._issuer = self.issuer
+            tagged_segments.append(tagged_seg)
         segments = tagged_segments
 
         known_cat = category_key_to_class_map.get(category_key)
 
         if not known_cat:
-            return Category(key=category_key, segments=segments)
+            cat = Category(key=category_key, segments=segments)
+            cat._derivation_namespace = derivation_namespace
+            cat._issuer = self.issuer
+            return cat
 
         field_aliases = [
             field_info.alias
@@ -225,35 +319,66 @@ class PAC_CAT(PAC_ID):
         # place, corrupting who-added-what attribution - so original ordering must be
         # preserved instead.
         cat._use_position_preserving_segments = has_marker
+        cat._derivation_namespace = derivation_namespace
+        cat._issuer = self.issuer
         return cat
 
     @staticmethod
-    def _split_segments_by_category(segments:list[IDSegment]) -> list[list[IDSegment]]:
-        category_segments = list()
-        c = list()
-        # Once a derivation namespace segment (`+<namespace>`) appears, every segment
-        # from there on belongs to the *primary* (first) category - it MUST NOT start a
-        # new category and MUST NOT be attributed to a subsequent issuing-system category,
-        # even if it looks like one (PAC-CAT "derivation namespace" section).
-        derivation_idx = next((i for i, s in enumerate(segments) if s.is_derivation_namespace), None)
+    def _split_segments_by_category(segments: list[IDSegment]) -> list[tuple[str | None, list[IDSegment]]]:
+        ''' Splits `segments` into per-category groups, in original order, paired
+        with each group's derivation-namespace scope: the primary category is
+        always first (scope irrelevant - `_cat_from_cat_segments` ignores it for
+        that group), followed by zero or more "second category" groups - each
+        either the PAC-ID's own top-level issuing system (scope `None`, appears
+        before any `+<namespace>` marker) or one specific derivation's issuing
+        system (scope = that namespace, appears after that block's own segments -
+        PAC-CAT "Identifying the issuing system of a derivation").
 
-        for i, s in enumerate(segments):
-            if derivation_idx is not None and i >= derivation_idx:
-                if not category_segments:
-                    category_segments.append([])
-                category_segments[0].append(s)
+        Any segment that isn't itself a category-key ('-...') or marker ('+...')
+        folds into the primary category while `primary_mode` is active - active
+        again immediately after every marker, until the next '-' category-key
+        segment reopens issuing-system mode. This is what keeps a derivation's own
+        segments in the primary category (PAC-CAT "derivation namespace" section)
+        while still letting a '-' *after* those segments start a real, separate
+        category instead of being swallowed too.
+
+        Before the very first '-' (i.e. before the primary category itself has
+        even been opened), `primary_mode` does NOT apply - any stray segment there
+        is discarded exactly as it always was, not folded into a category that
+        doesn't exist yet. Without this distinction, an identifier with no
+        category segments at all (e.g. a plain PAC-ID's whole identifier) would
+        wrongly get a synthetic, empty-keyed "category", and `PAC_Parser` would
+        never fall back from `PAC_CAT` to a plain `PAC_ID` for it. '''
+        category_segments: list[list[IDSegment]] = []
+        scopes: list[str | None] = []
+        current: list[IDSegment] = []
+        current_scope = None
+        primary_mode = False
+
+        for s in segments:
+            if s.is_derivation_namespace:
+                current_scope = s.value[1:]
+                if category_segments:
+                    primary_mode = True
+                    category_segments[0].append(s)
+                else:
+                    current.append(s)
                 continue
-            # new category starts with "-"
+
             if s.value.startswith('-'):
-                c = [s]
-                category_segments.append(c)
+                current = [s]
+                category_segments.append(current)
+                scopes.append(current_scope)
+                primary_mode = False
+                continue
+
+            if primary_mode:
+                category_segments[0].append(s)
             else:
-                c.append(s)
+                current.append(s)
 
-        # first cat can be empty > remove
-        category_segments = [c for c in category_segments if len(c) > 0]
-
-        return category_segments
+        # first cat can be empty > remove (keeping scopes in sync)
+        return [(scope, segs) for scope, segs in zip(scopes, category_segments) if segs]
     
     
     @model_validator(mode='after')

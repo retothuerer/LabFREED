@@ -44,7 +44,10 @@ class PredefinedCategory(Category, ABC):
     def _get_segments_canonical(self, use_short_notation=False) -> list[CategorySegment]:
         ''' Known fields in schema order, then any custom segments - the long-standing
         reconstruction used when no derivation marker is involved (see
-        `_use_position_preserving_segments`).'''
+        `_use_position_preserving_segments`). Every field-derived segment built here
+        gets `_issuer` stamped from `self._issuer` - there's no marker in this path,
+        so `derivation_namespace`/`issuing_system` are correctly left at their
+        defaults (None) for all of them.'''
         segments = []
         can_omit_keys = use_short_notation # keeps track of whether keys can still be omitted. That is the case when the segment recommendation is followed
         for field_name, field_info in type(self).model_fields.items():
@@ -55,7 +58,9 @@ class PredefinedCategory(Category, ABC):
                     key = None
                 else:
                     key = field_info.alias
-                segments.append(CategorySegment(key= key, value= value)  )
+                seg = CategorySegment(key=key, value=value)
+                seg._issuer = self._issuer
+                segments.append(seg)
             else:
                 can_omit_keys = False
         if self.additional_segments:
@@ -66,7 +71,10 @@ class PredefinedCategory(Category, ABC):
         ''' Re-emits the originally parsed segments in their original order, only
         adjusting whether known fields carry an explicit key - so custom segments and
         derivation namespace markers stay exactly where they were, instead of being
-        moved after all known fields.'''
+        moved after all known fields. Every freshly built segment gets `_issuer`/
+        `_issuing_system` re-stamped from `self` here, every call - `.segments`
+        rebuilds fresh each access (see design-choices.md), so neither can be set
+        once and relied on to persist on a specific segment instance.'''
         omit_key_for_alias = self._omit_key_for_alias(use_short_notation)
 
         segments = []
@@ -75,7 +83,11 @@ class PredefinedCategory(Category, ABC):
                 segments.append(seg)
             else:
                 key = None if omit_key_for_alias.get(alias) else alias
-                segments.append(CategorySegment(key=key, value=seg.value, derivation_namespace=seg.derivation_namespace))
+                new_seg = CategorySegment(key=key, value=seg.value)
+                new_seg._derivation_namespace = seg.derivation_namespace
+                new_seg._issuer = self._issuer
+                new_seg._issuing_system = self._issuing_systems_by_scope.get(seg.derivation_namespace)
+                segments.append(new_seg)
         return segments
 
     def _omit_key_for_alias(self, use_short_notation) -> dict:

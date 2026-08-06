@@ -12,12 +12,40 @@ _category_key_pattern = r'-[A-Za-z]+'
 class CategorySegment(IDSegment):
     ''' An id segment as it appears within a PAC-CAT category, tagged with which
     derivation namespace (if any) contributed it - see PAC-CAT "Segments added via
-    a derivation namespace" section. '''
-    derivation_namespace: str | None = None
-    ''' The namespace that added this segment via a `+<namespace>` marker (without the
-    leading `+`), or None if it was part of the identifier as issued by the primary
-    issuer. The marker segment itself never appears as its own entry in a category's
-    `.segments` - once every segment is tagged, it would just be redundant noise. '''
+    a derivation namespace" section.
+
+    `derivation_namespace`/`issuer`/`issuing_system` are all private-attr-backed,
+    Python-only convenience - none of the three are constructor kwargs, and none
+    are part of serialization (`to_dict()`/the Resolver Context JSON). They're
+    wired in by `PAC_CAT` (`_cat_from_cat_segments`, `_partition_categories`)
+    after parsing, not set directly by callers. '''
+    _derivation_namespace: str | None = PrivateAttr(default=None)
+    _issuer: str = PrivateAttr(default=None)
+    _issuing_system: 'Category | None' = PrivateAttr(default=None)
+
+    @property
+    def derivation_namespace(self) -> str | None:
+        ''' The namespace that added this segment via a `+<namespace>` marker (without
+        the leading `+`), or None if it was part of the identifier as issued by the
+        primary issuer. The marker segment itself never appears as its own entry in a
+        category's `.segments` - once every segment is tagged, it would just be
+        redundant noise. '''
+        return self._derivation_namespace
+
+    @property
+    def issuer(self) -> str:
+        ''' The domain that added this segment - `derivation_namespace` if it was
+        added via a `+<namespace>` marker, otherwise the PAC-ID's own issuer. '''
+        return self._derivation_namespace or self._issuer
+
+    @property
+    def issuing_system(self) -> 'Category | None':
+        ''' The issuing-system category scoped to this segment's own derivation
+        (or the PAC-ID's own top-level issuing system, if this segment wasn't
+        added via a derivation namespace) - see PAC-CAT "Identifying the issuing
+        system of a derivation" and `PAC_CAT.derivation_issuing_systems`. None if
+        no such category is present. '''
+        return self._issuing_system
 
 
 class Category(LabFREED_BaseModel):
@@ -28,12 +56,26 @@ class Category(LabFREED_BaseModel):
     key:str
     '''The category key, e.g. "-MD"'''
     _segments: list[CategorySegment] = PrivateAttr(default_factory=list)
-
+    _derivation_namespace: str | None = PrivateAttr(default=None)
+    _issuer: str = PrivateAttr(default=None)
+    _issuing_systems_by_scope: dict = PrivateAttr(default_factory=dict)
+    ''' @private Only meaningfully populated on the primary category
+    (`PAC_CAT._partition_categories`) - maps a derivation namespace (or `None`
+    for the PAC-ID's own top-level issuing system) to the `Category` a segment
+    with that `derivation_namespace` should report as `.issuing_system`. '''
 
     @computed_field
     @property
     def segments(self) -> list[CategorySegment]:
         return self._segments
+
+    @property
+    def derivation_namespace(self) -> str | None:
+        ''' Which `+<namespace>` block this category is scoped to, if it is an
+        issuing-system category for one specific derivation (PAC-CAT
+        "Identifying the issuing system of a derivation") - `None` for the
+        primary category and for the PAC-ID's own top-level issuing system. '''
+        return self._derivation_namespace
 
     def has_derivation_segments(self) -> bool:
         '''Whether any segment in this category was added via a derivation

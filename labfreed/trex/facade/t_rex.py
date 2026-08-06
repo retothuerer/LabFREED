@@ -209,11 +209,10 @@ def _error_value_from_python_type(v:str):
 def _trex_segment_to_python_type(v):
     '''Converts a TREX segment to a python value. Note the segment key must be handles outside.'''
     if isinstance(v, NumericSegment):
-        num_val = _trex_value_to_python_type(v)
-        if num_val is None:
+        if not v.value:
             return None
         unit = ucum_bridge.ucum_for_unece_code(v.type)
-        return Quantity(value=num_val, unit=unit)
+        return Quantity.from_str_value(v.value, unit)
     
     # value segments are derived from their respective value type
     elif isinstance(v, ValueSegment):
@@ -226,7 +225,7 @@ def _trex_segment_to_python_type(v):
             for e, h in zip(row, v.column_headers):
                 if isinstance(e, NumericValue) and e.value:
                     unit = ucum_bridge.ucum_for_unece_code(h.type)
-                    r.append(Quantity(value=e.value, unit=unit))
+                    r.append(Quantity.from_str_value(e.value, unit))
                 else:
                     r.append(_trex_value_to_python_type(e))
             table.append(r)
