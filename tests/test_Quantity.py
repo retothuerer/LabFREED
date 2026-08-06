@@ -63,6 +63,16 @@ def test_print_significant_digits():
         
         
         
+def test_repr_does_not_recurse_infinitely():
+    # __repr__ currently calls self.__repr__() instead of self.__str__()/f"{self}" -
+    # infinite recursion until RecursionError. Any code path that reprs a Quantity
+    # (e.g. Pydantic's default __str__ on a model holding one, which repr()s each
+    # field) crashes. Found via pac-buchi-com-landingpage rendering a DataTable
+    # containing Quantity cells through Jinja's `str(value)`.
+    q = Quantity(value=5, unit='kg')
+    assert repr(q) == f'Quantity: {q}'
+
+
 def test_find_significant_digits():
     tests = [
             ('111.11', -2),

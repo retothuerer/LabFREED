@@ -156,7 +156,7 @@ class Quantity(BaseModel):
         return f"{val} {unit_symbol}"
 
     def __repr__(self):
-        return f'Quantity: {self.__repr__()}'
+        return f'Quantity: {self.__str__()}'
 
 
 
