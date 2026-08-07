@@ -557,6 +557,28 @@ cross-reference a `T-REX` key against an IRI vocabulary.
 
 ---
 
+## Make `device.jinja.html` less generic - per-device-type page variants
+
+`pac_issuer_lib/templates/pac_info/device.jinja.html` renders every `-MD`
+(device/instrument) item through the same one-size-fits-all layout - the generic
+`card.info_card`, then blanket `service_group_block`/`attribute_group_block`/
+`attached_data_block` loops - regardless of what kind of device it actually is.
+
+This is the "device page" slice of a broader direction already sketched for
+`pac_info`/`pac_issuer_lib` rendering generally: split by `-MD`/`-MS`/`-MC`/etc.
+primary category into dedicated page variants, with a specific-with-fallback
+sub-variant layer for narrower device types (e.g. a BÜCHI SpeedExtractor extraction
+run vs. a generic instrument), consolidated shared CSS reused across variants instead
+of new per-variant stylesheets, and a separate minimal "item summary card" servable
+standalone/HTMX-embeddable. None of that has started - `pac-buchi-com-landingpage`'s
+`pac_info.e800_run` flag (gating the generic info card out for E-800 extraction runs)
+is the only workaround in place today.
+
+Not scoped yet - flagging so the "device page specifically" slice of that direction
+isn't lost track of.
+
+---
+
 ## Pending removals - deprecated symbols scheduled for v2.0
 
 Per the `versioning` skill's deprecation policy, everything below carries a "Deprecated

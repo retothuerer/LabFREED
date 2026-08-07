@@ -11,11 +11,13 @@
 
     <div
         id="page-root"
-        hx-get="{{slow_content_url}}"   
+        hx-get="{{slow_content_url}}"
         hx-trigger="load"
         hx-target="#page-root"
         hx-swap="outerHTML"
         hx-push-url="false"
+        hx-request='{"timeout": 10000}'
+        hx-on::timeout="htmx.ajax('GET', '{{timeout_url}}', {target: '#page-root', swap: 'outerHTML'})"
     >
         {% block landing_page_placeholder %}
         <div class="lf-content-container">

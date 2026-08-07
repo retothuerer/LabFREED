@@ -344,12 +344,18 @@ class IssuerFlaskAppFactory():
         @bp_landing_page.get('/<path:path>')
         def pac_issuer_landingpage(path):
             base = request.blueprint.replace('.landing_page','')
-            slow_content_url = base + '/slow_content/' + path 
-            
+            slow_content_url = base + '/slow_content/' + path
+            timeout_url = base + '/timeout'
+
             return render_from_bp(bp,
                         "pac_issuer_landing_page_skeleton.jinja.html",
-                        slow_content_url=slow_content_url
-                        ) 
+                        slow_content_url=slow_content_url,
+                        timeout_url=timeout_url
+                        )
+
+        @bp_landing_page.get('/timeout')
+        def pac_issuer_landing_page_timeout():
+            return render_from_bp(bp, 'pac_issuer_error.jinja.html', msg="The request timed out. Please try again."), 408
             
         @bp_landing_page.get('/<path:anything>/slow_content/<path:path>')
         @bp_landing_page.get('/slow_content/<path:path>')
@@ -472,6 +478,14 @@ class IssuerFlaskAppFactory():
             # (fixed at create_blueprint() time), so building it once here - instead
             # of on every render_from_bp() call - avoids rebuilding the loader/globals/
             # template cache from scratch on every single request and card fetch.
+
+            # create_app() sets this on app.config, but create_blueprint() is also
+            # called directly (e.g. multi-issuer apps registering several blueprints on
+            # one bare Flask app) without ever going through create_app() - so templates
+            # relying on config.get('feature_flags') (e.g. the DEV debug banner in
+            # pac_issuer_landing_page.jinja.html) would otherwise see a missing key.
+            state.app.config.setdefault('feature_flags', {})
+
             env = jinja2.Environment(
                 loader=bp.jinja_loader,
                 autoescape=jinja2.select_autoescape(['html', 'htm', 'xml', 'xhtml']),
