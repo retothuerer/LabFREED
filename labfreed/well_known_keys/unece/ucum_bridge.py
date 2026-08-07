@@ -178,14 +178,18 @@ def ucum_for_unece_code(code: str) -> str:
     )
 
 
-# Manual reverse of _normalize_unece_symbol's non-ASCII rewrites, so the handful of
-# common symbols it produces (temperature, ohm) pretty-print correctly even without the
-# optional 'units' extra - unlike arbitrary UCUM expressions, these are unambiguous 1:1
-# lookups that don't need pint's dimensional analysis.
+# Common atomic UCUM units whose pretty form isn't just the raw string - covers
+# _normalize_unece_symbol's non-ASCII rewrites (temperature, ohm) plus a few other
+# single-token units seen often enough in lab data (angstrom) to be worth hardcoding.
+# Unlike arbitrary UCUM expressions, these are unambiguous 1:1 lookups - each verified
+# against pint's own `:~P` rendering - so they don't need pint's dimensional analysis to
+# get right.
 _UCUM_PRETTY_FALLBACK = {
     'Cel': '°C',
     '[degF]': '°F',
+    '[degR]': '°R',
     '[ohm]': 'Ω',
+    'Ao': 'Å',
 }
 
 
