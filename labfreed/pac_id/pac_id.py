@@ -145,10 +145,19 @@ class PAC_ID(LabFREED_BaseModel):
 
     @computed_field
     @property
-    def as_url(self) -> str:
+    def serialized_as_url_including_extensions(self) -> str:
         '''The PAC-ID re-serialized as a URL string, including extensions - matches to_url().
-        Part of the PAC-ID Resolver's Resolver Context JSON contract (`$.pac.as_url`).'''
+        Part of the PAC-ID Resolver's Resolver Context JSON contract
+        (`$.pac.serialized_as_url_including_extensions`).'''
         return self.to_url()
+
+    @computed_field
+    @property
+    def serialized_as_url_without_extensions(self) -> str:
+        '''The PAC-ID re-serialized as a URL string, omitting extensions - matches
+        to_url(include_extensions=False). Part of the PAC-ID Resolver's Resolver
+        Context JSON contract (`$.pac.serialized_as_url_without_extensions`).'''
+        return self.to_url(include_extensions=False)
     
     def __str__(self):
         return self.to_url()
