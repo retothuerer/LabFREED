@@ -10,7 +10,7 @@
 
 <div class="lf-content-container" >
 
-    {% if config.get('feature_flags').get('DEV') %}
+    {% if config.get('feature_flags',{}).get('DEV') %}
     <div style="background:#fffae6;color:#665200;font:12px monospace;padding:4px 8px;border-bottom:1px solid #e6d9a3;">{{ content_template }}</div>
     {% endif %}
 

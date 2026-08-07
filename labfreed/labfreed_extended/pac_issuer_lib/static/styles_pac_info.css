@@ -312,9 +312,25 @@
 
 
 
+/* Loading placeholder logo - flips around the Y axis as a spinner while the
+   real content is fetched via htmx (see landing_page_placeholder block). */
+.lf-loading-logo {
+    max-height: 100px;
+    max-width: 150px;
+    height: auto;
+    width: 4.75em;
+    animation: lf-loading-logo-flip 1.4s ease-in-out infinite;
+}
+
+@keyframes lf-loading-logo-flip {
+    0% { transform: rotateY(0deg); }
+    100% { transform: rotateY(360deg); }
+}
+
+
 .stacked-flex{
-    display:flex; 
-    flex-direction:column; 
+    display:flex;
+    flex-direction:column;
     gap:10px;
 }
 

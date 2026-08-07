@@ -19,8 +19,9 @@
     >
         {% block landing_page_placeholder %}
         <div class="lf-content-container">
-            <h1>Loading</h1>
-            <marquee>Please Wait ...</marquee>
+            
+            <img src="{{ resolve_static_image('loading_logo') }}" alt="Loading" class="lf-loading-logo"><br>
+            <b>Loading</b>
         </div>
         {% endblock %}
 
