@@ -178,12 +178,27 @@ def ucum_for_unece_code(code: str) -> str:
     )
 
 
+# Manual reverse of _normalize_unece_symbol's non-ASCII rewrites, so the handful of
+# common symbols it produces (temperature, ohm) pretty-print correctly even without the
+# optional 'units' extra - unlike arbitrary UCUM expressions, these are unambiguous 1:1
+# lookups that don't need pint's dimensional analysis.
+_UCUM_PRETTY_FALLBACK = {
+    'Cel': '°C',
+    '[degF]': '°F',
+    '[ohm]': 'Ω',
+}
+
+
 def pretty_print_ucum(unit: str) -> str:
     '''Human-readable rendering of a UCUM unit (e.g. for display, not for wire format).
 
-    Requires HAS_UCUM_SUPPORT - raises UcumSupportError otherwise.
+    Uses HAS_UCUM_SUPPORT (pint) when available, for a fully general rendering. Without
+    it, falls back to a small hardcoded table of common symbols (see
+    _UCUM_PRETTY_FALLBACK); raises UcumSupportError for anything outside that table.
     '''
-    if not HAS_UCUM_SUPPORT:
-        raise UcumSupportError(f"Cannot pretty-print UCUM unit {unit!r} automatically.")
-    q = _registry().from_ucum(unit)
-    return f'{q.units:~P}'
+    if HAS_UCUM_SUPPORT:
+        q = _registry().from_ucum(unit)
+        return f'{q.units:~P}'
+    if unit in _UCUM_PRETTY_FALLBACK:
+        return _UCUM_PRETTY_FALLBACK[unit]
+    raise UcumSupportError(f"Cannot pretty-print UCUM unit {unit!r} automatically.")

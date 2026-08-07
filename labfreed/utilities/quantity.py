@@ -144,16 +144,25 @@ class Quantity(BaseModel):
             val = str(self.value)
         return val
 
+    @property
+    def unit_display(self) -> str:
+        ''' Human-readable unit for display (e.g. '°C' for the UCUM code 'Cel'), via
+        ucum_bridge.pretty_print_ucum. Empty string if the quantity is dimensionless, or
+        if no pretty rendering is available (neither pint nor a hardcoded fallback) -
+        falls back to the raw UCUM string with '.' rendered as the UCUM multiplication
+        dot '·', so display never raises.
+        '''
+        if not self.unit or self.unit in ["1", "dimensionless"]:
+            return ""
+        try:
+            return ucum_bridge.pretty_print_ucum(self.unit)
+        except ucum_bridge.UcumSupportError:
+            return self.unit.replace('.', '·')
+
     def __str__(self):
-        unit_symbol = self.unit
-        if self.unit in [ "1", "dimensionless"] or not self.unit:
-            unit_symbol = ""
-        elif ucum_bridge.HAS_UCUM_SUPPORT:
-            unit_symbol = ucum_bridge.pretty_print_ucum(self.unit)
-        else:
-            unit_symbol = unit_symbol.replace('.', '·')
         val = self.value_as_str()
-        return f"{val} {unit_symbol}"
+        unit = self.unit_display
+        return f"{val} {unit}" if unit else val
 
     def __repr__(self):
         return f'Quantity: {self.__str__()}'

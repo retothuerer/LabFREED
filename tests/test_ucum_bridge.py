@@ -90,3 +90,14 @@ def test_blankspace_and_caret_are_rejected_without_units_extra(bad_unit, without
 def test_pretty_print_requires_units_extra(without_ucum_support):
     with pytest.raises(ucum_bridge.UcumSupportError):
         ucum_bridge.pretty_print_ucum('kg/m3')
+
+
+@pytest.mark.parametrize(("unit", "expected"), [
+    ('Cel', '°C'),
+    ('[degF]', '°F'),
+    ('[ohm]', 'Ω'),
+])
+def test_pretty_print_falls_back_for_known_symbols_without_units_extra(unit, expected, without_ucum_support):
+    # These are the same three non-ASCII symbols _normalize_unece_symbol special-cases on
+    # the way in - unambiguous 1:1 lookups, so no need for pint's dimensional analysis.
+    assert ucum_bridge.pretty_print_ucum(unit) == expected
