@@ -6,7 +6,7 @@ from pathlib import Path
 import re
 import secrets
 import socket
-from typing import Any, Protocol
+from typing import Any, Callable, Protocol
 from uuid import uuid4
 from jinja2 import ChoiceLoader, FileSystemLoader
 import jinja2
@@ -32,6 +32,8 @@ from labfreed.pac_attributes.server.attribute_data_sources import AttributeGroup
 from labfreed.pac_attributes.server.translation_data_sources import TranslationDataSource, DictTranslationDataSource, Terms
 
 from labfreed.labfreed_extended.app.pac_info.pac_info import PacInfo
+from labfreed.labfreed_extended.pac_issuer_lib.lib.renderer_config import RendererConfig
+from labfreed.labfreed_extended.pac_issuer_lib.lib.processor import default_processor_from_pac_extraction
 from labfreed.pac_id_resolver.service_availability import check_service
 from labfreed.pac_id_resolver.services import Service
 from labfreed.labfreed_extended.pac_issuer_lib.lib.render_predicates import render_context_utils
@@ -88,10 +90,10 @@ class PacInfoExtender(Protocol):
 
 class IssuerFlaskAppFactory():
     @classmethod
-    def create_app( cls, 
+    def create_app( cls,
                     issuer:str,
-                    site_meta:SiteMeta|None = None, 
-                    attribute_data:AttributeData|None = None, 
+                    site_meta:SiteMeta|None = None,
+                    attribute_data:AttributeData|None = None,
                     keep_duplicate_attributes:Literal["all", "first", "last"] = "all",
                     path_to_custom_resources:str|None = None,
                     app_secret:str|None = None,
@@ -99,7 +101,9 @@ class IssuerFlaskAppFactory():
                     resolver_macros:dict[str, str] = None,
                     use_issuer_resolver_config=False,
                     feature_flags:dict|None = None,
-                    attribute_server_http_client=None):
+                    attribute_server_http_client=None,
+                    renderer_config:RendererConfig|None = None,
+                    processor_from_pac:Callable[[PacInfo], str|None] = default_processor_from_pac_extraction):
         
         app =  Flask(__name__, static_folder=None, static_url_path='/static') 
         
@@ -122,7 +126,9 @@ class IssuerFlaskAppFactory():
                                     pac_info_extender=pac_info_extender,
                                     resolver_macros=resolver_macros,
                                     use_issuer_resolver_config = use_issuer_resolver_config,
-                                    attribute_server_http_client=attribute_server_http_client)
+                                    attribute_server_http_client=attribute_server_http_client,
+                                    renderer_config=renderer_config,
+                                    processor_from_pac=processor_from_pac)
         app.register_blueprint(bp)
         
         # origins="*" + supports_credentials=True is a spec-invalid combination
@@ -147,14 +153,16 @@ class IssuerFlaskAppFactory():
     def create_blueprint(   cls,
                             issuer:str,
                             as_multi_issuer_app:bool,
-                            site_meta:SiteMeta|None = None, 
-                            attribute_data:AttributeData|None = None, 
+                            site_meta:SiteMeta|None = None,
+                            attribute_data:AttributeData|None = None,
                             keep_duplicate_attributes:Literal["all", "first", "last"] = "all",
                             path_to_custom_resources:str|None = None,
                             pac_info_extender:PacInfoExtender|None = None,
                             resolver_macros:dict[str, str] = None,
                             use_issuer_resolver_config=False,
-                            attribute_server_http_client=None):
+                            attribute_server_http_client=None,
+                            renderer_config:RendererConfig|None = None,
+                            processor_from_pac:Callable[[PacInfo], str|None] = default_processor_from_pac_extraction):
         
         logging.info('initializing Blueprint')
         
@@ -324,6 +332,8 @@ class IssuerFlaskAppFactory():
         # add the pac_info analyzer, too
         bp._pac_info_extender = pac_info_extender
         bp._site_meta = site_meta
+        bp._renderer_config = RendererConfig.labfreed_defaults().merge(renderer_config)
+        bp._processor_from_pac = processor_from_pac
 
         @bp_landing_page.get('/')
         def index():
@@ -363,19 +373,26 @@ class IssuerFlaskAppFactory():
             if a := bp._pac_info_extender:
                 a:PacInfoExtender
                 pac_info = a.extend(pac_info)
-                
-            hide_attribute_groups = [] 
-            
+
+            # both resolved once, in Python, before rendering - see renderer_config.py /
+            # processor.py. processor_pac_id is set first since a RendererRule predicate
+            # could plausibly want to look at it.
+            pac_info.processor_pac_id = bp._processor_from_pac(pac_info)
+            content_template = bp._renderer_config.resolve_page_template(pac_info)
+
+            hide_attribute_groups = []
+
             pac_card_url_for = partial(url_for,f'{issuer_name}.landing_page.pac_card')
-            
+
             trace_id = uuid4() # used to trace calls to links ( espeially action links)
             session['trace_id']= trace_id
 
             return render_from_bp(
                         bp,
                         "pac_issuer_landing_page.jinja.html",
-                        pac=pac_id, 
-                        pac_info = pac_info, 
+                        pac=pac_id,
+                        pac_info = pac_info,
+                        content_template = content_template,
                         hide_attribute_groups=hide_attribute_groups,
                         pac_card_url_for = pac_card_url_for,
                         trace_id = trace_id

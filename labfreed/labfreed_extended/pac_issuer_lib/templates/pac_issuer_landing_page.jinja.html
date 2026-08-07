@@ -1,19 +1,20 @@
 
 
-{# Category picks the preferred landing-page content: -MS (Material_Substance,
-   i.e. chemicals) gets the CLP digital label; everything else falls back to the
-   generic info page. An issuer that wants a different pairing (or a page for another
-   category, e.g. -MD) overrides this file directly - same mechanism acme_labs already
-   uses for its own templates. See developer-docs/design-choices.md. #}
+{# content_template is resolved once, in Python, by RendererConfig.resolve_page_template()
+   (see lib/renderer_config.py and app_factory.py's landing-page route) - an ordered,
+   predicate-based rule list ("last match wins"), not a hardcoded if/else. LabFREED
+   ships defaults (-MS -> digital_label, -MD -> device, -DR -> run_page, else the
+   generic pac_info page); an issuer app registers its own additional rules via
+   IssuerFlaskAppFactory(renderer_config=...) without needing to touch this file. #}
 {% block page_main_content  %}
 
 <div class="lf-content-container" >
 
-    {% if pac_info and pac_info.main_category and pac_info.main_category.key == '-MS' %}
-        {% include "pac_info/digital_label.jinja.html" %}
-    {% else %}
-        {% include "pac_info/pac_info.jinja.html" %}
+    {% if config.get('feature_flags').get('DEV') %}
+    <div style="background:#fffae6;color:#665200;font:12px monospace;padding:4px 8px;border-bottom:1px solid #e6d9a3;">{{ content_template }}</div>
     {% endif %}
+
+    {% include content_template|default('pac_info/pac_info.jinja.html') %}
 
 </div>
 {% endblock %}

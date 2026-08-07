@@ -79,6 +79,13 @@ class PacInfo(BaseModel):
     user_handovers: list[ServiceGroup] = Field(default_factory=list)
     actions: list[ServiceGroup] = Field(default_factory=list)
     attribute_groups:dict[str, AttributeGroup] = Field(default_factory=dict)
+
+    processor_pac_id: PAC_ID | None = None
+    '''PAC-ID of whatever "processor" (often, not always, a device)
+    produced this record - e.g. the instrument that generated a -DR run record. Finding
+    it is issuer-convention-dependent, not a PAC-CAT guarantee, so this is populated by
+    an explicitly-injected function (see IssuerFlaskAppFactory's processor_from_pac
+    parameter, default in pac_issuer_lib/lib/processor.py) rather than computed here.'''
     
     
     # info about pac-id

@@ -1,0 +1,64 @@
+{# Shared base for instrument/processor "run record" pages (-DR). run_view() provides
+   the title, download button and embedded processor reference card; the record-type-
+   specific body is supplied by the caller via {% call %}. See run_page.jinja.html for
+   the generic fallback, and an issuer's own dedicated run templates for specific ones. #}
+
+{% import "pac_info/base-components.jinja.html" as pac_macros with context %}
+
+{% macro qty(q) -%}
+{%- if q is none -%}&mdash;{%- else -%}{{ q.value_as_str() }}{% if q.unit_display %} {{ q.unit_display }}{% endif %}{%- endif -%}
+{%- endmacro %}
+
+
+{% macro run_view(title, processor_pac_id) %}
+    <link rel="stylesheet" type="text/css" href="{{ url_for_within_issuer('static', filename='styles_run.css') }}">
+    <section class="lf-info-block lf-run">
+        {{ run_header(title) }}
+        {{ instrument_info_box(processor_pac_id) }}
+        {{ caller() }}
+    </section>
+{% endmacro %}
+
+
+{% macro run_header(title) %}
+    <div class="lf-run-header">
+        <div>
+            <h1>{{ title }}</h1>
+        </div>
+        <button type="button" class="btn btn-primary-action no-print" onclick="window.print()">Download PDF</button>
+    </div>
+{% endmacro %}
+
+
+{% macro instrument_info_box(processor_pac_id) %}
+    {% if processor_pac_id %}
+    <div class="lf-run-instrument-ref">
+        {{ pac_macros.reference(processor_pac_id, card_request_params={'card_type': 'small'}, target_class='lf-card-embedded', display_label=False) }}
+    </div>
+    {% endif %}
+{% endmacro %}
+
+
+{% macro stat_group(title, rows) %}
+    <div class="lf-run-stat-group">
+        {% if title %}<div class="lf-run-stat-group__title">{{ title }}</div>{% endif %}
+        {% for label, actual, set_val in rows %}
+        <div class="lf-run-stat-row">
+            <span class="lf-run-stat-row__label">{{ label }}</span>
+            <span class="lf-run-stat-row__value num">{{ actual }}{% if set_val is not none %} <span class="lf-run-set-value">of {{ set_val }}</span>{% endif %}</span>
+        </div>
+        {% endfor %}
+    </div>
+{% endmacro %}
+
+
+{# A single-box instrument view: one flat group of readings, no sub-groups. Used by
+   record types that report just one run (not multiple positions) - e.g. Rotavapor,
+   Spray Dryer. Notification lists (or any other issuer-specific content) are the
+   caller's own concern - render them alongside run_box(), not inside it, since
+   notification rendering is issuer-specific, not generic. #}
+{% macro run_box(rows) %}
+    <div class="lf-info-card lf-run-box">
+        {{ stat_group(none, rows) }}
+    </div>
+{% endmacro %}

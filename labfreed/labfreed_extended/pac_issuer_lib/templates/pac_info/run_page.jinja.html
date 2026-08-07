@@ -1,0 +1,16 @@
+{# Generic -DR (Data_Result / "run") page: title/download-button/processor-reference
+   chrome from run_macros.jinja.html, with the SUM payload (if any) rendered as a plain
+   T-REX table. This is the fallback for any -DR record with no more specific
+   (issuer-registered) dedicated template - see renderer_config.py. An issuer with a
+   dedicated view for a specific record type registers a more specific RendererRule
+   that wins via "last match wins"; this file is never modified per-issuer. #}
+
+{% import "pac_info/run_macros.jinja.html" as run_macros with context %}
+{% import "pac_info/base-components.jinja.html" as pac_macros with context %}
+
+{% set title = 'Run' + (' ' + pac_info.main_category.id if pac_info.main_category and pac_info.main_category.id else '') %}
+{% call run_macros.run_view(title, pac_info.processor_pac_id) %}
+    {% if pac_info.attached_data.get('SUM') %}
+        {{ pac_macros.attached_data_trex('SUM', pac_info.attached_data.get('SUM')) }}
+    {% endif %}
+{% endcall %}
