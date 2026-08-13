@@ -194,7 +194,7 @@ pac.print_validation_messages()
 >> Validation Results                                                              
 >> ┌──────────────────────────────────────────────────────────────────────────────┐
 >> │ **RECOMMENDATION** in id segment value bal500                                │
->> │ Characters 'l','a','b' should not be used., Characters SHOULD be limited to  │
+>> │ Characters 'a','b','l' should not be used., Characters SHOULD be limited to  │
 >> │ upper case letters (A-Z), numbers (0-9), '-' and '+'                         │
 >> │                                                                              │
 >> │ HTTPS://PAC.METTORIUS.COM/-MD/👉bal👈500/@1234                               │
@@ -206,7 +206,7 @@ pac.print_validation_messages()
 >> │ HTTPS://PAC.METTORIUS.COM/-MD/bal500/👉@👈1234                               │
 >> ├──────────────────────────────────────────────────────────────────────────────┤
 >> │ **RECOMMENDATION** in id segment value bal500                                │
->> │ Characters 'l','a','b' should not be used., Characters SHOULD be limited to  │
+>> │ Characters 'a','b','l' should not be used., Characters SHOULD be limited to  │
 >> │ upper case letters (A-Z), numbers (0-9), '-' and '+'                         │
 >> │                                                                              │
 >> │ HTTPS://PAC.METTORIUS.COM/-MD/👉bal👈500/@1234                               │
@@ -218,7 +218,7 @@ pac.print_validation_messages()
 >> │ HTTPS://PAC.METTORIUS.COM/-MD/bal500/👉@👈1234                               │
 >> ├──────────────────────────────────────────────────────────────────────────────┤
 >> │ **RECOMMENDATION** in id segment value bal500                                │
->> │ Characters 'l','a','b' should not be used., Characters SHOULD be limited to  │
+>> │ Characters 'a','b','l' should not be used., Characters SHOULD be limited to  │
 >> │ upper case letters (A-Z), numbers (0-9), '-' and '+'                         │
 >> │                                                                              │
 >> │ HTTPS://PAC.METTORIUS.COM/-MD/👉bal👈500/@1234                               │
@@ -355,7 +355,7 @@ trex.print_validation_messages()
 >> Validation Results                                            
 >> ┌────────────────────────────────────────────────────────────┐
 >> │ **ERROR** in TREX table column Date                        │
->> │ Column header key contains invalid characters: 'a','t','e' │
+>> │ Column header key contains invalid characters: 'a','e','t' │
 >> │                                                            │
 >> │ STOP$T.D:20240505T1306                                     │
 >> │ +TEMP$KEL:10.15                                            │
@@ -363,9 +363,9 @@ trex.print_validation_messages()
 >> │ +COMMENT$T.A:FOO                                           │
 >> │ +COMMENT2$T.T:12G3                                         │
 >> │ +TABLE$$DURATION$HUR:D👉ate👈$T.D:OK$T.B:COMMENT$T.A::     │
->> │  1:20260813T053446.505:T:FOO::                             │
->> │  1.1:20260813T053446.505:T:BAR::                           │
->> │  1.3:20260813T053446.507:F:BLUBB                           │
+>> │  1:20260813T060232.684:T:FOO::                             │
+>> │  1.1:20260813T060232.684:T:BAR::                           │
+>> │  1.3:20260813T060232.684:F:BLUBB                           │
 >> └────────────────────────────────────────────────────────────┘
 ```
 #### Combine PAC-ID and TREX and serialize
@@ -377,7 +377,7 @@ pac_str = pac.to_url()
 print(pac_str)
 ```
 ```text
->> HTTPS://PAC.METTORIUS.COM/21:1234*MYTREX$TREX/STOP$T.D:20240505T1306+TEMP$KEL:10.15+OK$T.B:F+COMMENT$T.A:FOO+COMMENT2$T.T:12G3+TABLE$$DURATION$HUR:Date$T.D:OK$T.B:COMMENT$T.A::1:20260813T053446.505:T:FOO::1.1:20260813T053446.505:T:BAR::1.3:20260813T053446.507:F:BLUBB
+>> HTTPS://PAC.METTORIUS.COM/21:1234*MYTREX$TREX/STOP$T.D:20240505T1306+TEMP$KEL:10.15+OK$T.B:F+COMMENT$T.A:FOO+COMMENT2$T.T:12G3+TABLE$$DURATION$HUR:Date$T.D:OK$T.B:COMMENT$T.A::1:20260813T060232.684:T:FOO::1.1:20260813T060232.684:T:BAR::1.3:20260813T060232.684:F:BLUBB
 ```
 ## PAC-ID Resolver
 
@@ -537,6 +537,7 @@ PAC-ID Attributes
 
 
 General
+- bugfix: `Werkzeug` moved from being pulled in only transitively via the `extended`/`experimental` extras' `Flask` dependency to a real base dependency - `pac_attributes/server/server.py` and `api_data_models/request.py` (both part of the always-imported base package, no extra required) use `werkzeug`'s `Accept-Language` parsing (`parse_accept_header`, `LanguageAccept`) directly, so a bare `pip install labfreed` (no extras) could not even `import labfreed` once those modules landed - `Flask` itself stays `extended`/`experimental`-only, since nothing in the base import chain actually needs the web framework, only this one HTTP-header-parsing utility it depends on
 - Minor Bugfixes
 - `labfreed_experimental.pac_disco`'s `ServiceUUID`/`PAC_Characteristics` now derive from `StrEnum` instead of `Enum` (no compatibility guarantee on this module, not tagged BREAKING)
 - `qr.generate_qr`'s `Direction` modernized from `class Direction(str, Enum)` to `class Direction(StrEnum)` - purely cosmetic, identical runtime behavior

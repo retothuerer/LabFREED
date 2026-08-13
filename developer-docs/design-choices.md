@@ -1977,4 +1977,63 @@ unchanged after a `$..*` lookup) and
 *Investigated 2026-08-13, while running the `release` skill's full-test-suite gate for
 the 1.0.0 release.*
 
+---
+
+## `Werkzeug` promoted to a base dependency; `Flask` itself stays `extended`/`experimental`-only
+
+**Decision:** `Werkzeug>=3.1.0` added to `pyproject.toml`'s base `dependencies`, alongside
+the existing `extended`/`experimental` extras that already carry `Flask` (which itself
+depends on Werkzeug transitively).
+
+**Why:** found via a GitHub Actions CI failure - `pytest`'s collection step crashed with
+`ModuleNotFoundError: No module named 'werkzeug'` on a runner that had only installed
+`pip install .[dev]`. Root-caused with a local import-blocking simulation (no actual
+uninstall needed): a bare `import labfreed`, with *no extras at all*, already reaches
+`werkzeug` - `labfreed/pac_attributes/__init__.py` (imported unconditionally by
+`labfreed/__init__.py`) directly imports `AttributeServerRequestHandler` from
+`server/server.py`, which imports `werkzeug.datastructures.accept.LanguageAccept` at
+module level; `api_data_models/request.py` (also unconditionally imported) uses
+`werkzeug.http.parse_accept_header` the same way, to parse/construct/serialize
+`Accept-Language` header values (`_find_response_language`'s `.best_match()` call,
+`AttributeRequestData`'s `language_preferences` field). Neither of these modules imports
+`flask` itself anywhere - confirmed by grep. This means **any** `pip install labfreed`
+user, not just this CI runner, would have hit the same crash on the most basic possible
+action (`import labfreed`), since `Werkzeug` was previously reachable only as a
+transitive dependency of `Flask`, which is itself gated behind the `extended`/
+`experimental` extras.
+
+**Alternatives considered:**
+
+- Add `Flask` itself to base dependencies - rejected: nothing in the base import chain
+  actually runs a Flask app (no `import flask` anywhere reachable without an extra); that
+  would drag the full web-framework dependency tree (`blinker`, `click`, `itsdangerous`,
+  `jinja2`, `markupsafe`, ...) into every install, including someone using only bare
+  PAC-ID/PAC-CAT/T-REX, for the sake of one HTTP-header-parsing utility.
+- Reimplement `Accept-Language` parsing/negotiation without Werkzeug (a small,
+  self-contained RFC 7231 q-value parser) - considered, but rejected as unnecessary
+  scope for this fix: `werkzeug.http.parse_accept_header`/`LanguageAccept` are
+  well-tested, and the actual bug is a packaging/extras-classification mistake, not a
+  reason to drop the dependency entirely. Revisit only if `Werkzeug` itself ever becomes
+  undesirable as a base dependency for an unrelated reason.
+- Make the `werkzeug` imports lazy (import inside the functions that use it, not at
+  module level) instead of promoting it to a base dependency - rejected: the request
+  handler's `Accept-Language` negotiation and the request/response data models'
+  `language_preferences` field are core, always-available functionality (exported at the
+  top-level `labfreed.*` namespace, no extra required to reach them per
+  `pac_attributes/__init__.py`'s `__all__`) - deferring the `ImportError` to first-use
+  would just move the same crash from import-time to request-time for every bare-install
+  user who actually exercises language negotiation, instead of fixing the real
+  classification problem.
+
+**Impact:** also fixed `.github/workflows/pypi-publish.yml`'s own `pip install .[dev]`
+step to `pip install .[dev,extended]` - even with the dependency fix above,
+`extended`-only tests (Flask blueprint factory, Excel data source) still need that extra
+installed to collect at all; confirmed `dev,extended` is sufficient for a full green run
+(`experimental`/`units` are not needed for collection). Both fixes verified against a
+clean venv reproducing CI's exact install command, not just the shared devcontainer
+environment (which already had every extra installed, masking this).
+
+*Investigated 2026-08-13, while diagnosing a GitHub Actions test failure during the
+1.0.0 release.*
+
 *Investigated 2026-08-05.*

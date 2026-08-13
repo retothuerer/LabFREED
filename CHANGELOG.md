@@ -23,6 +23,7 @@ PAC-ID Attributes
 
 
 General
+- bugfix: `Werkzeug` moved from being pulled in only transitively via the `extended`/`experimental` extras' `Flask` dependency to a real base dependency - `pac_attributes/server/server.py` and `api_data_models/request.py` (both part of the always-imported base package, no extra required) use `werkzeug`'s `Accept-Language` parsing (`parse_accept_header`, `LanguageAccept`) directly, so a bare `pip install labfreed` (no extras) could not even `import labfreed` once those modules landed - `Flask` itself stays `extended`/`experimental`-only, since nothing in the base import chain actually needs the web framework, only this one HTTP-header-parsing utility it depends on
 - Minor Bugfixes
 - `labfreed_experimental.pac_disco`'s `ServiceUUID`/`PAC_Characteristics` now derive from `StrEnum` instead of `Enum` (no compatibility guarantee on this module, not tagged BREAKING)
 - `qr.generate_qr`'s `Direction` modernized from `class Direction(str, Enum)` to `class Direction(StrEnum)` - purely cosmetic, identical runtime behavior
