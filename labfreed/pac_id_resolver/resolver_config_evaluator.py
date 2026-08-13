@@ -1,3 +1,4 @@
+import copy
 import json
 import operator
 import re
@@ -170,7 +171,14 @@ class ResolverConfigEvaluator:
         if isinstance(pac_id_json, str):
             pac_id_json = json.loads(pac_id_json)
         jsonpath_expr = jsonpath.parse(jp_query)
-        matches = [match.value for match in jsonpath_expr.find(pac_id_json)]
+        # jsonpath_ng's recursive-descendant wildcard (e.g. "$..*[?...]", which is what
+        # this evaluator's own `['key']` bracket-shorthand expands a leading "$..*" into)
+        # mutates the dict it walks in place - replacing a nested dict with
+        # list(that_dict.values()) as a side effect of just reading it. `evaluate()`
+        # reuses the same pac_id_json across every block/entry for one PAC-ID, so without
+        # this copy, evaluating one entry's template could silently corrupt every
+        # subsequent block's applicable_if/template_url lookups against the same dict.
+        matches = [match.value for match in jsonpath_expr.find(copy.deepcopy(pac_id_json))]
         return matches
 
 

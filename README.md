@@ -194,7 +194,7 @@ pac.print_validation_messages()
 >> Validation Results                                                              
 >> ┌──────────────────────────────────────────────────────────────────────────────┐
 >> │ **RECOMMENDATION** in id segment value bal500                                │
->> │ Characters 'a','b','l' should not be used., Characters SHOULD be limited to  │
+>> │ Characters 'l','a','b' should not be used., Characters SHOULD be limited to  │
 >> │ upper case letters (A-Z), numbers (0-9), '-' and '+'                         │
 >> │                                                                              │
 >> │ HTTPS://PAC.METTORIUS.COM/-MD/👉bal👈500/@1234                               │
@@ -206,7 +206,7 @@ pac.print_validation_messages()
 >> │ HTTPS://PAC.METTORIUS.COM/-MD/bal500/👉@👈1234                               │
 >> ├──────────────────────────────────────────────────────────────────────────────┤
 >> │ **RECOMMENDATION** in id segment value bal500                                │
->> │ Characters 'a','b','l' should not be used., Characters SHOULD be limited to  │
+>> │ Characters 'l','a','b' should not be used., Characters SHOULD be limited to  │
 >> │ upper case letters (A-Z), numbers (0-9), '-' and '+'                         │
 >> │                                                                              │
 >> │ HTTPS://PAC.METTORIUS.COM/-MD/👉bal👈500/@1234                               │
@@ -218,7 +218,7 @@ pac.print_validation_messages()
 >> │ HTTPS://PAC.METTORIUS.COM/-MD/bal500/👉@👈1234                               │
 >> ├──────────────────────────────────────────────────────────────────────────────┤
 >> │ **RECOMMENDATION** in id segment value bal500                                │
->> │ Characters 'a','b','l' should not be used., Characters SHOULD be limited to  │
+>> │ Characters 'l','a','b' should not be used., Characters SHOULD be limited to  │
 >> │ upper case letters (A-Z), numbers (0-9), '-' and '+'                         │
 >> │                                                                              │
 >> │ HTTPS://PAC.METTORIUS.COM/-MD/👉bal👈500/@1234                               │
@@ -363,9 +363,9 @@ trex.print_validation_messages()
 >> │ +COMMENT$T.A:FOO                                           │
 >> │ +COMMENT2$T.T:12G3                                         │
 >> │ +TABLE$$DURATION$HUR:D👉ate👈$T.D:OK$T.B:COMMENT$T.A::     │
->> │  1:20260803T073633.966:T:FOO::                             │
->> │  1.1:20260803T073633.966:T:BAR::                           │
->> │  1.3:20260803T073633.968:F:BLUBB                           │
+>> │  1:20260813T053446.505:T:FOO::                             │
+>> │  1.1:20260813T053446.505:T:BAR::                           │
+>> │  1.3:20260813T053446.507:F:BLUBB                           │
 >> └────────────────────────────────────────────────────────────┘
 ```
 #### Combine PAC-ID and TREX and serialize
@@ -377,7 +377,7 @@ pac_str = pac.to_url()
 print(pac_str)
 ```
 ```text
->> HTTPS://PAC.METTORIUS.COM/21:1234*MYTREX$TREX/STOP$T.D:20240505T1306+TEMP$KEL:10.15+OK$T.B:F+COMMENT$T.A:FOO+COMMENT2$T.T:12G3+TABLE$$DURATION$HUR:Date$T.D:OK$T.B:COMMENT$T.A::1:20260803T073633.966:T:FOO::1.1:20260803T073633.966:T:BAR::1.3:20260803T073633.968:F:BLUBB
+>> HTTPS://PAC.METTORIUS.COM/21:1234*MYTREX$TREX/STOP$T.D:20240505T1306+TEMP$KEL:10.15+OK$T.B:F+COMMENT$T.A:FOO+COMMENT2$T.T:12G3+TABLE$$DURATION$HUR:Date$T.D:OK$T.B:COMMENT$T.A::1:20260813T053446.505:T:FOO::1.1:20260813T053446.505:T:BAR::1.3:20260813T053446.507:F:BLUBB
 ```
 ## PAC-ID Resolver
 
@@ -528,18 +528,12 @@ PAC-ID Resolver
 - BREAKING: `ServiceType` now derives from `StrEnum` instead of `Enum`; `_validate_service_type` in both `resolver_config_common.py` and `resolver_config.py` dropped their manual `.value`/`isinstance` unwrapping now that members compare directly against plain strings
 - BREAKING: `ServiceStatus` (`Service.status`) now derives from `StrEnum` with explicit string values (`"active"`/`"inactive"`/`"unknown"`) instead of plain `Enum` with `auto()`-generated int values; any code reading `.value` directly (none found in this codebase) would now get a string instead of an int
 - new optional `key` field on `ResolverConfigEntry`/`Service`: an absolute IRI, drawn from the same shared vocabularies PAC-ID Attributes already sources its own `key` from, identifying what an entry semantically *is* (e.g. "this is a Material Safety Data Sheet"), orthogonal to `application_intents` (which identifies which use case selects it). `PacInfo` gained matching `get_user_handover(s)_by_key()`/`get_action(s)_by_key()` lookups
+- bugfix: `ResolverConfigEvaluator.evaluate()` reuses one `pac_id_json` dict across every block/entry for a PAC-ID; evaluating a `template_url`/`applicable_if` containing a `$..*`-shaped jsonpath query (e.g. this evaluator's own `['key']` bracket-shorthand with a leading `$..*`, as used by `cit.yaml`'s `Manual`/`CoA` macros) mutated that shared dict in place (a `jsonpath_ng` quirk: its recursive-descendant wildcard replaces a nested dict with `list(that_dict.values())` as a side effect of reading it), silently breaking every block evaluated afterward with no error raised - fixed by deep-copying before each jsonpath lookup
 
 
 PAC-ID Attributes
 - new building block
-- BREAKING: renamed PhysoChemicalProperties to PhysicoChemicalProperties (typo fix; deprecated alias kept for one more major version)
-- BREAKING: fixed MELTINGPOINT value typo (meltinggpoint -> meltingpoint) - still an unreleased `.../dummy/...` placeholder key, fixed before real adoption
-- BREAKING: replaced BOILINGPOINT, MELTINGPOINT and DENSITY `.../dummy/...` placeholder values with real qudt.org quantitykind URIs, matching what a real attribute server (Apini) returns - still unreleased placeholder keys, fixed before real adoption
-- added well-known attribute keys MOLARMASS and FLASHPOINT to PhysicoChemicalProperties, and new ChemicalIdentifiers (CAS_NUMBER, EC_NUMBER, EMPIRICAL_FORMULA), GuaranteeAnalysisProperties (ASSAY, WATER_CONTENT) and DocumentKeys (DATASHEET, SAFETY_DATA_SHEET) enums, sourced from a real Apini attribute server response for a Carl Roth solvent
-- renamed well_knonw_attribute_keys module to well_known_attribute_keys (typo fix; deprecated shim module kept for one more major version)
-- BREAKING: `Webframework` (`AttributeServerFactory`) now derives from `StrEnum` instead of `Enum`, for consistency; no known call site read `.value` on it before
-- BREAKING: attribute key enums (MetaAttributeKeys, IdentifierKeys, PhysicoChemicalProperties, etc.) now derive from `StrEnum` instead of `Enum`, matching `CommonQuantityUnit`; members are usable directly wherever a `str` is expected (dict keys, equality checks, `pyAttribute(key=...)`) without `.value` - existing `.value` call sites are unaffected, but code relying on `isinstance(key, str)` being `False` or on the old `str(key)` repr-style output will observe different behavior
-- NumericAttributeItemsElement's unit validation now shares the same UCUM check used across the package (authoritative when the new optional `units` extra is installed), instead of its own separate regex
+- `AttributeClient` request auth: `PatternMatchedAuth`/`AuthRule` (`client/auth.py`) inject per-request credentials (header/scheme) based on a URL glob or regex match, with `env_credential()`/`static_credential()` helpers for where the value comes from
 
 
 General

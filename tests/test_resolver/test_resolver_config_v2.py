@@ -490,3 +490,48 @@ def test_evaluate_pac_id_skips_blocks_with_malformed_applicable_if():
     result = rc.evaluate_pac_id(_FakePac({}))
 
     assert [s.service_name for s in result.services] == ['Good Service']
+
+
+# ---------------------------------------------------------------------------
+# jsonpath_ng's recursive-descendant wildcard ("$..*") mutates the dict it
+# walks in place (replaces a nested dict with list(that_dict.values())) -
+# evaluate() must not let that corrupt later blocks/entries sharing the same
+# pac_id_json.
+# ---------------------------------------------------------------------------
+
+def test_evaluate_jsonpath_does_not_mutate_its_input():
+    evaluator = ResolverConfigEvaluator(ResolverConfig(origin='o'))
+    pac_id_json = {'pac': {'issuer': 'ACME.COM', 'categories': [{'key': '240', 'value': 'X'}]}}
+
+    matches = evaluator._evaluate_jsonpath(pac_id_json, "$..*[?(@.key == '240')].value")
+
+    assert matches == ['X']
+    assert pac_id_json == {'pac': {'issuer': 'ACME.COM', 'categories': [{'key': '240', 'value': 'X'}]}}
+
+
+def test_evaluate_pac_id_wildcard_template_in_one_entry_does_not_break_later_blocks():
+    # Regression test: the first block's template_url uses a "$..*['...']"-shaped
+    # query (this repo's own bracket-shorthand for a leading "$..*", as used by
+    # e.g. cit.yaml's Manual/CoA macros). Evaluating it used to mutate the shared
+    # pac_id_json dict, so the second block's applicable_if - checked against the
+    # same dict - would then silently see a corrupted structure and never match.
+    yml = '''
+    origin: my-origin
+    config:
+      - if: True
+        entries:
+          - service_name: Wildcard Service
+            application_intents: [view-apinilabs]
+            service_type: userhandover-generic
+            template_url: "https://example.com/{$..*['240'].value}"
+      - if: $.pac.issuer == ACME.COM
+        entries:
+          - service_name: Later Service
+            application_intents: [view-apinilabs]
+            service_type: userhandover-generic
+            template_url: "https://example.com/later"
+    '''
+    rc = ResolverConfig.from_yaml(yml)
+    result = rc.evaluate_pac_id(_FakePac({'issuer': 'ACME.COM', 'categories': [{'key': '240', 'value': 'X'}]}))
+
+    assert [s.service_name for s in result.services] == ['Wildcard Service', 'Later Service']

@@ -209,17 +209,10 @@ never-iterated generator turns out to need reviving, point it at
 
 ---
 
-## `client/auth.py` shipped to PyPI with no `CHANGELOG.md` entry
+## ~~`client/auth.py` shipped to PyPI with no `CHANGELOG.md` entry~~ (fixed, see below)
 
-`AuthRule`/`PatternMatchedAuth`/`env_credential` (`labfreed/pac_attributes/client/auth.py`)
-are already live in production PyPI builds past `1.0.0b44` - confirmed by grep, the
-module exists and is imported directly by `labfreed-webtools` (`bp_instrument_demo.py`,
-`bp_attribute_server.py`) - but `CHANGELOG.md` has zero mentions of authentication.
-A process gap found while auditing the client/server area during
-[[project_labfreed_pac_attributes_improvement_plan]] Phase 3, unrelated to that plan's
-actual fixes. Add a retroactive `CHANGELOG.md` entry under the pending `v1.0.0` heading
-(new public API, not breaking) so the release history isn't silently missing a real
-feature.
+Retroactive `CHANGELOG.md` entry added under the `v1.0.0` heading (PAC-ID Attributes
+section) as part of cutting the 1.0.0 release itself.
 
 ---
 

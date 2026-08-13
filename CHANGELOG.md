@@ -14,10 +14,12 @@ PAC-ID Resolver
 - BREAKING: `ServiceType` now derives from `StrEnum` instead of `Enum`; `_validate_service_type` in both `resolver_config_common.py` and `resolver_config.py` dropped their manual `.value`/`isinstance` unwrapping now that members compare directly against plain strings
 - BREAKING: `ServiceStatus` (`Service.status`) now derives from `StrEnum` with explicit string values (`"active"`/`"inactive"`/`"unknown"`) instead of plain `Enum` with `auto()`-generated int values; any code reading `.value` directly (none found in this codebase) would now get a string instead of an int
 - new optional `key` field on `ResolverConfigEntry`/`Service`: an absolute IRI, drawn from the same shared vocabularies PAC-ID Attributes already sources its own `key` from, identifying what an entry semantically *is* (e.g. "this is a Material Safety Data Sheet"), orthogonal to `application_intents` (which identifies which use case selects it). `PacInfo` gained matching `get_user_handover(s)_by_key()`/`get_action(s)_by_key()` lookups
+- bugfix: `ResolverConfigEvaluator.evaluate()` reuses one `pac_id_json` dict across every block/entry for a PAC-ID; evaluating a `template_url`/`applicable_if` containing a `$..*`-shaped jsonpath query (e.g. this evaluator's own `['key']` bracket-shorthand with a leading `$..*`, as used by `cit.yaml`'s `Manual`/`CoA` macros) mutated that shared dict in place (a `jsonpath_ng` quirk: its recursive-descendant wildcard replaces a nested dict with `list(that_dict.values())` as a side effect of reading it), silently breaking every block evaluated afterward with no error raised - fixed by deep-copying before each jsonpath lookup
 
 
 PAC-ID Attributes
 - new building block
+- `AttributeClient` request auth: `PatternMatchedAuth`/`AuthRule` (`client/auth.py`) inject per-request credentials (header/scheme) based on a URL glob or regex match, with `env_credential()`/`static_credential()` helpers for where the value comes from
 
 
 General

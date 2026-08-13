@@ -1914,4 +1914,67 @@ every category exists, that those same rebuild functions consult per-segment by 
 segment's own `derivation_namespace` - rather than trying to attach a resolved
 `Category` reference directly to a segment instance.
 
+---
+
+## `ResolverConfigEvaluator._evaluate_jsonpath` deep-copies its input before every `jsonpath_ng` lookup
+
+**Decision:** `_evaluate_jsonpath` (`resolver_config_evaluator.py`) now calls
+`jsonpath_expr.find(copy.deepcopy(pac_id_json))` instead of passing `pac_id_json`
+straight through.
+
+**Why:** found while cutting the 1.0.0 release, running the full test suite as the
+`release` skill's final gate - two `tests/test_resolver/test_resolver_config_sanity_check.py`
+tests failed against `cit.yaml`, missing several entries that should have matched a
+device PAC-ID. Root-caused with a minimal reproduction directly against
+`jsonpath_ng.ext` (no app code involved): evaluating a `$..*`-shaped recursive-descendant
+wildcard query (e.g. `$..*[?(@.key=='240')].value`, which is what this evaluator's own
+`['key']` bracket-shorthand expands a leading `$..*` into - see cit.yaml's `Manual`/`CoA`
+macros, `{$..*['240'].value}`) against a dict mutates that dict *in place*, replacing a
+nested dict with `list(that_dict.values())` as a side effect of just reading it - a
+`jsonpath_ng` library quirk, not something this codebase's own code does.
+
+`ResolverConfigEvaluator.evaluate()` builds one `pac_id_json` dict per PAC-ID and reuses
+that same reference across every block's `applicable_if` and every entry's
+`template_url` for that resolution (`resolver_config_evaluator.py:40`). So evaluating the
+*first* entry whose template used this wildcard shape silently corrupted `pac_id_json`
+for every block evaluated afterward: `$.pac.issuer`-style lookups against the
+now-list-shaped `pac.` value return no matches, which `_TokenEvaluator` treats as a
+plain "not applicable" - no exception, indistinguishable from a legitimately
+non-matching condition. This is exactly the failure mode the `evaluate_pac_id`/malformed-
+`applicable_if` contract (see the "Resolver config's expression evaluation split out..."
+entry above) is designed to tolerate, which is why nothing surfaced this until an
+end-to-end test exercised a block *after* a wildcard-templated one.
+
+**Real-world exposure:** `cit.yaml`'s own comments describe it as mirroring configs used
+by `labfreed-webtools`' live resolver tester, and its `Manual`/`CoA` macros use exactly
+this `$..*['240']` pattern - so any real resolver config combining a `$..*`-shaped
+template with additional blocks *after* it was silently missing those later services in
+production, not just in this test fixture.
+
+**Alternatives considered:**
+
+- Deep-copy once per `evaluate()` call instead of once per `_evaluate_jsonpath` call -
+  rejected: `_evaluate_jsonpath` is the one place `jsonpath_ng` is actually invoked (per
+  the split described above), so fixing it there defends against *any* mutating query
+  shape jsonpath_ng might have, not just the one `$..*` case found here. A per-`evaluate()`
+  copy would still let one entry's lookup corrupt every later lookup within that same
+  call.
+- Avoid the `$..*` shape entirely (rewrite the bracket-shorthand's expansion, or ban it) -
+  rejected: it's valid, useful jsonpath (recursive "look up this key wherever it appears"),
+  and the actual bug is jsonpath_ng's read-time mutation, not this codebase's use of the
+  syntax.
+
+**Impact:** pure bugfix, not a behavior anyone could have intentionally relied on (the old
+behavior was "silently drop services after the first wildcard-templated entry," with no
+error to signal it was even happening) - shipped as a plain (non-`BREAKING`) `CHANGELOG.md`
+entry under `PAC-ID Resolver`. Regression coverage added in
+`tests/test_resolver/test_resolver_config_v2.py`:
+`test_evaluate_jsonpath_does_not_mutate_its_input` (unit-level, asserts the input dict is
+unchanged after a `$..*` lookup) and
+`test_evaluate_pac_id_wildcard_template_in_one_entry_does_not_break_later_blocks`
+(end-to-end, asserts a block after a wildcard-templated entry still matches).
+
+*Investigated 2026-08-13, while running the `release` skill's full-test-suite gate for
+the 1.0.0 release.*
+
 *Investigated 2026-08-05.*
