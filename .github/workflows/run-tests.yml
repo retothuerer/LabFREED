@@ -19,7 +19,7 @@ jobs:
     - name: Install project with dev dependencies
       run: |
         pip install flit
-        flit install --deps develop
+        flit install --deps develop --extras extended
 
     - name: Run tests
       run: pytest
