@@ -33,11 +33,11 @@ jobs:
 
       - name: Run Ruff linter
         run: |
-          ruff check . || true
+          ruff check .
 
       - name: Run tests
         run: |
-          pytest tests 
+          pytest tests
 
       - name: Build release distributions
         run: |

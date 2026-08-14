@@ -17,7 +17,12 @@ Requires Python 3.14.
 pip install flit
 flit install --deps develop
 # or: pip install -e ".[dev]"
+pre-commit install
 ```
+
+`pre-commit install` wires up Ruff and basic hygiene checks (trailing
+whitespace, YAML/TOML validity, etc.) to run automatically before each
+commit — the same checks CI runs, so issues surface locally first.
 
 ## Running tests
 
@@ -30,8 +35,16 @@ CI (`.github/workflows/run-tests.yml`) runs the same suite on Python 3.14.
 ## Code style
 
 This project uses [Ruff](https://github.com/astral-sh/ruff) (config in `pyproject.toml`,
-line length 100). Run `ruff check .` before submitting — CI runs it too (non-blocking for
-now, see `.github/workflows/pypi-publish.yml`).
+line length 100). Run `ruff check .` before submitting — CI enforces it (blocking) in both
+`run-tests.yml` and `pypi-publish.yml`, and `pre-commit` runs it locally before each commit
+if installed (see Development setup above).
+
+## Dependency scanning
+
+`.github/workflows/dependency-scan.yml` runs `pip-audit` (known CVEs) and `pip-licenses`
+(dependency license report) on every PR, on a weekly schedule, and on demand. Both are
+report-only for now — check the workflow run if you're adding a new dependency, but a
+finding there won't block your PR yet.
 
 ## Branches
 

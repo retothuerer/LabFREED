@@ -1,0 +1,36 @@
+name: Dependency scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Install project with dev dependencies
+        run: |
+          pip install flit
+          flit install --deps develop
+
+      - name: Run pip-audit (report-only)
+        continue-on-error: true
+        run: pip-audit
+
+      - name: Run pip-licenses (report-only)
+        continue-on-error: true
+        run: |
+          echo "## Dependency licenses" >> "$GITHUB_STEP_SUMMARY"
+          pip-licenses --format=markdown >> "$GITHUB_STEP_SUMMARY"

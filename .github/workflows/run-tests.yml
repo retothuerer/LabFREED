@@ -21,5 +21,8 @@ jobs:
         pip install flit
         flit install --deps develop
 
+    - name: Run Ruff linter
+      run: ruff check .
+
     - name: Run tests
       run: pytest
