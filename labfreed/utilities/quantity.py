@@ -1,4 +1,5 @@
 import re
+import warnings
 from pydantic import BaseModel, model_validator
 
 from enum import StrEnum
@@ -33,7 +34,7 @@ class Quantity(BaseModel):
 
         #dimensionless_unit
         unit:str= d.get('unit')
-        if unit and unit in ['1', '', 'dimensionless']:
+        if unit in ['1', '', 'dimensionless']:
             unit = None
             d['unit'] = unit
 
@@ -48,6 +49,14 @@ class Quantity(BaseModel):
                 f"Unit {unit!r} is not a valid UCUM unit{extra_hint}. See https://ucum.org/ or "
                 "check it with https://lhncbc.github.io/ucum-lhc/demo.html. Pass "
                 "dont_enforce_ucum_units=True to bypass this check (discouraged)."
+            )
+
+        if 'unit' in d and d['unit'] is None:
+            warnings.warn(
+                f"Quantity(value={d.get('value')!r}, unit=None) is unitless. LabFREED has no "
+                "unitless numbers as a matter of principle - this is fine if genuinely intentional "
+                "(e.g. a dimensionless GS1/UNECE C62 count), but if a bare int/float was silently "
+                "wrapped for convenience, prefer passing an explicit unit instead."
             )
 
         return d
