@@ -89,3 +89,6 @@ exclude = [
 [tool.ruff]
 line-length = 100
 exclude = ["dist", ".venv"]
+
+[tool.coverage.run]
+source = ["labfreed"]
