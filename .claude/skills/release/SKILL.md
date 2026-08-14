@@ -87,6 +87,10 @@ whether it needs a `design-choices.md` entry -- see that skill.
 - Run the full test suite (`python3 -m pytest tests/`) and read `git diff` on
   `README.md` and everything under `plugins/labfreed/` -- a clean run doesn't guarantee
   a clean diff (see `update-readme`'s notes on stale/non-deterministic output).
+- If this release adds real functionality (not a pure patch/bugfix), run the
+  `check-coverage` skill against whatever changed. Decide per finding whether to close
+  the gap now or log it in `developer-docs/TODO.md` and ship anyway -- this is a
+  judgment call each time, not a hard gate on every release.
 - Publish by cutting a GitHub Release (tag = the dropped-suffix version) -- that's what
   triggers `.github/workflows/pypi-publish.yml`'s test-gated publish to PyPI. Don't use
   `build_tools/publish.sh`/`publish.ps1` for the final release; those bypass the test

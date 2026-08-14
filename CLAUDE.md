@@ -103,7 +103,7 @@ Use this to jump straight to the right place instead of grepping the whole tree 
 - `spec_versions.yaml` — pinned spec commits checked by the `check-spec-conformance` skill
 - `plans/` — in-flight implementation plans (e.g. the IRI migration)
 
-Repo-specific skills already cover the workflows for most of the above — check `.claude/skills` before hand-rolling a process (versioning, release, test-first, design-choices, update-readme, check-spec-conformance, small-fix).
+Repo-specific skills already cover the workflows for most of the above — check `.claude/skills` before hand-rolling a process (versioning, release, test-first, design-choices, update-readme, check-spec-conformance, check-coverage, small-fix).
 
 ## Troubleshooting / token discipline
 
