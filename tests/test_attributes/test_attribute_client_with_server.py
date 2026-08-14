@@ -3,11 +3,21 @@ from datetime import datetime
 import pytest
 
 from labfreed.pac_attributes.api_data_models.request import AttributeRequestData
-from labfreed.pac_attributes.api_data_models.response import AttributeResponsePayload
-from labfreed.pac_attributes.client.client import AttributeClient
+from labfreed.pac_attributes.api_data_models.response import (
+    AttributeResponsePayload,
+    Spec_AttributeGroup,
+)
+from labfreed.pac_attributes.client.client import (
+    AttributeClient,
+    AttributeClientInternalError,
+    AttributeServerError,
+    AuthenticationError,
+    local_attribute_request_callback_factory,
+)
 from labfreed.pac_attributes.facade.attributes import Attribute, Attributes, Reference
 from labfreed.pac_attributes.facade.dict_data_source import Dict_DataSource
-from labfreed.pac_attributes.server.server import AttributeServerRequestHandler
+from labfreed.pac_attributes.server.attribute_data_sources import AttributeGroupDataSource
+from labfreed.pac_attributes.server.server import AttributeServerRequestHandler, InvalidRequestError
 from labfreed.pac_attributes.server.translation_data_sources import DictTranslationDataSource
 from labfreed.utilities.translations import Term, Terms
 
@@ -23,33 +33,49 @@ def _build_handler():
     data_source = Dict_DataSource(
         attribute_group_key="ProductionData",
         data={
-            NORMAL_PAC_ID: Attributes([
-                Attribute(key="MfgDate", value=datetime(2015, 10, 1, 10, 12)),
-                Attribute(key="CalWeight", value=Reference(CAL_PAC_ID)),
-            ]),
-            CAL_PAC_ID: Attributes([
-                Attribute(key="NominalWeight", value="50 g"),
-            ]),
-            TRAILING_SLASH_PAC_ID: Attributes([
-                Attribute(key="MfgDate", value=datetime(2020, 1, 1)),
-            ]),
-            GENERIC_IRI: Attributes([
-                Attribute(key="MfgDate", value=datetime(2021, 1, 1)),
-            ]),
-            SUBSTANCE_PAC_ID: Attributes([
-                Attribute(key="MfgDate", value=datetime(2022, 3, 1)),
-            ]),
-            ALIQUOT_PAC_ID: Attributes([
-                Attribute(key="MfgDate", value=datetime(2023, 5, 1)),
-            ]),
+            NORMAL_PAC_ID: Attributes(
+                [
+                    Attribute(key="MfgDate", value=datetime(2015, 10, 1, 10, 12)),
+                    Attribute(key="CalWeight", value=Reference(CAL_PAC_ID)),
+                ]
+            ),
+            CAL_PAC_ID: Attributes(
+                [
+                    Attribute(key="NominalWeight", value="50 g"),
+                ]
+            ),
+            TRAILING_SLASH_PAC_ID: Attributes(
+                [
+                    Attribute(key="MfgDate", value=datetime(2020, 1, 1)),
+                ]
+            ),
+            GENERIC_IRI: Attributes(
+                [
+                    Attribute(key="MfgDate", value=datetime(2021, 1, 1)),
+                ]
+            ),
+            SUBSTANCE_PAC_ID: Attributes(
+                [
+                    Attribute(key="MfgDate", value=datetime(2022, 3, 1)),
+                ]
+            ),
+            ALIQUOT_PAC_ID: Attributes(
+                [
+                    Attribute(key="MfgDate", value=datetime(2023, 5, 1)),
+                ]
+            ),
         },
     )
-    translations = Terms(terms=[
-        Term.create("MfgDate", [("en", "Manufacturing date")]),
-        Term.create("CalWeight", [("en", "Calibration weight")]),
-        Term.create("NominalWeight", [("en", "Nominal weight")]),
-    ])
-    translation_data_source = DictTranslationDataSource(data=translations, supported_languages=["en"])
+    translations = Terms(
+        terms=[
+            Term.create("MfgDate", [("en", "Manufacturing date")]),
+            Term.create("CalWeight", [("en", "Calibration weight")]),
+            Term.create("NominalWeight", [("en", "Nominal weight")]),
+        ]
+    )
+    translation_data_source = DictTranslationDataSource(
+        data=translations, supported_languages=["en"]
+    )
     return AttributeServerRequestHandler(
         data_sources=[data_source],
         translation_data_sources=[translation_data_source],
@@ -59,14 +85,21 @@ def _build_handler():
 
 def _build_client():
     handler = _build_handler()
+    return AttributeClient(http_post_callback=local_attribute_request_callback_factory(handler))
 
-    def local_callback(url, attribute_request_data):
-        try:
-            return 200, handler.handle_attribute_request(attribute_request_data)
-        except Exception as e:
-            return 500, str(e)
 
-    return AttributeClient(http_post_callback=local_callback)
+def _build_handler_data_source_and_translations():
+    """Minimal (data_source, translation_data_source) pair for tests that only care
+    about AttributeServerRequestHandler's constructor, not the fixture data itself."""
+    data_source = Dict_DataSource(
+        attribute_group_key="ProductionData",
+        data={NORMAL_PAC_ID: Attributes([Attribute(key="MfgDate", value=datetime(2015, 10, 1))])},
+    )
+    translations = Terms(terms=[Term.create("MfgDate", [("en", "Manufacturing date")])])
+    translation_data_source = DictTranslationDataSource(
+        data=translations, supported_languages=["en"]
+    )
+    return data_source, translation_data_source
 
 
 def test_client_gets_attributes_for_a_normal_pac_id():
@@ -116,7 +149,9 @@ def test_old_pac_id_keyword_still_works_and_warns():
 
 def test_no_attributes_found_returns_empty_list_not_a_crash():
     client = _build_client()
-    groups = client.get_attributes(server_url="", subject_id="HTTPS://PAC.METTORIUS.COM/-MD/UNKNOWN/000")
+    groups = client.get_attributes(
+        server_url="", subject_id="HTTPS://PAC.METTORIUS.COM/-MD/UNKNOWN/000"
+    )
     assert groups == []
 
 
@@ -126,20 +161,30 @@ def test_derivation_parent_attributes_are_included_under_parents_id():
     # parent's own id, alongside the subject's.
     handler = _build_handler()
     request = AttributeRequestData(subject_id=ALIQUOT_PAC_ID)
-    payload = AttributeResponsePayload.model_validate_json(handler.handle_attribute_request(request))
+    payload = AttributeResponsePayload.model_validate_json(
+        handler.handle_attribute_request(request)
+    )
     items_by_id = {item.id: item for item in payload.data}
 
     assert ALIQUOT_PAC_ID in items_by_id
-    assert items_by_id[ALIQUOT_PAC_ID].attribute_groups[0].attributes["MfgDate"].items[0].value == datetime(2023, 5, 1).date()
+    assert (
+        items_by_id[ALIQUOT_PAC_ID].attribute_groups[0].attributes["MfgDate"].items[0].value
+        == datetime(2023, 5, 1).date()
+    )
 
     assert SUBSTANCE_PAC_ID in items_by_id
-    assert items_by_id[SUBSTANCE_PAC_ID].attribute_groups[0].attributes["MfgDate"].items[0].value == datetime(2022, 3, 1).date()
+    assert (
+        items_by_id[SUBSTANCE_PAC_ID].attribute_groups[0].attributes["MfgDate"].items[0].value
+        == datetime(2022, 3, 1).date()
+    )
 
 
 def test_derivation_lookup_can_be_disabled():
     handler = _build_handler()
     request = AttributeRequestData(subject_id=ALIQUOT_PAC_ID, do_derivation_lookup=False)
-    payload = AttributeResponsePayload.model_validate_json(handler.handle_attribute_request(request))
+    payload = AttributeResponsePayload.model_validate_json(
+        handler.handle_attribute_request(request)
+    )
     ids = {item.id for item in payload.data}
     assert SUBSTANCE_PAC_ID not in ids
 
@@ -153,7 +198,9 @@ def test_self_derived_parent_attributes_are_included_without_a_marker():
     # CalWeight reference.
     handler = _build_handler()
     request = AttributeRequestData(subject_id=NORMAL_PAC_ID, do_forward_lookup=False)
-    payload = AttributeResponsePayload.model_validate_json(handler.handle_attribute_request(request))
+    payload = AttributeResponsePayload.model_validate_json(
+        handler.handle_attribute_request(request)
+    )
     ids = {item.id for item in payload.data}
     assert "HTTPS://PAC.METTORIUS.COM/-MD/BAL500" in ids
 
@@ -163,6 +210,8 @@ def test_single_field_category_has_no_parent_entry():
     # a meaningful narrower entity to report as a parent.
     handler = _build_handler()
     request = AttributeRequestData(subject_id="HTTPS://PAC.METTORIUS.COM/-MD/BAL500")
-    payload = AttributeResponsePayload.model_validate_json(handler.handle_attribute_request(request))
+    payload = AttributeResponsePayload.model_validate_json(
+        handler.handle_attribute_request(request)
+    )
     assert len(payload.data) == 1
     assert payload.data[0].id == "HTTPS://PAC.METTORIUS.COM/-MD/BAL500"
