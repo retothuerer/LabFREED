@@ -51,10 +51,16 @@ grammar rule, current version number, or a recent breaking change.
 
 ## Version note
 
-The package went through a large batch of breaking changes at v1.0.0. If you're looking
-at code, a tutorial, or an example written against a pre-1.0 release, don't assume its
-imports or names still match current `main` -- check `references/quickstart.md` or the
-live repo instead of extrapolating from old code. The accumulated changes:
+The package went through a large batch of breaking changes at v1.0.0, plus one more at
+v1.0.1. If you're looking at code, a tutorial, or an example written against a pre-1.0
+release, don't assume its imports or names still match current `main` -- check
+`references/quickstart.md` or the live repo instead of extrapolating from old code.
+
+**v1.0.1**: `PAC_ID.__eq__`/`__hash__` now scope identity to `(issuer, identifier)` only
+-- two `PAC_ID`s (or a `PAC_ID`/`PAC_CAT` pair) with the same issuer+identifier but
+different extensions now compare equal and hash the same, where they previously didn't.
+
+**v1.0.0, accumulated changes:**
 
 - **`labfreed.trex.pythonic` / `labfreed.pac_attributes.pythonic` renamed to
   `labfreed.trex.facade` / `labfreed.pac_attributes.facade`**, and every `py`-prefixed
