@@ -106,10 +106,13 @@ segments = {
 mydata = T_REX(segments)
 
 # Create a table
+# A bare int/float is accepted for convenience (it's silently wrapped in a unitless
+# Quantity, with a warning) - but LabFREED has no unitless numbers as a matter of
+# principle, so always prefer an explicit Quantity with a real unit, as done here.
 table = DataTable(col_names=['DURATION', 'Date', 'OK', 'COMMENT'])
 table.append([Quantity(value=1, unit='h'), datetime.now(), True, 'FOO'])
-table.append([                                                 1.1,  datetime.now(), True, 'BAR'])
-table.append([                                                 1.3,  datetime.now(), False, 'BLUBB'])
+table.append([Quantity(value=1.1, unit='h'), datetime.now(), True, 'BAR'])
+table.append([Quantity(value=1.3, unit='h'), datetime.now(), False, 'BLUBB'])
 #add the table to the pytrex
 mydata.update({'TABLE': table})
 
