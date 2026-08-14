@@ -1979,6 +1979,282 @@ the 1.0.0 release.*
 
 ---
 
+## `PAC_ID.__eq__`/`__hash__` scoped to `(issuer, identifier)`, extensions excluded
+
+**Decision:** `PAC_ID` gets a custom `__eq__` (`isinstance(other, PAC_ID) and
+self.to_url(include_extensions=False) == other.to_url(include_extensions=False)`) and
+`__hash__` (`hash(self.to_url(include_extensions=False))`), replacing pydantic's
+inherited default `BaseModel.__eq__`/the `hash(self.to_url())` added 2026-08-03.
+Deliberately cross-type: a `PAC_CAT` and a `PAC_ID` with identical issuer+identifier now
+compare equal, not just same-type instances. Deliberately compares the *serialized URL
+string*, not `self.issuer == other.issuer and self.identifier == other.identifier`
+field-by-field - see the dedicated alternative below, this isn't a stylistic choice.
+
+**Why:** `get_non_derived_pac_id()`, `get_parent_pac_id()`, and `derive()`
+(`labfreed/pac_id/pac_id.py`) already drop `extensions` when computing identity, with
+inline comments stating identity is issuer+identifier - extensions describe "the entity
+they're attached to, not its parent." But `__eq__`/`__hash__` never matched that stated
+model: pydantic's default `BaseModel.__eq__` compares every field including
+`extensions`, and `__hash__` (`hash(self.to_url())`, added in `93f86b6`, undocumented at
+the time) defaults to `to_url(include_extensions=True)`. Verified empirically: two
+`PAC_ID`s differing only in an extension were `!=` and hashed differently before this
+fix, contradicting the derivation methods' own model. Surfaced while checking an
+external field-notes brief that assumed (incorrectly, as it turned out) that this was
+already the case.
+
+Cross-type equality (`PAC_CAT` vs. `PAC_ID`) is deliberate, not an oversight: `PAC_CAT`
+is an interpretive view over `PAC_ID.identifier`, not a different entity, and parsing
+already opportunistically upgrades a `PAC_ID` to `PAC_CAT` whenever the identifier is
+category-conformant. Treating the two as different identities just because one was
+parsed one step further would be an arbitrary distinction the rest of the codebase
+doesn't draw.
+
+**Alternatives considered / why not:**
+
+- Add a separate `identity_key()`/`same_identity()` method instead of touching
+  `__eq__`/`__hash__`, avoiding a breaking change entirely - rejected: it would leave
+  two competing notions of equality on the same class (`==` says "all fields,"
+  `identity_key()` says "issuer+identifier"), which is more confusing than a one-time
+  breaking fix, especially since the derivation methods already committed the class to
+  "identity = issuer+identifier" as a concept.
+- Exact-type match (`PAC_CAT(...) != PAC_ID(...)` even with identical issuer+identifier)
+  - considered first since it matches pydantic's previous default behavior and avoids
+  any behavior change beyond the one being deliberately made, but rejected once
+  `PAC_CAT`'s subclass/augmented-view relationship to `PAC_ID` was made explicit (see
+  Why above).
+- No `PAC_CAT`-specific override - confirmed unnecessary rather than assumed: `PAC_CAT`'s
+  `categories`/`main_category`/`processor` computed fields are pure functions of
+  `self.identifier` (`labfreed/pac_cat/pac_cat.py`), so inheriting `PAC_ID`'s `__eq__`/
+  `__hash__` is automatically correct.
+- `self.issuer == other.issuer and self.identifier == other.identifier` (comparing
+  `IDSegment` objects directly instead of serialized strings) - built first, then
+  rejected: confirmed empirically that `LabFREED_BaseModel._validation_messages`
+  (`PrivateAttr(default_factory=list)`, storing `ValidationMessage(source_id=id(self),
+  ...)`) participates in pydantic's default equality, so two structurally-identical
+  `IDSegment`s that each independently picked up even an *identical* validation message
+  compare unequal, because their `source_id`s differ. Real-world `PAC_ID`s almost always
+  accumulate at least one validation message during construction (e.g. a
+  RECOMMENDATION-level "key not in `WellKnownKeys`"), so this would have silently broken
+  `__eq__` for ordinary, valid identifiers - already flagged as an existing landmine in
+  `tests/test_PAC_CAT/test_PAC_CAT_main_category_and_processor.py`'s
+  `test_main_category_is_the_first_category` docstring, for the same underlying reason.
+  Comparing the serialized `to_url()` string instead sidesteps it entirely (strings have
+  plain value equality) and, as a bonus, guarantees `__eq__`/`__hash__` consistency by
+  construction, since both now derive from literally the same string.
+
+**Impact:** breaking change, released as v1.0.1 (v1.0.0 shipped hours earlier the same
+day; accepted given ~zero adoption at the time). Confirmed low internal blast radius
+before deciding to fix rather than defer: no internal code compares `PAC_ID` objects by
+`==`/uses one as a cache key (the only nearby `lru_cache`,
+`pac_id_resolver/resolver.py`, keys on a plain `issuer: str`). Leaves the separate,
+already-tracked segment-*ordering* equality gap
+([`TODO.md`](TODO.md#structural-category-based-equality-could-sidestep-the-two-parked-exact-layout-stretch-goal-tests))
+untouched - that entry is about order-insensitivity within `identifier`, not about
+extensions, and shouldn't be conflated with this fix.
+
+*Investigated 2026-08-13, prompted by an external field-notes brief.*
+
+---
+
+## `values_for_key()`'s `Origin` types carry no `describe()`/custom `__eq__` - plain equality and `.model_dump()` already do the job
+
+**Decision:** `PAC_ID.values_for_key(key) -> list[KeyedValue]` (joint lookup across
+identifier segments and extensions, extended by `PAC_CAT` for implicit/positional
+segment-key resolution) tags each match with a small `Origin` type
+(`SegmentOrigin(category_key)`, `ExtensionOrigin(extension_name)`,
+`TrexTableOrigin(ExtensionOrigin)` adding `table_key` for a match found inside a T-REX
+`TableSegment` column) rather than a flat `source: Literal["segment", "trex"]` string.
+These are plain `LabFREED_BaseModel` (pydantic) classes with no methods of their own
+beyond their fields.
+
+**Why:** a flat two-value `source` string can't distinguish *which* category a segment
+match came from, or *which* named T-REX extension/table a match came from - and the
+T-REX spec's own example (`ENV`/`PH`/`CONDUCTIVITY` tables each with a `TEMP` column,
+`Specs: T-REX/README.md`) proves this matters: three simultaneous, legitimately
+different `TEMP` values inside one T-REX extension would otherwise be indistinguishable.
+Extension matching is polymorphic (`ExtensionBase.values_for_key()`, overridden by
+`TREX_Extension` to also search table columns) rather than centralized in `PAC_ID`, so
+`Origin` needed to be a type hierarchy anyway, one per extension's own internal
+structure - a closed `source` enum would have forced every extension type to fit one
+shared shape, and blocked adding PAC-ID Attributes as a third source later (see the
+parked `PacInfo`-as-RDF-document question in [`TODO.md`](TODO.md#should-pacinfo-become-an-rdfjson-ld-shaped-document)) without
+reinventing the concept.
+
+**Alternatives considered / why not:**
+
+- A `describe() -> dict` method on the base `Origin`, overridden per subtype (each
+  override merging `super().describe()` with its own extra fields) so generic code
+  holding only the base type could still discover subtype-specific detail (e.g.
+  `table_key`) without an `isinstance` check - built, then rejected on reflection: it's
+  a hand-written reimplementation of pydantic's own `.model_dump()`, which already
+  returns every field on the actual runtime instance (subclass-added fields included),
+  for free, with no method to write or maintain. The same reasoning covers plain
+  printing/logging, not just structured access: verified against the actual class shape
+  (`LabFREED_BaseModel` has no `__repr__`/`__str__` override of its own) that
+  `repr(TrexTableOrigin(extension_name='SENSORS', table_key='ENV'))` already renders
+  `TrexTableOrigin(extension_name='SENSORS', table_key='ENV')` and `str(...)` renders
+  `extension_name='SENSORS' table_key='ENV'` - both fields, unprompted - so a caller who
+  only prints/logs an `Origin` they're holding as the base type still sees the full
+  detail, with nothing to implement.
+- A custom `__eq__`/hashing scheme on `Origin` to answer "are these two matches from the
+  same place" - unnecessary: pydantic's default equality on these plain model classes
+  already checks type *and* fields, so a `TrexTableOrigin` can never spuriously equal a
+  plain `ExtensionOrigin` even with overlapping/empty fields, and two origins from
+  genuinely the same place compare equal automatically.
+- `KeyedValue.value` as a single scalar, with a `row: int` field on `TrexTableOrigin` to
+  address a specific table row - rejected: a table *column* key names a set of values
+  (one per row), not one row-indexed scalar, so the natural match unit is the whole
+  column (`TableSegment.column_data(col)`, already a list). `KeyedValue.value` is
+  instead always a list, even for a single scalar match, so callers never branch on
+  which kind of match they got before iterating.
+
+*Investigated 2026-08-13, alongside the `values_for_key()` design prompted by the same
+external field-notes brief.*
+
+---
+
+## `PAC_CAT.from_categories()` deprecated in favor of named-role construction
+
+**Decision:** `from_categories(issuer, categories: list[Category])` is deprecated
+(`DeprecationWarning`, kept functioning, scheduled for removal at v2.0 - see
+[`TODO.md`](TODO.md#pending-removals---deprecated-symbols-scheduled-for-v20)) in favor of
+`PAC_CAT.from_roles(main: Category, processor: Category | None = None)`, plus a new
+companion `Category.from_key(key: str, **fields) -> Category`
+(`category_key_to_class_map[key](**fields)`, with the same generic-`Category` fallback
+`_cat_from_cat_segments` already uses for an unregistered key). Both new constructors
+also get a plain `of` alias (`PAC_CAT.of`, `Category.of`) pointing at the same
+implementation, with the docstring on `of` noting `from_roles`/`from_key` as the
+encouraged spelling.
+
+**Why:** `from_categories`'s role assignment (which list entry is "main," which is
+"processor") is inferred purely from list position, with no validation at all -
+`processor`'s own docstring already says "whichever category sits there counts,
+regardless of type." That's the same bug class an external field-notes brief described
+at the segment-key level (conditionally-assembled positional lists silently getting a
+value's meaning wrong), just one level up, at the category-role level. Named parameters
+make the wrong assignment structurally impossible instead of merely unvalidated.
+
+Confirmed via tracing `from_categories` → `_resolve_identifier_for_notation` that
+`_build_all_categories()` always re-derives `_segment_bindings` fresh from
+`self.identifier`, never reusing the caller's original `Category` object - so "build
+long-form, force short notation via `to_url(use_short_notation=True)`, re-parse via
+`from_url()`" already works correctly on a freshly-constructed `PAC_CAT`, not only on
+one parsed from a URL. `from_roles` needed no changes to the underlying re-keying
+machinery, only the named-parameter entry point.
+
+**Alternatives considered / why not:**
+
+- Generalize to an arbitrary-length list of roles instead of two named parameters -
+  rejected: `PAC_CAT.categories`'s own docstring already documents "capped at these
+  two" as a deliberate, spec-level model (a derivation's own issuing system is scoped to
+  that one derivation, tracked separately via `derivation_issuing_systems`, not as a
+  third top-level slot) - not an arbitrary code limitation needing a more general fix.
+- Accept derivation-scoped issuing systems (`+<namespace>` markers) in `from_roles` v1 -
+  deferred: materially bigger (constructing the marker structure itself) and a less
+  common construction case than main+processor.
+- `.of()` as the primary name, matching the field-notes brief's own suggested shape
+  (mirroring Java/Kotlin's `List.of()`) - rejected as the *primary* name since every
+  existing constructor in this codebase is `from_*` (`from_pac_id`, `from_url`), which
+  also names what's being built from; kept as a plain alias instead, since supporting
+  both costs nothing and matches habits of callers coming from Java/TS-influenced
+  ecosystems.
+
+*Investigated 2026-08-13, prompted by an external field-notes brief.*
+
+---
+
+## T-REX explicit-type wrapper family, and splitting `to_trex()`/`serialize()` into two verbs
+
+**Decision:** `T_REX`'s dict facade (`labfreed/trex/facade/t_rex.py`) gains a family of
+explicit-type wrapper classes - `Alphanumeric` (new, forces `T.A`, validates eagerly),
+`Text` (new, forces `T.T` - takes *ordinary* text and encodes it to base36 internally at
+serialization time), `Numeric`, `Bool`, `Date` (new, completing the set for symmetry,
+even though no ambiguity exists for these types today) - so any dict entry's wire type
+can be stated explicitly instead of always inferred from the Python value's runtime
+type. `Text` is deliberately **not** an alias for the existing `base36` (an earlier
+draft of this decision assumed it could be, and was corrected while writing the test for
+it): `base36` validates its input as *already* base36-encoded (`re.fullmatch(r'[A-Z0-9]*'
+, v)`), so `base36("free text")` raises - it's a pre-encoded-data escape hatch, kept
+exactly as-is, not something `Text` could just point at. Separately,
+`to_trex()`/`from_trex()` are
+renamed to `to_trex_spec()`/`from_trex_spec()` (old names deprecated, kept one version -
+see [`TODO.md`](TODO.md#pending-removals---deprecated-symbols-scheduled-for-v20)), and
+`T_REX` gains its own `serialize()`/`deserialize(s)`, matching `Spec_T_REX`'s own verb
+pair, as the everyday entry point. The five wrapper classes live in
+`labfreed/trex/facade/typed_values.py` but are re-exported through
+`labfreed/trex/facade/__init__.py` and `labfreed/trex/__init__.py`, matching exactly how
+`T_REX`/`DataTable`/`Quantity` are already threaded through both levels - so
+`from labfreed.trex import Alphanumeric` works, not just the submodule path.
+
+**Two more pre-existing bugs surfaced while implementing this, both fixed in the same
+patch:** (1) `from_trex`/`from_trex_spec` returned a plain `dict`, never actually
+`cls(...)`-wrapped into a real `T_REX` instance - latent since dict-like access
+(`result['key']`) works identically either way, so nothing caught it until a test
+asserted `isinstance(result, T_REX)` directly. (2) Once fixed to properly construct a
+`T_REX`, that exposed a second gap: the `T_REX` dict-value union had no `None` member,
+even though a T-REX value can legitimately be empty/undefined per spec (and
+`to_trex_spec()`'s own dispatch already explicitly handles `v is None`) - confirmed this
+was already broken for direct construction too (`T_REX({'X': None})` raised), not just
+via `from_trex_spec`; it only went unnoticed because `from_trex`'s un-wrapped dict never
+triggered validation. Fixed by adding `None` to the union, matching the pattern
+`DataTable.data`'s cell-type union already used.
+
+**Why:** `T_REX.to_trex()`'s type dispatch is ambiguous in exactly one place - a plain
+`str` value has to guess between `T.A` and `T.T` via a regex charset check
+(`t_rex.py`); every other Python type (`bool`, `Quantity`/numeric, `date`/`time`/
+`datetime`) already dispatches unambiguously by `isinstance`. That same string-ambiguity
+check was duplicated three times (top-level dict value, `DataTable` column-type
+inference, `DataTable` cell-value inference) before this change - now written once and
+called from all three sites. `Alphanumeric`/`base36` already existed as one half of an
+override (wrapping a string in `base36(...)` already forced `T.T`); this adds the
+missing other half (`Alphanumeric` forces `T.A`) and completes the family for symmetry
+per explicit decision, rather than adding overrides only where ambiguity happens to
+exist today.
+
+The naming split is separate but bundled in the same area: `to_trex()`/`from_trex()`
+made sense when the friendly facade class was named `pyTREX` ("this pythonic wrapper,
+converted to a trex"); now that the class itself is named `T_REX`, both read as
+near-tautological. `to_trex_spec()`/`from_trex_spec()` name what they actually
+produce/consume - a `Spec_T_REX` - and become the rarely-touched bridging step (still
+needed for e.g. handing a `Spec_T_REX` directly to `TREX_Extension.trex`, which is typed
+as `Spec_T_REX`), while `serialize()`/`deserialize()` become the everyday
+"dict in/out, wire string out/in" entry point most callers actually want.
+
+**Alternatives considered / why not:**
+
+- Add explicit-type wrappers only for the one case with real ambiguity (`Alphanumeric`
+  alongside the existing `base36`) - considered first and initially recommended, but
+  rejected in favor of the full family per explicit decision: symmetry (every wire type
+  gets an explicit-override option, not just the historically-ambiguous one) was judged
+  worth the small amount of extra, unambiguous wrapper classes.
+- `Text = base36` (a plain alias) - built first, then rejected once `Text("free text")`
+  was actually tried in a test: `base36`'s validator requires already-encoded
+  `[A-Z0-9]*` input, so it would reject the exact ordinary-text case `Text` exists for.
+  `base36` stays exactly as it was (a distinct, lower-level, pre-encoded-data escape
+  hatch); `Text` is a new, separate wrapper.
+- `from_str`/`to_str` for the new convenience methods - rejected in favor of
+  `serialize()`/`deserialize()`, matching `Spec_T_REX`'s own existing verb pair exactly,
+  so a caller learns one vocabulary for "turn this into/from wire text" at both layers
+  instead of two different naming schemes for the same operation.
+
+**Related bug found while testing the `Numeric`/`Bool`/`Date` wrappers, same area, same
+patch:** `T_REX`'s dict-value type (`Quantity | datetime | time | date | bool | str |
+base36 | DataTable`) and `DataTable`'s cell type have no bare `int`/`float` member.
+Pydantic's "smart" union mode only prefers an exact-type match over a coercion when an
+exact match exists among the union's members - since none did, a plain `int`/`float`
+was silently coerced into a `datetime` via Unix-timestamp interpretation (`T_REX({"X":
+5})["X"]` was `datetime(1970, 1, 1, 0, 0, 5)`), before `to_trex()`'s own, correctly-
+ordered `isinstance(v, (int, float))` check (checked *before* the `datetime` check
+there) ever got a chance to see the original value - confirmed in isolation with a bare
+`pydantic.TypeAdapter` on just the union type, no `T_REX` code involved. Fix: add
+`int | float` to both unions - verified this alone makes pydantic's smart-mode matching
+pick the exact type immediately for the previously-coerced case, without disturbing the
+already-correct ones (`bool`, `Quantity`).
+
+*Investigated 2026-08-13, prompted by an external field-notes brief.*
+
+---
+
 ## `Werkzeug` promoted to a base dependency; `Flask` itself stays `extended`/`experimental`-only
 
 **Decision:** `Werkzeug>=3.1.0` added to `pyproject.toml`'s base `dependencies`, alongside
@@ -2035,5 +2311,3 @@ environment (which already had every extra installed, masking this).
 
 *Investigated 2026-08-13, while diagnosing a GitHub Actions test failure during the
 1.0.0 release.*
-
-*Investigated 2026-08-05.*

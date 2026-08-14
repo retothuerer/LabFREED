@@ -1,7 +1,7 @@
 from .trex import Spec_T_REX, TREX
 from .value_segments import NumericSegment, DateSegment, BoolSegment, AlphanumericSegment, TextSegment, ErrorSegment
 from .table_segment import TableSegment, ColumnHeader, TableRow
-from .facade import T_REX, DataTable, Quantity
+from .facade import T_REX, DataTable, Quantity, Alphanumeric, Text, Numeric, Bool, Date
 
 __all__ = [
     "Spec_T_REX",
@@ -18,4 +18,9 @@ __all__ = [
     "T_REX",
     "DataTable",
     "Quantity",
+    "Alphanumeric",
+    "Text",
+    "Numeric",
+    "Bool",
+    "Date",
 ]

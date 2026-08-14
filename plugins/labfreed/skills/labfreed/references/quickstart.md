@@ -75,8 +75,9 @@ print(pac.to_url())  # HTTPS://PAC.METTORIUS.COM/21:1234
 
 ## Create a T-REX payload from a plain dict
 
-`T_REX` is the pythonic facade layer -- build it from a dict, then call `.to_trex()` to
-get the actual spec-conformant T-REX object.
+`T_REX` is the pythonic facade layer -- build it from a dict, then call `.to_trex_spec()`
+to get the actual spec-conformant T-REX object (or `.serialize()` to go straight to the
+wire string, if you don't need the intermediate object).
 
 ```python
 from datetime import datetime
@@ -92,10 +93,13 @@ mydata = T_REX(segments)
 
 table = DataTable(col_names=['DURATION', 'DATE', 'OK', 'COMMENT'])
 table.append([Quantity(value=1, unit='h'), datetime.now(), True, 'FOO'])
-table.append([1.1, datetime.now(), True, 'BAR'])
+# A bare int/float is accepted for convenience (silently wrapped in a unitless Quantity,
+# with a warning) -- but LabFREED has no unitless numbers as a matter of principle, so
+# always prefer an explicit Quantity with a real unit, as here.
+table.append([Quantity(value=1.1, unit='h'), datetime.now(), True, 'BAR'])
 mydata.update({'TABLE': table})
 
-trex = mydata.to_trex()
+trex = mydata.to_trex_spec()
 trex.print_validation_messages()  # validation works the same way as for PAC_ID
 ```
 

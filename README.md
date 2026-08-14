@@ -194,7 +194,7 @@ pac.print_validation_messages()
 >> Validation Results                                                              
 >> ┌──────────────────────────────────────────────────────────────────────────────┐
 >> │ **RECOMMENDATION** in id segment value bal500                                │
->> │ Characters 'a','b','l' should not be used., Characters SHOULD be limited to  │
+>> │ Characters 'a','l','b' should not be used., Characters SHOULD be limited to  │
 >> │ upper case letters (A-Z), numbers (0-9), '-' and '+'                         │
 >> │                                                                              │
 >> │ HTTPS://PAC.METTORIUS.COM/-MD/👉bal👈500/@1234                               │
@@ -206,7 +206,7 @@ pac.print_validation_messages()
 >> │ HTTPS://PAC.METTORIUS.COM/-MD/bal500/👉@👈1234                               │
 >> ├──────────────────────────────────────────────────────────────────────────────┤
 >> │ **RECOMMENDATION** in id segment value bal500                                │
->> │ Characters 'a','b','l' should not be used., Characters SHOULD be limited to  │
+>> │ Characters 'a','l','b' should not be used., Characters SHOULD be limited to  │
 >> │ upper case letters (A-Z), numbers (0-9), '-' and '+'                         │
 >> │                                                                              │
 >> │ HTTPS://PAC.METTORIUS.COM/-MD/👉bal👈500/@1234                               │
@@ -218,7 +218,7 @@ pac.print_validation_messages()
 >> │ HTTPS://PAC.METTORIUS.COM/-MD/bal500/👉@👈1234                               │
 >> ├──────────────────────────────────────────────────────────────────────────────┤
 >> │ **RECOMMENDATION** in id segment value bal500                                │
->> │ Characters 'a','b','l' should not be used., Characters SHOULD be limited to  │
+>> │ Characters 'a','l','b' should not be used., Characters SHOULD be limited to  │
 >> │ upper case letters (A-Z), numbers (0-9), '-' and '+'                         │
 >> │                                                                              │
 >> │ HTTPS://PAC.METTORIUS.COM/-MD/👉bal👈500/@1234                               │
@@ -337,10 +337,13 @@ segments = {
 mydata = T_REX(segments)
 
 # Create a table
+# A bare int/float is accepted for convenience (it's silently wrapped in a unitless
+# Quantity, with a warning) - but LabFREED has no unitless numbers as a matter of
+# principle, so always prefer an explicit Quantity with a real unit, as done here.
 table = DataTable(col_names=['DURATION', 'Date', 'OK', 'COMMENT'])
 table.append([Quantity(value=1, unit='h'), datetime.now(), True, 'FOO'])
-table.append([                                                 1.1,  datetime.now(), True, 'BAR'])
-table.append([                                                 1.3,  datetime.now(), False, 'BLUBB'])
+table.append([Quantity(value=1.1, unit='h'), datetime.now(), True, 'BAR'])
+table.append([Quantity(value=1.3, unit='h'), datetime.now(), False, 'BLUBB'])
 #add the table to the pytrex
 mydata.update({'TABLE': table})
 
@@ -355,7 +358,7 @@ trex.print_validation_messages()
 >> Validation Results                                            
 >> ┌────────────────────────────────────────────────────────────┐
 >> │ **ERROR** in TREX table column Date                        │
->> │ Column header key contains invalid characters: 'a','e','t' │
+>> │ Column header key contains invalid characters: 't','a','e' │
 >> │                                                            │
 >> │ STOP$T.D:20240505T1306                                     │
 >> │ +TEMP$KEL:10.15                                            │
@@ -363,9 +366,9 @@ trex.print_validation_messages()
 >> │ +COMMENT$T.A:FOO                                           │
 >> │ +COMMENT2$T.T:12G3                                         │
 >> │ +TABLE$$DURATION$HUR:D👉ate👈$T.D:OK$T.B:COMMENT$T.A::     │
->> │  1:20260813T060232.684:T:FOO::                             │
->> │  1.1:20260813T060232.684:T:BAR::                           │
->> │  1.3:20260813T060232.684:F:BLUBB                           │
+>> │  1:20260814T021153.586:T:FOO::                             │
+>> │  1.1:20260814T021153.588:T:BAR::                           │
+>> │  1.3:20260814T021153.590:F:BLUBB                           │
 >> └────────────────────────────────────────────────────────────┘
 ```
 #### Combine PAC-ID and TREX and serialize
@@ -377,7 +380,7 @@ pac_str = pac.to_url()
 print(pac_str)
 ```
 ```text
->> HTTPS://PAC.METTORIUS.COM/21:1234*MYTREX$TREX/STOP$T.D:20240505T1306+TEMP$KEL:10.15+OK$T.B:F+COMMENT$T.A:FOO+COMMENT2$T.T:12G3+TABLE$$DURATION$HUR:Date$T.D:OK$T.B:COMMENT$T.A::1:20260813T060232.684:T:FOO::1.1:20260813T060232.684:T:BAR::1.3:20260813T060232.684:F:BLUBB
+>> HTTPS://PAC.METTORIUS.COM/21:1234*MYTREX$TREX/STOP$T.D:20240505T1306+TEMP$KEL:10.15+OK$T.B:F+COMMENT$T.A:FOO+COMMENT2$T.T:12G3+TABLE$$DURATION$HUR:Date$T.D:OK$T.B:COMMENT$T.A::1:20260814T021153.586:T:FOO::1.1:20260814T021153.588:T:BAR::1.3:20260814T021153.590:F:BLUBB
 ```
 ## PAC-ID Resolver
 
@@ -411,18 +414,18 @@ for sg in service_groups:
     sg.print()
 ```
 ```text
->> Services from origin 'MY_COMPANY                        
->> ┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┓
->> ┃ Service Name        ┃ URL                  ┃ Service Type        ┃ Reachable ┃
->> ┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━┩
->> │ Chemical Management │ https://chem-manage… │ userhandover-gener… │ UNKNOWN   │
->> └─────────────────────┴──────────────────────┴─────────────────────┴───────────┘
->>                          Services from origin 'PERSONAL                         
+>> Services from origin 'PERSONAL                         
 >> ┏━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┓
 >> ┃ Service Name ┃ URL                        ┃ Service Type         ┃ Reachable ┃
 >> ┡━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━┩
 >> │ CAS Search   │ https://pubchem.ncbi.nlm.… │ userhandover-generic │ UNKNOWN   │
 >> └──────────────┴────────────────────────────┴──────────────────────┴───────────┘
+>>                         Services from origin 'MY_COMPANY                        
+>> ┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┓
+>> ┃ Service Name        ┃ URL                  ┃ Service Type        ┃ Reachable ┃
+>> ┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━┩
+>> │ Chemical Management │ https://chem-manage… │ userhandover-gener… │ UNKNOWN   │
+>> └─────────────────────┴──────────────────────┴─────────────────────┴───────────┘
 ```
 ## PAC-ID Attributes
 Attributes attach lightweight metadata -- e.g. a display name, an image, a calibration due date -- to a PAC-ID,
@@ -514,6 +517,27 @@ real release ships.
 <!-- BEGIN CHANGELOG -->
 ## Change Log
 
+### v1.0.1
+PAC-ID
+- BREAKING: `PAC_ID.__eq__`/`__hash__` now scoped to `(issuer, identifier)` only, excluding extensions - two `PAC_ID`s differing only in an extension previously compared unequal and hashed differently, contradicting `get_non_derived_pac_id()`/`get_parent_pac_id()`/`derive()`'s own issuer+identifier identity model. Deliberately cross-type: a `PAC_CAT` and a `PAC_ID` with identical issuer+identifier now compare equal (accepted as a patch given ~zero adoption of v1.0.0, released hours earlier)
+- new `PAC_ID.values_for_key(key)` (also on `PAC_CAT`, extended by extensions incl. T-REX table columns): joint lookup across identifier segments and extensions, tagging each match with its `Origin` (`SegmentOrigin`, `ExtensionOrigin`, `TrexTableOrigin`)
+- bugfix: `Extension` subclasses' type-mismatch warning interpolated the wrong variable (`DisplayNameExtension`/`TextBase36Extension` logged the extension `name` instead of the mismatched `type`)
+
+PAC-CAT
+- new `PAC_CAT.from_roles(issuer, main, processor=None)` / `Category.from_key(key, **fields)` (plus `.of` aliases) for named-role construction; `PAC_CAT.from_categories()` is now deprecated in favor of it (kept working, scheduled for removal at v2.0)
+
+PAC-ID Resolver
+- bugfix: `ResolverConfigEvaluator` deep-copies its input before each jsonpath lookup - `jsonpath_ng`'s recursive-descendant wildcard mutated the shared per-PAC-ID dict in place, silently corrupting every block evaluated after the first wildcard-shaped `template_url`/`applicable_if` (e.g. `cit.yaml`'s `Manual`/`CoA` macros)
+
+T-REX
+- new explicit-type wrapper classes `Alphanumeric`, `Text`, `Numeric`, `Bool`, `Date` (`labfreed.trex.facade`) so a dict entry's wire type can be stated explicitly instead of always inferred from the Python value's type
+- `to_trex()`/`from_trex()` renamed to `to_trex_spec()`/`from_trex_spec()`; `T_REX` gains its own `serialize()`/`deserialize(s)` as the everyday entry point (old names kept as deprecated aliases)
+- bugfix: `from_trex`/`from_trex_spec` now actually return a `T_REX` instance instead of a plain `dict`
+- bugfix: `T_REX`'s dict-value union (and `DataTable`'s cell type) had no bare `int`/`float`/`None` member - a plain `int`/`float` could be silently coerced into a `datetime` via Unix-timestamp interpretation, and constructing with `None` (a valid, undefined T-REX value) raised
+
+General
+- `Quantity(value=..., unit=None)` now emits a warning - LabFREED treats unitless numbers as a matter of principle, so this flags a bare `int`/`float` that got silently wrapped for convenience, or any other genuinely unitless construction, rather than passing silently
+
 ### v1.0.0
 PAC-ID
 - supporting PAC.LI issuer
@@ -528,12 +552,10 @@ PAC-ID Resolver
 - BREAKING: `ServiceType` now derives from `StrEnum` instead of `Enum`; `_validate_service_type` in both `resolver_config_common.py` and `resolver_config.py` dropped their manual `.value`/`isinstance` unwrapping now that members compare directly against plain strings
 - BREAKING: `ServiceStatus` (`Service.status`) now derives from `StrEnum` with explicit string values (`"active"`/`"inactive"`/`"unknown"`) instead of plain `Enum` with `auto()`-generated int values; any code reading `.value` directly (none found in this codebase) would now get a string instead of an int
 - new optional `key` field on `ResolverConfigEntry`/`Service`: an absolute IRI, drawn from the same shared vocabularies PAC-ID Attributes already sources its own `key` from, identifying what an entry semantically *is* (e.g. "this is a Material Safety Data Sheet"), orthogonal to `application_intents` (which identifies which use case selects it). `PacInfo` gained matching `get_user_handover(s)_by_key()`/`get_action(s)_by_key()` lookups
-- bugfix: `ResolverConfigEvaluator.evaluate()` reuses one `pac_id_json` dict across every block/entry for a PAC-ID; evaluating a `template_url`/`applicable_if` containing a `$..*`-shaped jsonpath query (e.g. this evaluator's own `['key']` bracket-shorthand with a leading `$..*`, as used by `cit.yaml`'s `Manual`/`CoA` macros) mutated that shared dict in place (a `jsonpath_ng` quirk: its recursive-descendant wildcard replaces a nested dict with `list(that_dict.values())` as a side effect of reading it), silently breaking every block evaluated afterward with no error raised - fixed by deep-copying before each jsonpath lookup
 
 
 PAC-ID Attributes
 - new building block
-- `AttributeClient` request auth: `PatternMatchedAuth`/`AuthRule` (`client/auth.py`) inject per-request credentials (header/scheme) based on a URL glob or regex match, with `env_credential()`/`static_credential()` helpers for where the value comes from
 
 
 General

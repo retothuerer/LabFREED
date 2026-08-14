@@ -36,7 +36,7 @@ class DisplayNameExtension(TextBase36Extension, LabFREED_BaseModel):
             logging.warning(f'Name {name} was given, but this extension should only be used with name "N". Will ignore input')
             
         if type != 'TEXT':
-            logging.warning(f'Type {name} was given, but this extension should only be used with type "TEXT". Will try to parse data as display names')
+            logging.warning(f'Type {type} was given, but this extension should only be used with type "TEXT". Will try to parse data as display names')
         
         display_name = from_base36(data)
          

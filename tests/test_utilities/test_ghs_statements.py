@@ -4,7 +4,7 @@ from labfreed.utilities.ghs.ghs_statements import signal_word_for_hazard_stateme
 from labfreed.utilities.ghs.ghs_statement_models import HazardStatement
 
 
-def _hs(code):
+def _hs(code: str) -> HazardStatement:
     return HazardStatement(code=code, text=None, text_origin='Predefined')
 
 

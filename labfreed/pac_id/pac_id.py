@@ -5,6 +5,7 @@ from pydantic import Field, computed_field, conlist, model_validator
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel, ValidationMsgLevel
 from labfreed.pac_id.id_segment import IDSegment
 from labfreed.pac_id.extension import Extension
+from labfreed.pac_id.keyed_values import KeyedValue, SegmentOrigin
 
 
 from typing import TYPE_CHECKING
@@ -37,6 +38,23 @@ class PAC_ID(LabFREED_BaseModel):
         if not out:
             return None
         return out[0]
+
+    def _segment_values_for_key(self, key: str) -> list[KeyedValue]:
+        return [
+            KeyedValue(value=[seg.value], origin=SegmentOrigin(category_key=None))
+            for seg in self.identifier if seg.key == key
+        ]
+
+    def values_for_key(self, key: str) -> list[KeyedValue]:
+        '''Joint lookup across identifier segments and extensions - returns every
+        match with provenance, never silently picking a winner. Works via explicit
+        segment keys even without category structure; PAC_CAT overrides
+        _segment_values_for_key to also resolve implicit/positional segment keys,
+        since only it knows a category's implicit key order. See design-choices.md.'''
+        results = self._segment_values_for_key(key)
+        for ext in self.extensions:
+            results.extend(ext.values_for_key(key))
+        return results
 
 
     def has_derivation_segments(self) -> bool:
@@ -162,8 +180,13 @@ class PAC_ID(LabFREED_BaseModel):
     def __str__(self):
         return self.to_url()
 
+    def __eq__(self, other):
+        if not isinstance(other, PAC_ID):
+            return NotImplemented
+        return self.to_url(include_extensions=False) == other.to_url(include_extensions=False)
+
     def __hash__(self):
-        return hash(self.to_url())
+        return hash(self.to_url(include_extensions=False))
 
     @model_validator(mode='after')
     def _check_at_least_one_segment(self) -> Self:

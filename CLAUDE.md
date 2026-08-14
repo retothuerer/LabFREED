@@ -65,6 +65,21 @@ field with no dedicated `PacInfo` property yet), not the default - if a UI layer
 to parse/resolve attribute data itself, that logic almost always belongs in `PacInfo`
 instead, so every consumer gets it for free.
 
+## LabFREED has no unitless numbers
+
+Every numeric value carries a unit - LabFREED is for labs, and a bare number without
+one is unusable/dangerous there. `Quantity(value, unit=None)` is the one sanctioned way
+to represent a genuinely dimensionless value (e.g. GS1/UNECE `C62`, "one"/count) - an
+explicit, intentional choice, not a silent default. Convenience construction from a bare
+`int`/`float` is fine at call sites that need it (e.g. T-REX's numeric segment
+handling), but it must immediately wrap the value in `Quantity(..., unit=None)` and warn
+that this happened silently, rather than leaving a bare number floating around
+un-wrapped or defaulting to unitless without flagging it. The warning lives once, in
+`Quantity` itself (fires whenever its normalized `unit` ends up `None`) - not
+re-implemented at every call site that happens to construct one. Examples/docs should
+model the explicit-`Quantity` form, with a comment noting that a bare `int`/`float` is
+accepted for convenience but discouraged - never present the bare form as the norm.
+
 ## Repo structure map
 
 Use this to jump straight to the right place instead of grepping the whole tree cold.

@@ -4,6 +4,7 @@ from typing import Any
 from pydantic import PrivateAttr, computed_field, model_validator
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel, ValidationMsgLevel
 from labfreed.pac_id.id_segment import IDSegment
+from labfreed.pac_id.keyed_values import KeyedValue, SegmentOrigin
 
 
 _category_key_pattern = r'-[A-Za-z]+'
@@ -87,6 +88,40 @@ class Category(LabFREED_BaseModel):
         '''The segments in this category that were added by the given derivation
         namespace (`namespace`, without the leading `+`).'''
         return [s for s in self.segments if s.derivation_namespace == namespace]
+
+    def value_for_key(self, key: str) -> KeyedValue | None:
+        '''This category's own value for a raw key (explicit or implicit alias), as a
+        KeyedValue tagged with this category's own key - or None if not present.
+        Checks .segments directly, which is already the correct source of truth
+        regardless of whether the original wire form spelled the key out explicitly
+        or relied on position (PredefinedCategory's .segments always reports explicit
+        keys - see design-choices.md).'''
+        for seg in self.segments:
+            if seg.key == key:
+                return KeyedValue(value=[seg.value], origin=SegmentOrigin(category_key=self.key))
+        return None
+
+    @classmethod
+    def from_key(cls, key: str, **fields) -> 'Category':
+        '''Builds a category from a raw category-key string (e.g. "-MS") plus
+        alias-keyed fields (e.g. {"240": "X67678", "10": "BATCH1"}), for callers who'd
+        rather pass a key string than import the concrete PredefinedCategory subclass.
+        None-valued fields are dropped, matching how an omitted optional field already
+        behaves. Falls back to a plain, generic Category for an unregistered key,
+        mirroring PAC_CAT._cat_from_cat_segments's own fallback.'''
+        from labfreed.pac_cat.predefined_categories import category_key_to_class_map
+        fields = {k: v for k, v in fields.items() if v is not None}
+        known_cat = category_key_to_class_map.get(key)
+        if known_cat:
+            return known_cat(**fields)
+        return Category(key=key, segments=[CategorySegment(key=k, value=v) for k, v in fields.items()])
+
+    @classmethod
+    def of(cls, key: str, **fields) -> 'Category':
+        '''Alias for from_key() - from_key is the encouraged spelling (matches this
+        codebase's from_* convention); of is provided for callers coming from Java/
+        TS-influenced ecosystems, where that's the idiomatic name.'''
+        return cls.from_key(key, **fields)
 
     def __init__(self, **data: Any):
         '''@private'''

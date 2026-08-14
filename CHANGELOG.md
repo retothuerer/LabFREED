@@ -1,5 +1,26 @@
 ## Change Log
 
+### v1.0.1
+PAC-ID
+- BREAKING: `PAC_ID.__eq__`/`__hash__` now scoped to `(issuer, identifier)` only, excluding extensions - two `PAC_ID`s differing only in an extension previously compared unequal and hashed differently, contradicting `get_non_derived_pac_id()`/`get_parent_pac_id()`/`derive()`'s own issuer+identifier identity model. Deliberately cross-type: a `PAC_CAT` and a `PAC_ID` with identical issuer+identifier now compare equal (accepted as a patch given ~zero adoption of v1.0.0, released hours earlier)
+- new `PAC_ID.values_for_key(key)` (also on `PAC_CAT`, extended by extensions incl. T-REX table columns): joint lookup across identifier segments and extensions, tagging each match with its `Origin` (`SegmentOrigin`, `ExtensionOrigin`, `TrexTableOrigin`)
+- bugfix: `Extension` subclasses' type-mismatch warning interpolated the wrong variable (`DisplayNameExtension`/`TextBase36Extension` logged the extension `name` instead of the mismatched `type`)
+
+PAC-CAT
+- new `PAC_CAT.from_roles(issuer, main, processor=None)` / `Category.from_key(key, **fields)` (plus `.of` aliases) for named-role construction; `PAC_CAT.from_categories()` is now deprecated in favor of it (kept working, scheduled for removal at v2.0)
+
+PAC-ID Resolver
+- bugfix: `ResolverConfigEvaluator` deep-copies its input before each jsonpath lookup - `jsonpath_ng`'s recursive-descendant wildcard mutated the shared per-PAC-ID dict in place, silently corrupting every block evaluated after the first wildcard-shaped `template_url`/`applicable_if` (e.g. `cit.yaml`'s `Manual`/`CoA` macros)
+
+T-REX
+- new explicit-type wrapper classes `Alphanumeric`, `Text`, `Numeric`, `Bool`, `Date` (`labfreed.trex.facade`) so a dict entry's wire type can be stated explicitly instead of always inferred from the Python value's type
+- `to_trex()`/`from_trex()` renamed to `to_trex_spec()`/`from_trex_spec()`; `T_REX` gains its own `serialize()`/`deserialize(s)` as the everyday entry point (old names kept as deprecated aliases)
+- bugfix: `from_trex`/`from_trex_spec` now actually return a `T_REX` instance instead of a plain `dict`
+- bugfix: `T_REX`'s dict-value union (and `DataTable`'s cell type) had no bare `int`/`float`/`None` member - a plain `int`/`float` could be silently coerced into a `datetime` via Unix-timestamp interpretation, and constructing with `None` (a valid, undefined T-REX value) raised
+
+General
+- `Quantity(value=..., unit=None)` now emits a warning - LabFREED treats unitless numbers as a matter of principle, so this flags a bare `int`/`float` that got silently wrapped for convenience, or any other genuinely unitless construction, rather than passing silently
+
 ### v1.0.0
 PAC-ID
 - supporting PAC.LI issuer
