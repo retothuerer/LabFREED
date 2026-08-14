@@ -14,6 +14,7 @@ import pytest
 
 from labfreed.trex.trex import Spec_T_REX
 from labfreed.trex.facade.t_rex import T_REX
+from labfreed.utilities.quantity import Quantity
 
 
 TREX_STR = "NUM$HUR:5"
@@ -22,7 +23,7 @@ TREX_STR = "NUM$HUR:5"
 def test_to_trex_spec_is_the_renamed_method():
     t = T_REX({"NUM": 5}).to_trex_spec()
     assert isinstance(t, Spec_T_REX)
-    assert t.get_segment("NUM").type == "HUR"
+    assert t.get_segment("NUM").type == "C62"  # bare int, no unit
 
 
 def test_old_to_trex_name_still_works_and_warns():
@@ -36,14 +37,14 @@ def test_old_to_trex_name_still_works_and_warns():
 def test_from_trex_spec_is_the_renamed_classmethod():
     py = T_REX.from_trex_spec(Spec_T_REX.deserialize(TREX_STR))
     assert isinstance(py, T_REX)
-    assert py["NUM"] == 5
+    assert py["NUM"] == Quantity(value=5, unit="h")
 
 
 def test_old_from_trex_name_still_works_and_warns():
     with pytest.deprecated_call():
         py = T_REX.from_trex(Spec_T_REX.deserialize(TREX_STR))
     assert isinstance(py, T_REX)
-    assert py["NUM"] == 5
+    assert py["NUM"] == Quantity(value=5, unit="h")
 
 
 def test_serialize_matches_to_trex_spec_then_serialize():
@@ -53,10 +54,14 @@ def test_serialize_matches_to_trex_spec_then_serialize():
 
 def test_deserialize_matches_from_trex_spec_of_the_parsed_string():
     py = T_REX.deserialize(TREX_STR)
-    assert py["NUM"] == 5
+    assert py["NUM"] == Quantity(value=5, unit="h")
     assert py == T_REX.from_trex_spec(Spec_T_REX.deserialize(TREX_STR))
 
 
 def test_serialize_deserialize_round_trips():
-    original = T_REX({"NUM": 5, "OK": True})
+    ''' Uses a real Quantity, not a bare int - a bare number is asymmetric across this
+    round trip by design (LabFREED has no unitless numbers - see CLAUDE.md): it goes
+    out as an explicitly-unitless Quantity and comes back as one too, so it would never
+    equal the original bare int. A properly-unitted Quantity round-trips cleanly. '''
+    original = T_REX({"NUM": Quantity(value=5, unit="h"), "OK": True})
     assert T_REX.deserialize(original.serialize()) == original

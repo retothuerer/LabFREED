@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from pydantic import computed_field, model_validator
 
 from labfreed.labfreed_infrastructure import LabFREED_BaseModel, ValidationMsgLevel
+from labfreed.pac_id.keyed_values import KeyedValue, ExtensionOrigin
 
     
 class ExtensionBase(ABC):
@@ -15,7 +16,17 @@ class ExtensionBase(ABC):
     @abstractmethod
     def data(self) -> str:
         raise NotImplementedError("Subclasses must implement 'data'")
-    
+
+    def values_for_key(self, key: str) -> list[KeyedValue]:
+        '''Default polymorphic lookup for PAC_ID.values_for_key(): matches on this
+        extension's own name. Subclasses with richer internal structure (e.g.
+        TREX_Extension, searching its segments and table columns; TextBase36Extension,
+        returning decoded text rather than the still-base36-encoded wire data)
+        override this instead of PAC_ID needing to know about their internals.'''
+        if self.name == key:
+            return [KeyedValue(value=[self.data], origin=ExtensionOrigin(extension_name=self.name))]
+        return []
+
     def __str__(self):
         if self.name and self.type:
             return f'{self.name}${self.type}/{self.data}'

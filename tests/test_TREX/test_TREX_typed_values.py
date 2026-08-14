@@ -18,12 +18,18 @@ escape hatch, kept exactly as-is. Text takes ordinary human-readable text and
 encodes it to base36 internally at serialization time, mirroring what the
 existing str-auto-detect fallback already does for a non-alphanumeric string,
 just made explicit/opt-in.
+
+Defined in labfreed/trex/facade/typed_values.py, but re-exported through
+labfreed/trex/facade/__init__.py and labfreed/trex/__init__.py, matching how
+T_REX/DataTable/Quantity are already threaded through both levels - imported
+below from the top-level labfreed.trex, not the submodule, so this test also
+verifies the re-export, not just that the classes exist somewhere.
 '''
 import pytest
 
 from labfreed.trex.facade.t_rex import T_REX
 from labfreed.trex.facade.data_table import DataTable
-from labfreed.trex.facade.typed_values import Alphanumeric, Text, Numeric, Bool, Date
+from labfreed.trex import Alphanumeric, Text, Numeric, Bool, Date
 from labfreed.utilities.base36 import to_base36
 
 

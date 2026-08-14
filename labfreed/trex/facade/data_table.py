@@ -6,12 +6,13 @@ from pydantic import BaseModel, Field, PrivateAttr, model_validator
 
 from labfreed.utilities.base36 import base36
 from labfreed.utilities.quantity import Quantity
+from labfreed.trex.facade.typed_values import Alphanumeric, Text, Numeric, Bool, Date
 
 
 class DataTable(BaseModel):
-    _row_template:list[str, Quantity | datetime | time | date | bool | str | base36] =  PrivateAttr(default_factory=list)
+    _row_template:list[str, Quantity | int | float | datetime | time | date | bool | str | base36 | Alphanumeric | Text | Numeric | Bool | Date] =  PrivateAttr(default_factory=list)
     col_names: list[str] = Field(default_factory=list)
-    data:list[list[Union[Quantity, datetime, time, date, bool, str, base36, None]]] = Field(default_factory=list)
+    data:list[list[Union[Quantity, int, float, datetime, time, date, bool, str, base36, Alphanumeric, Text, Numeric, Bool, Date, None]]] = Field(default_factory=list)
     
     @property
     def row_template(self):

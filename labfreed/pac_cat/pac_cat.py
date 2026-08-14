@@ -1,6 +1,7 @@
 from __future__ import annotations  # optional in 3.11, but recommended for consistency
 
 from typing import Self
+from deprecated import deprecated
 from pydantic import computed_field, model_validator
 
 from rich import print
@@ -15,6 +16,7 @@ from labfreed.pac_cat.predefined_categories import (
 )
 from labfreed.pac_id.id_segment import IDSegment
 from labfreed.pac_id.pac_id import PAC_ID
+from labfreed.pac_id.keyed_values import KeyedValue
 
 ''' Configure pdoc'''
 
@@ -126,6 +128,13 @@ class PAC_CAT(PAC_ID):
             return None
         return tmp[0]
 
+    def _segment_values_for_key(self, key: str) -> list[KeyedValue]:
+        '''Overrides PAC_ID's explicit-key-only lookup to also resolve implicit/
+        positional segment keys, via each category's own already-resolved fields -
+        each category already tags its own match with a SegmentOrigin, so this just
+        collects them.'''
+        return [kv for category in self.categories if (kv := category.value_for_key(key)) is not None]
+
     def _resolve_identifier_for_notation(self, use_short_notation: bool) -> list[IDSegment]:
         ''' @private Rebuilds the full identifier for forced short/long notation by
         walking `self.identifier` in its true original order and re-keying only the
@@ -195,14 +204,41 @@ class PAC_CAT(PAC_ID):
     
     
     @classmethod
+    @deprecated("Role assignment is purely positional here - use PAC_CAT.from_roles() "
+                "instead, which assigns main/processor by name, not list position. "
+                "Deprecated since v1.0, will be removed in v2.0.")
     def from_categories(cls, issuer:str, categories:list[Category]) -> PAC_CAT:
         identifier = list()
         for category in categories:
             identifier.append(IDSegment(value=category.key))
             identifier.extend(category.segments)
         return PAC_CAT(issuer=issuer, identifier=identifier)
-    
-    
+
+
+    @classmethod
+    def from_roles(cls, issuer: str, main: Category, processor: Category | None = None) -> PAC_CAT:
+        '''Builds a PAC_CAT from named category roles instead of a positional list -
+        main/processor are assigned by name, so a caller can never accidentally swap
+        them the way a positional list allows. Builds the long-form identifier, forces
+        short notation, and re-parses, so the caller never decides which keys ride
+        implicitly - the returned PAC_CAT already reflects the minimized form.'''
+        categories = [main] if processor is None else [main, processor]
+        identifier = list()
+        for category in categories:
+            identifier.append(IDSegment(value=category.key))
+            identifier.extend(category.segments)
+        long_form = PAC_CAT(issuer=issuer, identifier=identifier)
+        return PAC_CAT.from_url(long_form.to_url(use_short_notation=True), suppress_validation_errors=True)
+
+
+    @classmethod
+    def of(cls, issuer: str, main: Category, processor: Category | None = None) -> PAC_CAT:
+        '''Alias for from_roles() - from_roles is the encouraged spelling (matches this
+        codebase's from_* convention); of is provided for callers coming from Java/
+        TS-influenced ecosystems, where that's the idiomatic name.'''
+        return cls.from_roles(issuer, main=main, processor=processor)
+
+
     @classmethod
     def from_pac_id(cls, pac_id:PAC_ID) -> PAC_CAT:
         '''Constructs a PAC-CAT from a PAC-ID'''

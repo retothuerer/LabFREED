@@ -555,6 +555,38 @@ Not scoped yet - deferred at the user's request (2026-08-03) while working on th
 `PAC-ID Resolver` `key` field; revisit when there's a concrete need to
 cross-reference a `T-REX` key against an IRI vocabulary.
 
+Update 2026-08-13: the "should `PacInfo` become an RDF/JSON-LD-shaped document?" idea
+below may be the concrete need this was waiting for - read both together if picking
+either up.
+
+---
+
+## Should `PacInfo` become an RDF/JSON-LD-shaped document?
+
+Raised while designing `PAC_ID.values_for_key()`'s `Origin` types (see the
+"`values_for_key()`'s `Origin` types..." entry in `design-choices.md`) in response to an
+external field-notes brief. Today `PacInfo` (`labfreed/labfreed_extended/app/pac_info/
+pac_info.py`) is a rendering-oriented data-prep layer - each property (`display_name`,
+`image_url`, `attached_data`, ...) resolves itself ad hoc, with its own precedence logic.
+`display_name` is the clearest symptom: it chains an extension-name lookup, a PAC-ID
+Attributes lookup, and a hardcoded-literal-key segment filter with `or`, silently
+picking a winner - exactly the pattern `values_for_key()` was built to avoid at the
+`PAC_ID`/`PAC_CAT` level.
+
+The bigger-picture alternative: `PacInfo` as an actual RDF/JSON-LD-shaped "all
+statements about this subject" document - predicates keyed by canonical IRI, values
+carrying provenance - rather than a bag of separately-computed, page-shaped properties.
+This is already closer to true for PAC-ID Attributes specifically (attribute keys are
+already IRIs); `T-REX` keys are the odd one out, deliberately short/local, which is
+exactly why the "Map T-REX well-known keys to canonical IRIs" idea above sits deferred.
+
+Not scoped - this is real, separate architecture work: the T-REX→IRI mapping above would
+need to actually be scoped for real (not just deferred), and every existing `PacInfo`
+consumer/template would need to move from typed-property access to predicate-lookup
+access. `values_for_key()`'s `Origin` types are deliberately open (a class hierarchy, not
+a closed enum) specifically so this door stays open rather than closed - worth knowing
+when this gets picked up, but not a reason to scope it now.
+
 ---
 
 ## Make `device.jinja.html` less generic - per-device-type page variants
@@ -613,6 +645,13 @@ here as it's removed.
   `Attribute`, `Attributes`, `AttributeGroup` respectively.
 - `labfreed/pac_attributes/facade/attributes.py`: `Attribute.value` property - use
   `.values`.
+- `labfreed/pac_cat/pac_cat.py`: `PAC_CAT.from_categories()` - use `PAC_CAT.from_roles()`
+  (see the "`PAC_CAT.from_categories()` deprecated..." entry in `design-choices.md`).
+- `labfreed/trex/facade/t_rex.py`: `T_REX.to_trex()` - use `T_REX.to_trex_spec()` (or, for
+  most callers, the new `T_REX.serialize()`).
+- `labfreed/trex/facade/t_rex.py`: `T_REX.from_trex()` - use `T_REX.from_trex_spec()` (or,
+  for most callers, the new `T_REX.deserialize()`) (see the "T-REX explicit-type wrapper
+  family..." entry in `design-choices.md`).
 
 Before removing any of these, check whether `labfreed-webtools` still imports it under
 the old name - see the "Two typo fixes..." and IRI-migration entries in

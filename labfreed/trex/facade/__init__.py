@@ -1,3 +1,4 @@
 from .t_rex import T_REX, pyTREX  # noqa: F401
 from .data_table import DataTable  # noqa: F401
+from .typed_values import Alphanumeric, Text, Numeric, Bool, Date  # noqa: F401
 from labfreed.utilities.quantity import Quantity  # noqa: F401

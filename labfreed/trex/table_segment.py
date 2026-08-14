@@ -51,7 +51,13 @@ class TableRow(RootModel[list[Value]]):
     """
     def serialize(self):
         return ':'.join([e.serialize() for e in self.root])
-    
+
+    def __getitem__(self, index):
+        return self.root[index]
+
+    def __setitem__(self, index, value):
+        self.root[index] = value
+
     def __len__(self):
         return len(self.root)
     

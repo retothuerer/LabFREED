@@ -1,5 +1,5 @@
 '''
-PAC_CAT.from_roles(main=, processor=None) and Category.from_key(key, **fields) -
+PAC_CAT.from_roles(issuer, main=, processor=None) and Category.from_key(key, **fields) -
 named-role construction replacing from_categories()'s positional-list role
 assignment (main vs. processor inferred purely from list position today, with
 no validation - the same bug class an external field-notes brief described at
@@ -37,14 +37,14 @@ def test_category_of_is_an_alias_for_from_key():
 
 def test_from_roles_with_only_main_gives_short_notation_by_default():
     main = Category.from_key("-MS", **{"240": "X67678", "10": "BATCH1"})
-    pac = PAC_CAT.from_roles(main=main)
+    pac = PAC_CAT.from_roles("METTORIUS.COM", main=main)
     assert pac.to_url() == "HTTPS://PAC.METTORIUS.COM/-MS/X67678/BATCH1"
 
 
 def test_from_roles_with_main_and_processor():
     main = Category.from_key("-MS", **{"240": "X67678", "10": "BATCH1"})
     processor = Category.from_key("-PS", **{"21": "INSTANCE1", "240": "AURORA"})
-    pac = PAC_CAT.from_roles(main=main, processor=processor)
+    pac = PAC_CAT.from_roles("METTORIUS.COM", main=main, processor=processor)
     assert pac.to_url() == "HTTPS://PAC.METTORIUS.COM/-MS/X67678/BATCH1/-PS/INSTANCE1/AURORA"
     assert pac.main_category.key == "-MS"
     assert pac.processor.key == "-PS"
@@ -56,13 +56,13 @@ def test_from_roles_never_writes_an_explicit_key_the_caller_did_not_ask_for():
     whatever comes after it, rather than silently shifting a later value into the
     skipped slot's position. '''
     main = Category.from_key("-MS", **{"240": "X67678", "250": "AL9"})  # batch/size/container skipped
-    pac = PAC_CAT.from_roles(main=main)
+    pac = PAC_CAT.from_roles("METTORIUS.COM", main=main)
     assert pac.to_url() == "HTTPS://PAC.METTORIUS.COM/-MS/X67678/250:AL9"
 
 
 def test_pac_cat_of_is_an_alias_for_from_roles():
     main = Category.from_key("-MS", **{"240": "X67678"})
-    assert PAC_CAT.of(main=main).to_url() == PAC_CAT.from_roles(main=main).to_url()
+    assert PAC_CAT.of("METTORIUS.COM", main=main).to_url() == PAC_CAT.from_roles("METTORIUS.COM", main=main).to_url()
 
 
 def test_from_categories_still_works_but_warns_deprecated():
