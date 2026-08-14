@@ -2191,3 +2191,43 @@ pick the exact type immediately for the previously-coerced case, without disturb
 already-correct ones (`bool`, `Quantity`).
 
 *Investigated 2026-08-13, prompted by an external field-notes brief.*
+
+---
+
+## `_evaluate_jsonpath()` deep-copies its input - `jsonpath_ng.ext`'s `find()` mutates in place for some expressions
+
+**Decision:** `ResolverConfigEvaluator._evaluate_jsonpath()` now calls
+`jsonpath_expr.find(copy.deepcopy(pac_id_json))` instead of `jsonpath_expr.find(pac_id_json)`.
+
+**Why:** confirmed, in complete isolation with no LabFREED code involved, that
+`jsonpath_ng.ext`'s `find()` mutates its input dict in place for a recursive-descent
+wildcard combined with a filter predicate (`$..*[?(@.key == 'X')].value` - exactly the
+pattern `cit.yaml`'s `Manual`/`CoA` macro templates use): a plain dict at the query root
+gets silently replaced by a nested list. `ResolverConfigEvaluator.evaluate()` builds one
+`pac_id_json` dict and reuses it across every block's `applicable_if` condition and every
+entry's `template_url` within a single call - so the first block whose template uses this
+pattern silently corrupted every block evaluated after it, since `$.pac.issuer` and similar
+conditions no longer resolved against the corrupted structure. This was already present,
+unchanged, in the actual tagged/pushed `v1.0.0` release (confirmed via `git merge-base`) -
+not a regression from anything in this session; found while investigating why
+`tests/test_resolver/test_resolver_config_sanity_check.py`'s `cit.yaml`-based tests
+(`test_cit_yaml_device_gets_shop_and_manual_and_logic_showcase_entries`,
+`test_cit_yaml_consumable_also_gets_coa`) were failing despite testing unrelated work.
+
+**Alternatives considered / why not:**
+
+- Rewrite `cit.yaml`'s macros to avoid the `$..*[?(...)]` pattern - rejected: that's valid,
+  useful JSONPath syntax; papering over a library bug by telling users to avoid a whole
+  class of otherwise-correct expressions isn't a real fix, and doesn't protect against the
+  same `jsonpath_ng` behavior showing up via some other expression shape later.
+- Copy `pac_id_json` once per `evaluate()` call instead of once per `_evaluate_jsonpath()`
+  call - rejected: still vulnerable to corruption *within* a single block, where a
+  condition and multiple `template_url` placeholders can each independently call
+  `_evaluate_jsonpath()` against what would still be one shared, mutable dict.
+- Pin `jsonpath-ng` to a version without this behavior - not pursued: `pyproject.toml`
+  already has an open-ended `jsonpath-ng>=1.7.0` (installed here: `1.8.0`), and pinning
+  would only mask the underlying assumption that a read-only-looking library call is safe
+  to call repeatedly against shared mutable state. The defensive copy protects against this
+  regardless of which version resolves.
+
+*Investigated and fixed 2026-08-14.*

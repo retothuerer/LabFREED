@@ -1,3 +1,4 @@
+import copy
 import json
 import operator
 import re
@@ -170,7 +171,14 @@ class ResolverConfigEvaluator:
         if isinstance(pac_id_json, str):
             pac_id_json = json.loads(pac_id_json)
         jsonpath_expr = jsonpath.parse(jp_query)
-        matches = [match.value for match in jsonpath_expr.find(pac_id_json)]
+        # jsonpath_ng.ext's find() mutates its input in place for certain
+        # recursive-descent + filter-predicate expressions (e.g. $..*[?(@.key ==
+        # 'X')].value) - confirmed reproducible with jsonpath_ng alone, no LabFREED
+        # code involved. pac_id_json is the same dict reused across every block's
+        # condition and every entry's template_url within one evaluate() call, so an
+        # in-place mutation here would silently corrupt every later lookup - see
+        # design-choices.md.
+        matches = [match.value for match in jsonpath_expr.find(copy.deepcopy(pac_id_json))]
         return matches
 
 

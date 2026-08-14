@@ -490,3 +490,34 @@ def test_evaluate_pac_id_skips_blocks_with_malformed_applicable_if():
     result = rc.evaluate_pac_id(_FakePac({}))
 
     assert [s.service_name for s in result.services] == ['Good Service']
+
+
+# ---------------------------------------------------------------------------
+# Shared Resolver Context must not be mutated by evaluating one block, since
+# the same pac_id_json dict is reused across every block/entry in one
+# evaluate() call.
+# ---------------------------------------------------------------------------
+
+@pytest.mark.skip(reason="NOT REVIEWED")
+def test_a_recursive_descent_template_query_does_not_corrupt_later_blocks():
+    ''' jsonpath_ng.ext's find() mutates its input dict in place for certain
+    recursive-descent + filter-predicate expressions (e.g. $..*[?(@.key ==
+    'X')].value) - confirmed reproducible with jsonpath_ng alone, no LabFREED code
+    involved: pac_id_json['pac'] (a dict) gets replaced by a nested list. Since
+    evaluate() reuses the same pac_id_json across every block's condition and every
+    entry's template_url in one call, a single block using this pattern silently
+    broke every condition evaluated after it (real-world case: cit.yaml's Manual/CoA
+    macros, both using this exact pattern). '''
+    pac = _FakePac({'issuer': 'METTORIUS.COM', 'items': [{'key': 'X', 'value': 'V'}]})
+    rc = ResolverConfig(config=[
+        ResolverConfigBlock(**{
+            'if': 'True',
+            'entries': [_entry(template_url="https://example.com/{$..*[?(@.key == 'X')].value}")],
+        }),
+        ResolverConfigBlock(**{
+            'if': '$.pac.issuer == METTORIUS.COM',
+            'entries': [_entry(service_name='Second')],
+        }),
+    ])
+    services = ResolverConfigEvaluator(rc).evaluate(pac).services
+    assert [s.service_name for s in services] == ['Service', 'Second']
