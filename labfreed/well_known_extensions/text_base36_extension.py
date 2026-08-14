@@ -27,7 +27,7 @@ class TextBase36Extension(ExtensionBase, LabFREED_BaseModel):
     def create(*, name, type, data):
             
         if type != 'TEXT':
-            logging.warning(f'Type {name} was given, but this extension should only be used with type "TEXT". Will try to parse data as display names')
+            logging.warning(f'Type {type} was given, but this extension should only be used with type "TEXT". Will try to parse data as display names')
         
         text = from_base36(data)
          
