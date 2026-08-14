@@ -69,3 +69,10 @@ def test_check_service_group_degrades_to_unknown_without_internet(monkeypatch):
     group = ServiceGroup(origin='o', services=[_service(service_name='a'), _service(service_name='b')])
     check_service_group(group, session=_StubSession(status_code=200))
     assert all(s.status == ServiceStatus.UNKNOWN for s in group.services)
+
+
+def test_service_status_is_exactly_active_inactive_and_unknown():
+    # ServiceStatus is a small, closed state set (unlike the open-ended key-registry
+    # enums elsewhere in labfreed) - check_service/check_service_group only ever
+    # branch on these three, so a silent addition/removal here is worth catching.
+    assert {s.value for s in ServiceStatus} == {"active", "inactive", "unknown"}

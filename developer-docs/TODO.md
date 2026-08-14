@@ -657,3 +657,39 @@ Before removing any of these, check whether `labfreed-webtools` still imports it
 the old name - see the "Two typo fixes..." and IRI-migration entries in
 `design-choices.md`, which confirmed a couple of these were still in live use there as
 of 2026-07-29.
+
+---
+
+## Branches flagged as dead/leftover while raising test coverage on the low-covered files
+
+Found while writing coverage-backfill tests for `data_table.py`, `server.py`,
+`client.py`, `resolver.py`, and `excel_attribute_data_source.py` (2026-08-14). Each of
+these looked like it'd need a contrived test to reach, which is usually a sign the
+branch itself is dead rather than a real gap - flagged here instead of forcing coverage
+onto them. Worth a look next time any of these files is touched, to confirm and delete:
+
+- `labfreed/pac_id_resolver/resolver.py`, `if __name__ == '__main__':` block (bottom of
+  the file) - leftover manual-run debug code; calling `PAC_ID_Resolver().resolve()` with
+  no argument as written would itself raise `TypeError` (`pac_id` is required).
+- `labfreed/pac_id_resolver/resolver.py`, `cit_from_str()`'s second `except Exception as
+  e2:` branch (around line 36) - no input was found that makes `CIT_v1.from_csv()` itself
+  raise; it's written to be lenient (malformed lines become validation-error entries
+  rather than raising), so this may be unreachable by design.
+- `labfreed/labfreed_extended/pac_issuer_lib/lib/excel_attribute_data_source.py`, the
+  module-level `try/except ImportError` guard around `from openpyxl import
+  load_workbook` - only fires if `openpyxl` itself fails to import, which needs
+  `sys.modules` manipulation to simulate in-suite; low value relative to the fragility of
+  testing it.
+- `labfreed/pac_attributes/client/client.py`,
+  `local_attribute_request_callback_factory()`'s `except
+  requests.exceptions.RequestException` branch - the call it wraps
+  (`request_handler.handle_attribute_request(...)`) never raises a `requests` exception
+  (that's an HTTP-transport exception class; this factory's callback never makes an HTTP
+  call), so this looks copy-pasted from `http_attribute_request_default_callback_factory`
+  just above it rather than reachable.
+- `labfreed/pac_attributes/server/server.py`,
+  `AttributeServerRequestHandler._get_derivation_parent_id()`'s `except Exception:
+  return None` branch - only reachable via a `subject_id` that doesn't even match the
+  `issuer/identifier` shape (no `/` at all), which `AttributeRequestData._validate_subject_id`
+  (requires a valid IRI) likely already rules out before this method is ever called
+  through the public API.
