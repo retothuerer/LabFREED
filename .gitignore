@@ -1,0 +1,9 @@
+*__pycache__
+qr.png
+.claude/settings.json
+dist*
+developer-docs/incoming/
+.coverage
+htmlcov/
+.ruff_cache/
+.pytest_cache/
