@@ -24,7 +24,6 @@ dependencies = [
     "Werkzeug>=3.1.0"
 ]
 classifiers = [
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.14",
